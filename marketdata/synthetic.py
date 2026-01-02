@@ -221,4 +221,3 @@ def generate_synthetic_ohlcv(
         "regime_plan": plan,
     }
     return {"df": df, "meta": meta}
-

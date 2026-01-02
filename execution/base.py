@@ -8,6 +8,7 @@ class IBrokerage(ABC):
     """
     Interface for brokerage services.
     """
+
     @abstractmethod
     def is_available(self) -> bool:
         """Check if API keys are configured and service is ready."""

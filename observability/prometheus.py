@@ -97,4 +97,3 @@ def render_prometheus(snapshot: Dict[str, Any], *, namespace: str = "readytrader
                 lines.append(f"{base}_{suffix} {fv}")
 
     return "\n".join(lines) + "\n"
-

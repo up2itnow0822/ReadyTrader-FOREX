@@ -1,8 +1,9 @@
-## ReadyTrader-Stocks Runbook (Equity-Focused)
+## ReadyTrader-FOREX Runbook (Equity-Focused)
 
 ### Common operations
 
 #### Verify health
+
 - Use MCP tool: `get_health()`
 - If health fails:
   - confirm required environment variables are set
@@ -10,31 +11,37 @@
   - confirm rate limits and policy allowlists are not blocking requests
 
 #### View metrics
+
 - Use MCP tool: `get_metrics_snapshot()`
 - Prometheus text format (no HTTP server): `get_metrics_prometheus()`
 
 #### Kill switch (live trading)
+
 - Set `TRADING_HALTED=true` and restart the container.
 
 #### Rotate secrets
+
 - Prefer keystore or remote signer in live environments.
 - Rotate `CEX_*` credentials by updating env vars and restarting.
 
 #### Debug execution failures
+
 - Look for JSON logs with `event=tool_error` (and check `level`).
 - In approve-each mode, use `list_pending_executions()` to inspect pending proposals.
 - Re-run failed operations with an `idempotency_key` to avoid duplicates.
 
 #### Websocket market streams
+
 - Start public streams with `start_marketdata_ws(...)` and stop with `stop_marketdata_ws(...)`.
 - For Binance private order updates, use `start_cex_private_ws(...)` / `stop_cex_private_ws(...)`, and inspect with
   `list_cex_private_updates(...)`.
 
----
+______________________________________________________________________
 
 ### Incident playbooks (Phase 4)
 
 #### 1) Rate limit storm (tools returning `rate_limited`)
+
 - **Symptoms**:
   - Tools start failing with `rate_limited`
   - Metrics show rising `counters.rate_limited_total`
@@ -51,6 +58,7 @@
     - `RATE_LIMIT_<TOOL>_PER_MIN`
 
 #### 2) Websocket disconnect loop (public streams)
+
 - **Symptoms**:
   - `get_marketdata_status()` shows websocket stream `last_error`
   - Metrics show increasing websocket error/connect counters (e.g. `ws_*_error_total`)
@@ -66,6 +74,7 @@
   - If unreliable, fall back to `ccxt_rest` and/or ingest your own feed.
 
 #### 3) Exchange outage / degraded mode
+
 - **Symptoms**:
   - CCXT calls failing (`ccxt_exchange_unavailable`, `ccxt_network_error`)
   - Private update pollers show errors / lag
@@ -78,6 +87,7 @@
   - Temporarily disable live execution with `TRADING_HALTED=true`
 
 #### 4) Signer unreachable (remote signer / keystore issues)
+
 - **Symptoms**:
   - Live DEX execution fails with signing errors
   - Errors like `remote_signer_error` or signer initialization failures
@@ -89,6 +99,7 @@
   - Fix signer connectivity/credentials, then restart
 
 #### 5) Policy blocks (allowlists / limits)
+
 - **Symptoms**:
   - Errors like `token_not_allowed`, `trade_amount_too_large`, `router_not_allowed`
 - **Triage**:
@@ -99,6 +110,6 @@
   - Keep `EXECUTION_APPROVAL_MODE=approve_each` while validating new configs
 
 ### Backup/restore (paper mode)
+
 - Paper ledger is stored in `data/paper.db` (ignored by git).
 - Back up by copying the file while the container is stopped.
-

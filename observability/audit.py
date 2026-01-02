@@ -17,7 +17,7 @@ class AuditLog:
 
     This is OFF by default. Enable by setting `AUDIT_DB_PATH` (or `READYTRADER_AUDIT_DB_PATH`).
     The log is intended for operators to debug and review tool activity.
-    
+
     Compliance Enhancement (Week 4):
     - Added 'previous_hash' to support immutable ledger concept.
     - Added 'export_tax_report' for CSV compliance exports.
@@ -53,20 +53,20 @@ class AuditLog:
         conn = self._get_conn()
         if conn is None:
             return
-        
+
         # Use compact separators for hashing to ensure stability across environments
         payload = self._serialize_payload(summary)
-        
+
         with self._lock:
             # Fetch the hash of the last entry to chain them together
             cursor = conn.execute("SELECT hash FROM audit_events ORDER BY id DESC LIMIT 1")
             last_row = cursor.fetchone()
             prev_hash = last_row[0] if last_row else "INITIAL_HASH"
-            
+
             # Create a string to hash: combine previous hash with current entry data
             data_to_hash = f"{prev_hash}|{ts_ms}|{request_id}|{tool}|{1 if ok else 0}|{payload}"
             current_hash = hashlib.sha256(data_to_hash.encode()).hexdigest()
-            
+
             conn.execute(
                 """
                 INSERT INTO audit_events(
@@ -74,20 +74,7 @@ class AuditLog:
                 )
                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (
-                    int(ts_ms),
-                    str(request_id),
-                    str(tool),
-                    1 if ok else 0,
-                    error_code,
-                    mode,
-                    venue,
-                    exchange,
-                    market_type,
-                    payload,
-                    current_hash,
-                    prev_hash
-                ),
+                (int(ts_ms), str(request_id), str(tool), 1 if ok else 0, error_code, mode, venue, exchange, market_type, payload, current_hash, prev_hash),
             )
             conn.commit()
 
@@ -98,29 +85,29 @@ class AuditLog:
         conn = self._get_conn()
         if conn is None:
             return True
-        
+
         with self._lock:
             cursor = conn.execute("SELECT ts_ms, request_id, tool, ok, summary_json, hash, previous_hash FROM audit_events ORDER BY id ASC")
             rows = cursor.fetchall()
-            
+
             last_hash = "INITIAL_HASH"
             for row in rows:
                 ts_ms, req_id, tool, ok, summary, cur_hash, prev_hash = row
                 if prev_hash != last_hash:
                     return False
-                
+
                 # Recompute hash using same logic
                 data_to_hash = f"{prev_hash}|{ts_ms}|{req_id}|{tool}|{ok}|{summary}"
                 computed = hashlib.sha256(data_to_hash.encode()).hexdigest()
                 if computed != cur_hash:
                     return False
                 last_hash = cur_hash
-                
+
         return True
 
     def _serialize_payload(self, summary: Dict[str, Any] | None) -> str:
-        return json.dumps(summary or {}, sort_keys=True, separators=(',', ':'))
-    
+        return json.dumps(summary or {}, sort_keys=True, separators=(",", ":"))
+
     def export_tax_report(self) -> str:
         """
         Export a CSV report of all successful trade executions.
@@ -128,8 +115,8 @@ class AuditLog:
         """
         conn = self._get_conn()
         if conn is None:
-            return "Timestamp,Type,Details,Status\n" # Empty CSV
-            
+            return "Timestamp,Type,Details,Status\n"  # Empty CSV
+
         with self._lock:
             # Query only successful execution tools
             cursor = conn.execute(
@@ -141,33 +128,33 @@ class AuditLog:
                 """
             )
             rows = cursor.fetchall()
-        
+
         output = io.StringIO()
         writer = csv.writer(output)
         writer.writerow(["Timestamp (ISO)", "Tool", "Venue", "Symbol/Token", "Amount", "Side", "TxHash/OrderID"])
-        
+
         for r in rows:
             ts_ms, tool, summary_str = r
             try:
                 data = json.loads(summary_str)
             except Exception:
                 data = {}
-            
-            iso_time = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(ts_ms / 1000))
+
+            iso_time = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(ts_ms / 1000))
             venue = data.get("venue") or data.get("exchange") or "unknown"
-            
+
             # Normalize fields based on tool type
             symbol = "N/A"
             amount = "0"
             side = "N/A"
             tx_id = "N/A"
-            
+
             if tool == "swap_tokens":
                 symbol = f"{data.get('from_token')} -> {data.get('to_token')}"
                 amount = data.get("amount")
                 side = "SWAP"
                 # Parse tx hash from result string if possible, or use request_id
-                tx_id = "see_logs" 
+                tx_id = "see_logs"
             elif tool == "place_cex_order":
                 symbol = data.get("symbol")
                 amount = data.get("amount")
@@ -177,19 +164,19 @@ class AuditLog:
                 symbol = data.get("chain", "ETH")
                 amount = data.get("amount")
                 side = "SEND"
-            
+
             writer.writerow([iso_time, tool, venue, symbol, amount, side, tx_id])
-            
+
         return output.getvalue()
 
     def _db_path(self) -> str:
         default = "data/audit.db"
         p = (os.getenv("READYTRADER_AUDIT_DB_PATH") or os.getenv("AUDIT_DB_PATH") or default).strip()
         if not os.path.exists(os.path.dirname(p)):
-             try:
-                 os.makedirs(os.path.dirname(p), exist_ok=True)
-             except Exception:
-                 return ""
+            try:
+                os.makedirs(os.path.dirname(p), exist_ok=True)
+            except Exception:
+                return ""
         return p
 
     def _get_conn(self) -> Optional[sqlite3.Connection]:

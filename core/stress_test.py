@@ -20,6 +20,7 @@ def _compile_strategy(strategy_code: str):
     - Must define: `on_candle(...) -> str` returning one of: buy/sell/hold
     - May define: `PARAMS = {...}` (used for surfacing recommendations and reporting only)
     """
+
     def safe_getattr(obj, name):
         if name.startswith("_"):
             raise AttributeError(f"Access to private attribute '{name}' is forbidden")
@@ -253,10 +254,7 @@ def run_synthetic_stress_test(
     }
 
     # Minimal artifacts: per-scenario summary CSV and worst-case equity curve/trades for replay
-    per_scenario_rows = [
-        {"seed": r.seed, "final_return": r.final_return, "max_drawdown": r.max_drawdown, "trades": r.trades}
-        for r in results
-    ]
+    per_scenario_rows = [{"seed": r.seed, "final_return": r.final_return, "max_drawdown": r.max_drawdown, "trades": r.trades} for r in results]
     scenario_df = pd.DataFrame(per_scenario_rows)
     artifacts = {
         "scenario_metrics_csv": scenario_df.to_csv(index=False),
@@ -292,4 +290,3 @@ def run_synthetic_stress_test(
         artifacts["worst_drawdown_trades_json"] = json.dumps(trades_log, indent=2)
 
     return {"summary": summary, "artifacts": artifacts}
-

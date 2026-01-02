@@ -1,17 +1,14 @@
 """
-Websocket-first market data streams (Phase 2.5).
+Market data streams for ReadyTrader-FOREX.
 
-This module provides **opt-in** background websocket clients for public ticker streams:
-- Binance (spot + swap/perp)
-- Coinbase (spot)
-- Kraken (spot)
+This module provides background price streaming for Forex trading:
+- **ForexPollingStream** (Primary): Polls yfinance for Forex pairs at configurable intervals
+- Legacy crypto streams (Binance/Coinbase/Kraken) are retained for compatibility
 
 Design notes:
-- Streams run in a dedicated background thread per exchange+market_type key and use an asyncio loop
-  within that thread (`asyncio.run`).
-- The network loops are intentionally excluded from unit tests. Instead, parser functions are unit-tested.
-- Parsed ticker snapshots are written into `InMemoryMarketDataStore` with short TTLs, so the MarketDataBus
-  can prefer websocket data when it is fresh, and fall back to CCXT REST when it is not.
+- Streams run in a dedicated background thread and use an asyncio loop.
+- ForexPollingStream polls yfinance every N seconds (default: 5s) for near-real-time data.
+- Parsed ticker snapshots are written into `InMemoryMarketDataStore` with short TTLs.
 """
 
 from __future__ import annotations
@@ -25,6 +22,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import websockets
+import yfinance as yf
 
 from .store import InMemoryMarketDataStore
 
@@ -235,7 +233,7 @@ class BinanceTickerStream(_WsStream):
         self.symbols = [s.strip().upper() for s in symbols if s.strip()]
         self.store = store
         # map BTCUSDT -> BTC/USDT
-        self.stream_to_symbol: Dict[str, str] = { _binance_stream_symbol(s).upper(): s for s in self.symbols }
+        self.stream_to_symbol: Dict[str, str] = {_binance_stream_symbol(s).upper(): s for s in self.symbols}
 
     def _url(self) -> str:
         base = "wss://stream.binance.com:9443/stream"
@@ -380,11 +378,120 @@ class KrakenTickerStream(_WsStream):
                 backoff = min(30.0, backoff * 2)
 
 
+# =============================================================================
+# FOREX STREAMING (Primary for ReadyTrader-FOREX)
+# =============================================================================
+
+
+class ForexPollingStream(_WsStream):
+    """
+    Polls yfinance for Forex tickers at configurable intervals.
+
+    Not true WebSocket streaming, but provides near-real-time data suitable
+    for paper trading and learning. Refreshes every N seconds (default: 5s).
+
+    Supported symbols: EUR/USD, GBP/USD, USD/JPY, AUD/USD, USD/CAD, etc.
+    """
+
+    def __init__(
+        self,
+        *,
+        symbols: List[str],
+        store: InMemoryMarketDataStore,
+        interval_sec: float = 5.0,
+        metrics: _MetricsLike | None = None,
+    ) -> None:
+        super().__init__(metrics=metrics, metric_prefix="forex_poll")
+        self.symbols = [s.strip().upper().replace("/", "") for s in symbols if s.strip()]
+        self.store = store
+        self.interval_sec = max(1.0, interval_sec)  # Minimum 1 second
+
+    def _normalize_symbol(self, symbol: str) -> str:
+        """Convert EUR/USD or EURUSD to EURUSD=X for yfinance."""
+        s = symbol.strip().upper().replace("/", "")
+        if len(s) == 6 and not s.endswith("=X"):
+            return f"{s}=X"
+        return s
+
+    def _to_display_symbol(self, symbol: str) -> str:
+        """Convert EURUSD to EUR/USD for display."""
+        s = symbol.replace("=X", "").upper()
+        if len(s) == 6:
+            return f"{s[:3]}/{s[3:]}"
+        return s
+
+    async def _run_async(self) -> None:  # pragma: no cover
+        """Poll yfinance for Forex prices at regular intervals."""
+        while not self._stop.is_set():
+            try:
+                for symbol in self.symbols:
+                    if self._stop.is_set():
+                        break
+
+                    yf_symbol = self._normalize_symbol(symbol)
+                    display_symbol = self._to_display_symbol(symbol)
+
+                    try:
+                        ticker = yf.Ticker(yf_symbol)
+                        hist = ticker.history(period="1d")
+
+                        if hist.empty:
+                            continue
+
+                        last_row = hist.iloc[-1]
+                        price = float(last_row["Close"])
+
+                        # Simulate bid/ask spread (1-2 pips)
+                        is_jpy = "JPY" in yf_symbol
+                        pip = 0.01 if is_jpy else 0.0001
+                        spread_pips = 1.5
+                        half_spread = (spread_pips * pip) / 2
+
+                        bid = price - half_spread
+                        ask = price + half_spread
+
+                        self._mark_message()
+                        self.store.put_ticker(
+                            symbol=display_symbol,
+                            last=price,
+                            bid=bid,
+                            ask=ask,
+                            timestamp_ms=int(time.time() * 1000),
+                            source="yfinance_forex",
+                            ttl_sec=self.interval_sec + 5.0,
+                        )
+
+                        if self._metrics:
+                            self._metrics.inc("forex_poll_success_total", 1)
+
+                    except Exception as e:
+                        self._last_error = f"{display_symbol}: {str(e)[:50]}"
+                        if self._metrics:
+                            self._metrics.inc("forex_poll_error_total", 1)
+
+                # Wait for next poll interval
+                await asyncio.sleep(self.interval_sec)
+
+            except Exception as e:
+                self._last_error = str(e)
+                if self._metrics:
+                    self._metrics.inc(f"{self._metric_prefix}_error_total", 1)
+                await asyncio.sleep(self.interval_sec)
+
+
+# =============================================================================
+# STREAM MANAGER
+# =============================================================================
+
+
 class WsStreamManager:
     """
-    Manages background websocket ticker streams for top exchanges.
+    Manages background price streams for Forex and crypto exchanges.
 
-    Streams are opt-in: nothing starts automatically in order to keep CI/tests deterministic.
+    Primary: yfinance (Forex polling)
+    Legacy: binance, coinbase, kraken (crypto WebSocket)
+
+    Streams are opt-in: nothing starts automatically.
     """
 
     def __init__(self, *, store: InMemoryMarketDataStore, metrics: _MetricsLike | None = None) -> None:
@@ -393,19 +500,25 @@ class WsStreamManager:
         self._lock = threading.Lock()
         self._streams: Dict[str, _WsStream] = {}
 
-    def start(self, *, exchange: str, symbols: List[str], market_type: str = "spot") -> None:
+    def start(self, *, exchange: str, symbols: List[str], market_type: str = "spot", interval_sec: float = 5.0) -> None:
         ex = (exchange or "").strip().lower()
         key = f"{ex}:{market_type}"
-        # Replace any existing stream for this (exchange, market_type) key to avoid duplicates.
+        # Replace any existing stream for this (exchange, market_type) key
         self.stop(exchange=ex, market_type=market_type)
-        if ex == "binance":
+
+        # PRIMARY: yfinance for Forex
+        if ex == "yfinance":
+            s = ForexPollingStream(symbols=symbols, store=self._store, interval_sec=interval_sec, metrics=self._metrics)
+        # LEGACY: Crypto exchanges
+        elif ex == "binance":
             s = BinanceTickerStream(symbols=symbols, market_type=market_type, store=self._store, metrics=self._metrics)
         elif ex == "coinbase":
             s = CoinbaseTickerStream(symbols=symbols, store=self._store, metrics=self._metrics)
         elif ex == "kraken":
             s = KrakenTickerStream(symbols=symbols, store=self._store, metrics=self._metrics)
         else:
-            raise ValueError("Unsupported exchange for websocket streams. Use one of: binance, coinbase, kraken")
+            raise ValueError("Unsupported exchange. Use 'yfinance' for Forex, or 'binance', 'coinbase', 'kraken' for crypto.")
+
         with self._lock:
             self._streams[key] = s
         s.start()
@@ -421,4 +534,3 @@ class WsStreamManager:
         with self._lock:
             items = list(self._streams.items())
         return {k: v.status() for k, v in items}
-

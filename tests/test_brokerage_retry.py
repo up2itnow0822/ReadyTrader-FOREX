@@ -19,6 +19,7 @@ def test_with_retry_retries_transient_and_then_succeeds(monkeypatch):
     assert out == "ok"
     assert calls["n"] == 2
 
+
 def test_with_retry_does_not_retry_non_transient(monkeypatch):
     calls = {"n": 0}
 

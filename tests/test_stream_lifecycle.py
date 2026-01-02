@@ -34,4 +34,3 @@ def test_ws_stream_restart_after_stop():
 
     s.stop()
     assert s.status()["running"] is False
-

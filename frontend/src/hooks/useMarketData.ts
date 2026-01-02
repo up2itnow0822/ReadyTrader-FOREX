@@ -16,6 +16,8 @@ export function useMarketData() {
     const [connected, setConnected] = useState(false);
     const socketRef = useRef<WebSocket | null>(null);
 
+    const connectRef = useRef<(() => void)>(() => {});
+
     const connect = useCallback(() => {
         // API port defaults to 8000
         const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws';
@@ -44,7 +46,7 @@ export function useMarketData() {
         ws.onclose = () => {
             setConnected(false);
             console.log('WS Closed, reconnecting in 3s...');
-            setTimeout(connect, 3000);
+            setTimeout(() => connectRef.current(), 3000);
         };
 
         ws.onerror = (err) => {
@@ -54,6 +56,10 @@ export function useMarketData() {
 
         socketRef.current = ws;
     }, []);
+
+    useEffect(() => {
+        connectRef.current = connect;
+    }, [connect]);
 
     useEffect(() => {
         connect();

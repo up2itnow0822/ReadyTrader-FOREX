@@ -85,4 +85,3 @@ class Metrics:
             "timers": timers,
             "gauges": gauges,
         }
-

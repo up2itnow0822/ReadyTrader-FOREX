@@ -12,17 +12,19 @@ class MarketInsight:
     insight_id: str
     symbol: str
     agent_id: str
-    signal: str # "bullish", "bearish", "neutral"
-    confidence: float # 0.0 to 1.0
+    signal: str  # "bullish", "bearish", "neutral"
+    confidence: float  # 0.0 to 1.0
     reasoning: str
     timestamp_ms: int
     expires_at_ms: int
     meta: Dict[str, Any]
 
+
 class InsightStore:
     """
     Persistent store for Market Insights shared between agents (Phase 3).
     """
+
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path or os.getenv("READYTRADER_INSIGHT_DB_PATH", os.getenv("INSIGHT_DB_PATH", "data/insights.db"))
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
@@ -46,11 +48,13 @@ class InsightStore:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_insight_symbol ON insights(symbol)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_insight_expiry ON insights(expires_at_ms)")
 
-    def post_insight(self, symbol: str, agent_id: str, signal: str, confidence: float, reasoning: str, ttl_seconds: int = 3600, meta: Optional[Dict[str, Any]] = None) -> MarketInsight:  # noqa: E501
+    def post_insight(
+        self, symbol: str, agent_id: str, signal: str, confidence: float, reasoning: str, ttl_seconds: int = 3600, meta: Optional[Dict[str, Any]] = None
+    ) -> MarketInsight:  # noqa: E501
         now_ms = int(time.time() * 1000)
         insight_id = secrets.token_hex(8)
         expires_at_ms = now_ms + (ttl_seconds * 1000)
-        
+
         insight = MarketInsight(
             insight_id=insight_id,
             symbol=symbol.upper(),
@@ -60,38 +64,41 @@ class InsightStore:
             reasoning=reasoning,
             timestamp_ms=now_ms,
             expires_at_ms=expires_at_ms,
-            meta=meta or {}
+            meta=meta or {},
         )
-        
+
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO insights (insight_id, symbol, agent_id, signal, confidence, reasoning, timestamp_ms, expires_at_ms, meta_json)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                insight.insight_id,
-                insight.symbol,
-                insight.agent_id,
-                insight.signal,
-                insight.confidence,
-                insight.reasoning,
-                insight.timestamp_ms,
-                insight.expires_at_ms,
-                json.dumps(insight.meta)
-            ))
+            """,
+                (
+                    insight.insight_id,
+                    insight.symbol,
+                    insight.agent_id,
+                    insight.signal,
+                    insight.confidence,
+                    insight.reasoning,
+                    insight.timestamp_ms,
+                    insight.expires_at_ms,
+                    json.dumps(insight.meta),
+                ),
+            )
         return insight
 
     def get_latest_insights(self, symbol: Optional[str] = None, limit: int = 5) -> List[MarketInsight]:
         now_ms = int(time.time() * 1000)
         query = "SELECT * FROM insights WHERE expires_at_ms > ?"
         params = [now_ms]
-        
+
         if symbol:
             query += " AND symbol = ?"
             params.append(symbol.upper())
-            
+
         query += " ORDER BY timestamp_ms DESC LIMIT ?"
         params.append(limit)
-        
+
         results = []
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(query, params)
@@ -117,5 +124,5 @@ class InsightStore:
             reasoning=row[5],
             timestamp_ms=row[6],
             expires_at_ms=row[7],
-            meta=json.loads(row[8]) if row[8] else {}
+            meta=json.loads(row[8]) if row[8] else {},
         )

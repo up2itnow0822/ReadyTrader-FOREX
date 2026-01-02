@@ -68,7 +68,7 @@ class InMemoryMarketDataStore:
             source=source,
         )
         self._tickers.set((snap.symbol,), snap, ttl_seconds=float(ttl_sec))
-        
+
         # Phase 2: Notify subscribers
         for cb in self._callbacks:
             try:
@@ -90,4 +90,3 @@ class InMemoryMarketDataStore:
     def stats(self) -> Dict[str, Any]:
         # TTLCache doesn't expose internal stats; return minimal heartbeat
         return {"now_ms": int(time.time() * 1000)}
-

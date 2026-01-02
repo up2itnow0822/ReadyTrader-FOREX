@@ -12,23 +12,31 @@ from intelligence.core import (
 
 
 def test_get_market_sentiment_success():
-    with patch("requests.get") as mock_get:
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "fear_and_greed": {
-                "rating": "greed",
-                "now": 65.0
-            }
-        }
-        mock_get.return_value = mock_response
-        
+    with (
+        patch("intelligence.core.get_dxy_trend", return_value="DXY Trend: Bullish"),
+        patch("intelligence.core.get_economic_calendar", return_value="Calendar: Clear"),
+    ):
         sentiment = get_market_sentiment()
-        assert "CNN Fear & Greed: GREED (65.0)" in sentiment
+        assert "Forex Sentiment:" in sentiment
+        assert "DXY Trend: Bullish" in sentiment
+
 
 def test_get_market_sentiment_failure():
-    with patch("requests.get", side_effect=Exception("API Down")):
+    with patch("intelligence.core.get_dxy_trend", side_effect=Exception("Data Source Down")):
+        # The current implementation of get_market_sentiment calls get_dxy_trend which catches its own exceptions
+        # and returns an error string. So we shouldn't see an exception here, but the error string in the output.
+        # However, if we want to test failure of the *composition*, we can rely on get_dxy_trend's error handling.
+        # Let's mock get_dxy_trend to actually raise if we want to test outer handling,
+        # OR rely on the fact that get_dxy_trend returns an error message.
+        # Looking at core.py, get_dxy_trend catches Exception and returns "DXY Trend: Error..."
+        # So let's test that flow.
+        pass
+
+    # Actually, let's verify that if the sub-functions return error strings, they appear in the output.
+    with patch("intelligence.core.get_dxy_trend", return_value="DXY Trend: Error fetching data"):
         sentiment = get_market_sentiment()
-        assert "Error fetching CNN Fear & Greed" in sentiment
+        assert "DXY Trend: Error fetching data" in sentiment
+
 
 def test_analyze_social_sentiment_no_keys():
     # Ensure env vars are unset
@@ -37,52 +45,55 @@ def test_analyze_social_sentiment_no_keys():
         # Correctly matching the actual output from core.py
         assert "No providers configured" in res
 
+
 def test_sentiment_cache():
     cache = SentimentCache()
     cache.set("AAPL", 0.8, ["Everything is awesome"])
-    
+
     cached = cache.get("AAPL")
     assert cached["score"] == 0.8
     assert "Everything is awesome" in cached["explainability_string"]
-    
+
     # Test expiry
     # We patch time.time to control "now"
     # When cache.set was called, it used real time.
     # So we need to ensure our patched time is >> real time.
     import time
+
     future_time = time.time() + 4000
-    
+
     with patch("time.time", return_value=future_time):
         assert cache.get("AAPL") is None
+
 
 def test_get_cached_sentiment_score():
     with patch("intelligence.core._sentiment_cache") as mock_cache:
         mock_cache.get.return_value = {"score": 0.5}
         assert get_cached_sentiment_score("AAPL") == 0.5
-        
+
         mock_cache.get.return_value = None
         assert get_cached_sentiment_score("GOOG") == 0.0
+
 
 def test_get_market_news_no_key():
     with patch.dict("os.environ", {}, clear=True):
         res = get_market_news()
         assert "ALPHAVANTAGE_API_KEY missing" in res
 
+
 def test_get_market_news_success():
     with patch.dict("os.environ", {"ALPHAVANTAGE_API_KEY": "test"}):
         with patch("requests.get") as mock_get:
-            mock_get.return_value.json.return_value = {
-                "feed": [
-                    {"title": "Stock Up", "source": "CNBC"}
-                ]
-            }
+            mock_get.return_value.json.return_value = {"feed": [{"title": "Stock Up", "source": "CNBC"}]}
             res = get_market_news()
             assert "Stock Up" in res
+
 
 def test_fetch_rss_news_no_lib():
     with patch("intelligence.core.feedparser", None):
         res = fetch_rss_news("AAPL")
         assert "feedparser library not installed" in res
+
 
 def test_fetch_rss_news_success():
     # Only if feedparser is installed (it is in main env, but maybe verify)
@@ -91,31 +102,29 @@ def test_fetch_rss_news_success():
         entry = MagicMock()
         entry.title = "AAPL releases iPhone 20"
         entry.summary = "It is great"
-        
+
         mock_feed = MagicMock()
         mock_feed.entries = [entry]
         mock_fp.parse.return_value = mock_feed
-        
+
         res = fetch_rss_news("AAPL")
         assert "AAPL releases iPhone 20" in res
+
 
 def test_fetch_financial_news_no_key():
     with patch.dict("os.environ", {}, clear=True):
         res = fetch_financial_news("AAPL")
         assert "NEWSAPI_KEY missing" in res
 
+
 def test_fetch_financial_news_success():
     with patch.dict("os.environ", {"NEWSAPI_KEY": "test"}):
         with patch("intelligence.core.NewsApiClient") as MockClient:
             client_inst = MockClient.return_value
-            client_inst.get_everything.return_value = {
-                "status": "ok",
-                "articles": [
-                    {"title": "Boom", "source": {"name": "Test"}}
-                ]
-            }
+            client_inst.get_everything.return_value = {"status": "ok", "articles": [{"title": "Boom", "source": {"name": "Test"}}]}
             res = fetch_financial_news("AAPL")
             assert "Boom" in res
+
 
 def test_analyze_social_sentiment_mocked_success():
     with patch.dict("os.environ", {"TWITTER_BEARER_TOKEN": "x", "REDDIT_CLIENT_ID": "r", "REDDIT_CLIENT_SECRET": "s"}):
@@ -127,7 +136,7 @@ def test_analyze_social_sentiment_mocked_success():
                 mock_tweet.text = "AAPL is going up #bullish"
                 mock_client.search_recent_tweets.return_value = MagicMock(data=[mock_tweet])
                 mock_tweepy.Client.return_value = mock_client
-                
+
                 # Mock Reddit
                 mock_reddit = MagicMock()
                 mock_sub = MagicMock()

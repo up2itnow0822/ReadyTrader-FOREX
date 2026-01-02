@@ -15,44 +15,47 @@ def test_fetch_price():
     pass
 
 
-                
 def test_place_stock_order_requires_approval():
-    with patch.object(settings, 'EXECUTION_APPROVAL_MODE', 'approve_each'):
-        with patch.object(global_container, 'risk_guardian') as mock_risk:
+    with patch.object(settings, "EXECUTION_APPROVAL_MODE", "approve_each"):
+        with patch.object(global_container, "risk_guardian") as mock_risk:
             mock_risk.validate_trade.return_value = {"allowed": True, "needs_confirmation": False}
-            
+
             res_str = place_stock_order("AAPL", "buy", 1.0)
             res = json.loads(res_str)
-            
+
             assert res["ok"] is True
             assert res["data"]["status"] == "pending_approval"
             assert "requires manual confirmation" in res["data"]["message"]
 
+
 def test_place_stock_order_paper_mode():
-    with patch.object(settings, 'PAPER_MODE', True):
-        with patch.object(settings, 'EXECUTION_APPROVAL_MODE', 'auto'):
-            with patch.object(global_container, 'paper_engine') as mock_engine:
-                with patch.object(global_container, 'risk_guardian') as mock_risk:
+    with patch.object(settings, "PAPER_MODE", True):
+        with patch.object(settings, "EXECUTION_APPROVAL_MODE", "auto"):
+            with patch.object(global_container, "paper_engine") as mock_engine:
+                with patch.object(global_container, "risk_guardian") as mock_risk:
                     mock_engine.execute_trade.return_value = "Paper Trade Executed"
                     mock_risk.validate_trade.return_value = {"allowed": True, "needs_confirmation": False}
-                    
+
                     res_str = place_stock_order("AAPL", "buy", 1.0)
                     res = json.loads(res_str)
-                    
+
                     assert res["ok"] is True
                     assert res["data"]["mode"] == "paper"
                     assert "Paper Trade Executed" in res["data"]["result"]
 
-def test_private_ws_paper_mode_blocked():
-     with patch.object(settings, 'PAPER_MODE', True):
-         res_str = start_brokerage_private_ws("alpaca", "spot")
-         res = json.loads(res_str)
-         assert res["ok"] is False
-         assert res["error"]["code"] == "paper_mode_not_supported"
 
-def test_private_ws_kraken_poll():
-    with patch.object(settings, 'PAPER_MODE', False):
-        res_str = start_brokerage_private_ws("kraken", "spot")
+def test_private_ws_paper_mode_blocked():
+    with patch.object(settings, "PAPER_MODE", True):
+        res_str = start_brokerage_private_ws("alpaca", "spot")
+        res = json.loads(res_str)
+        assert res["ok"] is False
+        assert res["error"]["code"] == "paper_mode_not_supported"
+
+
+def test_private_ws_connected():
+    with patch.object(settings, "PAPER_MODE", False):
+        res_str = start_brokerage_private_ws("oanda", "spot")
         res = json.loads(res_str)
         assert res["ok"] is True
-        assert res["data"]["mode"] == "poll"
+        assert res["data"]["mode"] == "ws"
+        assert res["data"]["status"] == "connected"

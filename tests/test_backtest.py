@@ -1,4 +1,3 @@
-
 def test_safe_execution(backtest_engine):
     # Simple strategy that should pass
     strategy = """
@@ -7,21 +6,25 @@ def on_candle(close, rsi, state):
 """
     # We mock fetch_ohlcv to avoid real network call
     backtest_engine.fetch_ohlcv = lambda *args, **kwargs: _mock_ohlcv()
-    
+
     # We need a mock dataframe generator
     import pandas as pd
+
     def _mock_ohlcv():
-        return pd.DataFrame({
-            'timestamp': [pd.Timestamp.now()] * 100,
-            'open': [100.0] * 100,
-            'high': [105.0] * 100,
-            'low': [95.0] * 100,
-            'close': [100.0] * 100,
-            'volume': [1000.0] * 100
-        })
+        return pd.DataFrame(
+            {
+                "timestamp": [pd.Timestamp.now()] * 100,
+                "open": [100.0] * 100,
+                "high": [105.0] * 100,
+                "low": [95.0] * 100,
+                "close": [100.0] * 100,
+                "volume": [1000.0] * 100,
+            }
+        )
 
     result = backtest_engine.run(strategy, "AAPL")
     assert "error" not in result
+
 
 def test_rce_prevention(backtest_engine):
     # Attempt to import os
@@ -32,13 +35,13 @@ def on_candle(close, rsi, state):
 """
     # Mock data fetch
     import pandas as pd
-    backtest_engine.fetch_ohlcv = lambda *args, **kwargs: pd.DataFrame(
-        columns=["timestamp", "open", "high", "low", "close", "volume"]
-    )
+
+    backtest_engine.fetch_ohlcv = lambda *args, **kwargs: pd.DataFrame(columns=["timestamp", "open", "high", "low", "close", "volume"])
 
     result = backtest_engine.run(strategy, "AAPL")
     assert "error" in result
-    assert "Importing 'os' is forbidden" in result['error'] or "Compilation Error" in result['error']
+    assert "Importing 'os' is forbidden" in result["error"] or "Compilation Error" in result["error"]
+
 
 def test_file_access_prevention(backtest_engine):
     # Attempt to open file
@@ -48,6 +51,7 @@ def on_candle(close, rsi, state):
     return 'hold'
 """
     import pandas as pd
+
     # Ensure loop executes: provide enough candles so RSI isn't NaN
     df = pd.DataFrame(
         {

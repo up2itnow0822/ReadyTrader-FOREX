@@ -13,4 +13,3 @@ def test_redact_removes_sensitive_keys():
     assert out["nested"]["password"] == "***REDACTED***"
     assert out["tokenValue"] == "***REDACTED***"
     assert out["safe"] == "x"
-

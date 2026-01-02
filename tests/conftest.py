@@ -12,31 +12,39 @@ os.environ["SIGNER_TYPE"] = "env_private_key"
 os.environ["PAPER_MODE"] = "true"
 os.environ["EXECUTION_MODE"] = "dex"
 
+
 @pytest.fixture(autouse=True)
 def mock_env_setup():
     # Ensures these are set for every test
     pass
 
+
 @pytest.fixture
 def container():
     from app.core.container import global_container
+
     return global_container
+
 
 @pytest.fixture
 def backtest_engine(container):
     return container.backtest_engine
 
+
 @pytest.fixture
 def paper_engine(container):
     return container.paper_engine
+
 
 @pytest.fixture
 def policy_engine(container):
     return container.policy_engine
 
+
 @pytest.fixture
 def risk_guardian(container):
     return container.risk_guardian
+
 
 @pytest.fixture
 def marketdata_bus(container):

@@ -1,5 +1,5 @@
 """
-Generate `docs/TOOLS.md` from the authoritative tool definitions in `server.py`.
+Generate `docs/TOOLS.md` from the authoritative tool definitions in `app/tools/`.
 
 Usage:
   python tools/generate_tool_docs.py
@@ -13,28 +13,29 @@ import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SERVER = ROOT / "server.py"
+TOOLS_DIR = ROOT / "app" / "tools"
 OUT = ROOT / "docs" / "TOOLS.md"
 
 
 def _is_mcp_tool_decorator(dec: ast.AST) -> bool:
-    return (
+    # mcp.tool()
+    if (
         isinstance(dec, ast.Call)
         and isinstance(dec.func, ast.Attribute)
         and isinstance(dec.func.value, ast.Name)
         and dec.func.value.id == "mcp"
         and dec.func.attr == "tool"
-    )
+    ):
+        return True
+
+    # @mcp.tool() without parentheses (less common in FastMCP but possible)
+    if isinstance(dec, ast.Attribute) and isinstance(dec.value, ast.Name) and dec.value.id == "mcp" and dec.attr == "tool":
+        return True
+
+    return False
 
 
 def _format_default(expr: ast.AST) -> str:
-    """
-    Render a default value for display in docs.
-
-    We prefer a safe, readable representation:
-    - try literal_eval for simple literals
-    - fallback to source snippet if available
-    """
     try:
         v = ast.literal_eval(expr)
         if isinstance(v, str):
@@ -48,7 +49,6 @@ def _signature(fn: ast.FunctionDef) -> str:
     args = fn.args
     parts: list[str] = []
 
-    # positional-only args (rare in this repo)
     for a in args.posonlyargs:
         parts.append(a.arg)
     if args.posonlyargs:
@@ -60,23 +60,22 @@ def _signature(fn: ast.FunctionDef) -> str:
     if args.vararg:
         parts.append(f"*{args.vararg.arg}")
 
-    # kw-only args
     for a in args.kwonlyargs:
         parts.append(a.arg)
 
     if args.kwarg:
         parts.append(f"**{args.kwarg.arg}")
 
-    # apply defaults (positional + kw-only)
     defaults = list(args.defaults)
     if defaults:
-        # defaults align to the last N positional args
         for i in range(1, len(defaults) + 1):
             arg_name = args.args[-i].arg
-            parts_index = parts.index(arg_name)
-            parts[parts_index] = f"{arg_name}={_format_default(defaults[-i])}"
+            try:
+                parts_index = parts.index(arg_name)
+                parts[parts_index] = f"{arg_name}={_format_default(defaults[-i])}"
+            except ValueError:
+                pass
 
-    # kw-only defaults
     for a, d in zip(args.kwonlyargs, args.kw_defaults):
         if d is None:
             continue
@@ -92,129 +91,77 @@ def _signature(fn: ast.FunctionDef) -> str:
 
 CATEGORY_ORDER: list[tuple[str, list[str]]] = [
     (
-        "Safety & governance",
+        "Forex & Stock Execution",
         [
-            "get_risk_disclosure",
-            "accept_risk_disclosure",
-            "get_advanced_risk_disclosure",
-            "accept_advanced_risk_disclosure",
-            "get_policy_overrides",
-            "set_policy_overrides",
-            "get_execution_preferences",
-            "set_execution_preferences",
-            "list_pending_executions",
-            "confirm_execution",
-            "cancel_execution",
-            "validate_trade_risk",
-        ],
-    ),
-    (
-        "Execution (DEX/Brokerage)",
-        [
-            "swap_tokens",
-            "transfer_eth",
-            "place_cex_order",
-            "get_cex_order",
-            "cancel_cex_order",
-            "wait_for_cex_order",
-            "get_cex_balance",
-            "get_cex_capabilities",
-            "list_cex_open_orders",
-            "list_cex_orders",
-            "get_cex_my_trades",
-            "cancel_all_cex_orders",
-            "replace_cex_order",
-        ],
-    ),
-    (
-        "Paper trading",
-        [
-            "deposit_paper_funds",
-            "reset_paper_wallet",
+            "place_market_order",
             "place_limit_order",
-            "check_orders",
-            "get_address_balance",
+            "place_forex_order",
+            "place_stock_order",
+            "start_brokerage_private_ws",
+            "deposit_paper_funds",
+            "reset_paper_account",
         ],
     ),
     (
-        "Market data",
+        "Market Intelligence",
         [
-            "get_crypto_price",
-            "get_multiple_prices",
-            "get_ticker",
-            "fetch_ohlcv",
-            "get_market_regime",
-            "get_marketdata_capabilities",
-            "get_marketdata_status",
-            "ingest_ticker",
-            "ingest_ohlcv",
-        ],
-    ),
-    (
-        "Websockets (Phase 2.5)",
-        [
-            "start_marketdata_ws",
-            "stop_marketdata_ws",
-            "start_cex_private_ws",
-            "stop_cex_private_ws",
-            "list_cex_private_updates",
-        ],
-    ),
-    (
-        "Research & evaluation",
-        [
-            "run_backtest_simulation",
-            "run_synthetic_stress_test",
-            "analyze_performance",
-        ],
-    ),
-    (
-        "Intelligence feeds",
-        [
-            "get_sentiment",
-            "get_news",
+            "get_market_sentiment",
+            "get_market_news",
+            "get_economic_calendar",
+            "get_forex_news",
+            "get_forex_market_brief",
             "get_social_sentiment",
             "get_financial_news",
+            "get_free_news",
         ],
     ),
     (
-        "Ops / observability",
+        "Analytics & Research",
         [
-            "get_health",
-            "get_metrics_snapshot",
-        ],
-    ),
-    (
-        "Misc",
-        [
-            "get_capabilities",
+            "get_stock_price",
+            "get_multiple_prices",
+            "get_market_regime",
+            "fetch_ohlcv",
+            "run_backtest_simulation",
+            "post_market_insight",
+            "get_latest_insights",
         ],
     ),
 ]
 
 
+def find_tools_in_tree(tree: ast.AST) -> dict[str, ast.FunctionDef]:
+    tools = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            if any(_is_mcp_tool_decorator(d) for d in node.decorator_list):
+                tools[node.name] = node
+    return tools
+
+
 def main() -> int:
-    tree = ast.parse(SERVER.read_text(encoding="utf-8"))
-    tools: dict[str, ast.FunctionDef] = {}
+    all_tools: dict[str, ast.FunctionDef] = {}
 
-    for node in tree.body:
-        if isinstance(node, ast.FunctionDef) and any(_is_mcp_tool_decorator(d) for d in node.decorator_list):
-            tools[node.name] = node
+    # Scan app/tools/*.py
+    for py_file in TOOLS_DIR.glob("*.py"):
+        if py_file.name == "__init__.py":
+            continue
+        tree = ast.parse(py_file.read_text(encoding="utf-8"))
+        all_tools.update(find_tools_in_tree(tree))
 
-    # Build sections in order; keep leftovers at the end.
     used: set[str] = set()
     lines: list[str] = []
 
-    lines.append("# ReadyTrader-Stocks MCP Tool Catalog")
+    lines.append("# ReadyTrader-FOREX MCP Tool Catalog")
     lines.append("")
-    lines.append("This file is automatically generated from the tool definitions in `server.py`.")
+    lines.append("This file is automatically generated from the tool definitions in `app/tools/`.")
     lines.append("")
     lines.append("> [!TIP]")
     lines.append("> AI agents can use these tools to gather intelligence, assess risk, and execute trades.")
     lines.append("")
 
     for section, names in CATEGORY_ORDER:
-        present = [n for n in names if n in tools]
+        present = [n for n in names if n in all_tools]
         if not present:
             continue
         used.update(present)
@@ -222,17 +169,16 @@ def main() -> int:
         lines.append("")
         lines.append("| Tool Name | Description |")
         lines.append("| :--- | :--- |")
-        
+
         for name in present:
-            fn = tools[name]
+            fn = all_tools[name]
             doc = (ast.get_docstring(fn) or "").strip()
             first = doc.splitlines()[0].strip() if doc else "No description."
-            # Link to the detailed section below
             lines.append(f"| [`{fn.name}`](#{fn.name.replace('_', '-')}) | {first} |")
         lines.append("")
 
         for name in present:
-            fn = tools[name]
+            fn = all_tools[name]
             sig = _signature(fn)
             doc = (ast.get_docstring(fn) or "").strip()
             lines.append(f"### `{fn.name}`")
@@ -245,21 +191,21 @@ def main() -> int:
             lines.append("---")
             lines.append("")
 
-    leftovers = sorted(set(tools) - used)
+    leftovers = sorted(set(all_tools) - used)
     if leftovers:
         lines.append("## Uncategorized")
         lines.append("")
         lines.append("| Tool Name | Description |")
         lines.append("| :--- | :--- |")
         for name in leftovers:
-            fn = tools[name]
+            fn = all_tools[name]
             doc = (ast.get_docstring(fn) or "").strip()
             first = doc.splitlines()[0].strip() if doc else "No description."
             lines.append(f"| [`{fn.name}`](#{fn.name.replace('_', '-')}) | {first} |")
         lines.append("")
-        
+
         for name in leftovers:
-            fn = tools[name]
+            fn = all_tools[name]
             sig = _signature(fn)
             doc = (ast.get_docstring(fn) or "").strip()
             lines.append(f"### `{fn.name}`")
@@ -274,10 +220,9 @@ def main() -> int:
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-    print(f"Wrote {OUT.relative_to(ROOT)} ({len(tools)} tools)")
+    print(f"Wrote {OUT.relative_to(ROOT)} ({len(all_tools)} tools)")
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

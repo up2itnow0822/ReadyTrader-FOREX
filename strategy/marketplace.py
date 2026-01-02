@@ -18,10 +18,12 @@ class StrategyArtifact:
     config_json: str
     created_at: int
 
+
 class StrategyRegistry:
     """
     Local marketplace for saving and sharing agent strategies (Phase 3).
     """
+
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path or os.getenv("REALTRADER_STRATEGY_DB_PATH", os.getenv("STRATEGY_DB_PATH", "data/strategies.db"))
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
@@ -53,23 +55,26 @@ class StrategyRegistry:
             backtest_sharpe=float(sharpe),
             logic_summary=summary,
             config_json=json.dumps(config),
-            created_at=int(time.time())
+            created_at=int(time.time()),
         )
-        
+
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO strategies (strategy_id, name, author, backtest_pnl_pct, backtest_sharpe, logic_summary, config_json, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                artifact.strategy_id,
-                artifact.name,
-                artifact.author,
-                artifact.backtest_pnl_pct,
-                artifact.backtest_sharpe,
-                artifact.logic_summary,
-                artifact.config_json,
-                artifact.created_at
-            ))
+            """,
+                (
+                    artifact.strategy_id,
+                    artifact.name,
+                    artifact.author,
+                    artifact.backtest_pnl_pct,
+                    artifact.backtest_sharpe,
+                    artifact.logic_summary,
+                    artifact.config_json,
+                    artifact.created_at,
+                ),
+            )
         return artifact
 
     def list_strategies(self, limit: int = 10) -> List[StrategyArtifact]:

@@ -57,11 +57,11 @@ def main() -> int:
         "scenarios": 60,
         "length": 500,
         "timeframe": "1h",
-        "initial_capital": 10_000.0,
-        "start_price": 100.0,
-        "base_vol": 0.015,
-        "black_swan_prob": 0.03,
-        "parabolic_prob": 0.03,
+        "initial_capital": 100_000.0,
+        "start_price": 1.10,  # EURUSD-like
+        "base_vol": 0.005,  # Forex is less volatile than Crypto
+        "black_swan_prob": 0.01,
+        "parabolic_prob": 0.01,
     }
 
     print("\n=== ReadyTrader-Crypto Synthetic Stress Lab demo ===")
@@ -97,4 +97,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

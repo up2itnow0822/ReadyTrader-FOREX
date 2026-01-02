@@ -10,7 +10,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .providers import MarketDataProvider
 
-logger = logging.getLogger(__name__) # Setup logger
+logger = logging.getLogger(__name__)  # Setup logger
+
 
 @dataclass(frozen=True)
 class MarketDataResult:
@@ -141,7 +142,7 @@ class MarketDataBus:
         now_ms = _now_ms()
 
         # Operator config: optionally fail closed for execution usage.
-        enforce_fresh = (os.getenv("MARKETDATA_FAIL_CLOSED", "false").strip().lower() == "true")
+        enforce_fresh = os.getenv("MARKETDATA_FAIL_CLOSED", "false").strip().lower() == "true"
 
         # Outlier detection config
         outlier_pct = _env_float("MARKETDATA_OUTLIER_MAX_PCT", 20.0)
@@ -152,7 +153,7 @@ class MarketDataBus:
         chosen: Optional[Dict[str, Any]] = None
         last_err: Exception | None = None
 
-        # To improve performance, we could fetch all in parallel, 
+        # To improve performance, we could fetch all in parallel,
         # but the logic here is sequential-failover based on priority.
         # However, making it async allows the calling event loop to remain responsive.
         for p in providers:
@@ -265,9 +266,7 @@ class MarketDataBus:
             _ = False
 
         if enforce_fresh and (stale or outlier):
-            raise ValueError(
-                f"marketdata_not_acceptable: stale={stale} outlier={outlier} provider={provider_id} age_ms={age_ms}"
-            )
+            raise ValueError(f"marketdata_not_acceptable: stale={stale} outlier={outlier} provider={provider_id} age_ms={age_ms}")
 
         meta = {
             "symbol": sym,

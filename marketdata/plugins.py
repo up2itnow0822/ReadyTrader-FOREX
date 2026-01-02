@@ -84,4 +84,3 @@ def load_marketdata_plugins() -> List[MarketDataProvider]:
             raise ValueError(f"Plugin {spec.class_path} must define provider_id or set provider_id in config")
         providers.append(inst)
     return providers
-

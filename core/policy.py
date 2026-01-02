@@ -77,7 +77,7 @@ class PolicyEngine:
         """
         if not insight_id:
             return 0.0
-            
+
         sym = symbol.strip().upper()
         for ins in insights:
             # Note: ins is a MarketInsight-like object (or dict from vars(ins))
@@ -86,11 +86,9 @@ class PolicyEngine:
             if ins_id == insight_id and ins_sym == sym:
                 conf = getattr(ins, "confidence", 0.0) or ins.get("confidence", 0.0)
                 return float(conf)
-        
+
         raise PolicyError(
-            code="insight_not_found",
-            message=f"No valid insight found for {symbol} with ID {insight_id}",
-            data={"symbol": symbol, "insight_id": insight_id}
+            code="insight_not_found", message=f"No valid insight found for {symbol} with ID {insight_id}", data={"symbol": symbol, "insight_id": insight_id}
         )
 
     def validate_swap(
@@ -139,10 +137,7 @@ class PolicyEngine:
         if max_amount_from is not None and amount > max_amount_from:
             raise PolicyError(
                 code="trade_amount_too_large",
-                message=(
-                    f"Trade amount {amount} {from_token} exceeds "
-                    f"MAX_TRADE_AMOUNT_{from_token.strip().upper()}={max_amount_from}."
-                ),
+                message=(f"Trade amount {amount} {from_token} exceeds MAX_TRADE_AMOUNT_{from_token.strip().upper()}={max_amount_from}."),
                 data={"amount": amount, "token": from_token, "max_trade_amount_token": max_amount_from},
             )
 
@@ -200,10 +195,10 @@ class PolicyEngine:
 
     def validate_signer_address(self, *, address: str) -> None:
         """
-        Optional safeguard: restrict signing to a known allowlist of addresses.
+               Optional safeguard: restrict signing to a known allowlist of addresses.
 
-        This helps prevent an operator accidentally pointing ReadyTrader-Stocks
- at the wrong signer/key.
+               This helps prevent an operator accidentally pointing ReadyTrader-FOREX
+        at the wrong signer/key.
         """
         addr = (address or "").strip().lower()
         allow = _parse_csv_set(os.getenv("ALLOW_SIGNER_ADDRESSES"))
@@ -376,4 +371,3 @@ class PolicyEngine:
                 message=f"Exchange '{exchange_id}' is not allowlisted.",
                 data={"exchange": exchange_id, "allow_exchanges": sorted(allow_exchanges)},
             )
-

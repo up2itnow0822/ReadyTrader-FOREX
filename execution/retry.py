@@ -37,7 +37,7 @@ def should_retry(e: Exception) -> bool:
     err_str = str(e).lower()
     if any(keyword in err_str for keyword in ["timeout", "network", "connection", "rate limit", "temporarily unavailable"]):
         return True
-    
+
     # Generally do not retry auth/bad symbol/permission etc.
     return False
 
@@ -72,9 +72,8 @@ def with_retry(op: str, fn: Callable[[], T]) -> T:
                 ) from e
             # exponential backoff with jitter
             delay = min(max_delay, base * (2 ** (attempt - 1)))
-            jitter = 0.5 + (random.random() * 0.5) # nosec
+            jitter = 0.5 + (random.random() * 0.5)  # nosec
             time.sleep(delay * jitter)
 
     # should never reach
     raise last_exc or RuntimeError("retry_failed")
-

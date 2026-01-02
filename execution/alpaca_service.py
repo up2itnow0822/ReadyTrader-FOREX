@@ -10,20 +10,23 @@ try:
     from alpaca.trading.client import TradingClient
     from alpaca.trading.enums import OrderSide, TimeInForce
     from alpaca.trading.requests import LimitOrderRequest, MarketOrderRequest
+
     _ALPACA_PY_AVAILABLE = True
 except ImportError:
     _ALPACA_PY_AVAILABLE = False
+
 
 class AlpacaBrokerage(IBrokerage):
     """
     Concrete implementation of a brokerage service using Alpaca-py SDK.
     Handles real order execution and account monitoring.
     """
+
     def __init__(self):
         self.api_key = os.getenv("ALPACA_API_KEY")
         self.api_secret = os.getenv("ALPACA_API_SECRET")
         self.paper_mode = os.getenv("PAPER_MODE", "true").lower() == "true"
-        
+
         if not self.api_key or not self.api_secret or not _ALPACA_PY_AVAILABLE:
             self._available = False
             self.client = None
@@ -43,30 +46,19 @@ class AlpacaBrokerage(IBrokerage):
 
         try:
             req = None
-            oside = OrderSide.BUY if side.lower() == 'buy' else OrderSide.SELL
-            
+            oside = OrderSide.BUY if side.lower() == "buy" else OrderSide.SELL
+
             if order_type.lower() == "market":
-                req = MarketOrderRequest(
-                    symbol=symbol,
-                    qty=qty,
-                    side=oside,
-                    time_in_force=TimeInForce.GTC
-                )
+                req = MarketOrderRequest(symbol=symbol, qty=qty, side=oside, time_in_force=TimeInForce.GTC)
             elif order_type.lower() == "limit":
                 if not price:
                     raise ValueError("Price required for limit order")
-                req = LimitOrderRequest(
-                    symbol=symbol,
-                    qty=qty,
-                    side=oside,
-                    time_in_force=TimeInForce.GTC,
-                    limit_price=price
-                )
+                req = LimitOrderRequest(symbol=symbol, qty=qty, side=oside, time_in_force=TimeInForce.GTC, limit_price=price)
             else:
-                 raise ValueError(f"Unsupported order type: {order_type}")
+                raise ValueError(f"Unsupported order type: {order_type}")
 
             order = self.client.submit_order(order_data=req)
-            
+
             return {
                 "id": str(order.id),
                 "client_order_id": str(order.client_order_id),
@@ -74,7 +66,7 @@ class AlpacaBrokerage(IBrokerage):
                 "symbol": order.symbol,
                 "qty": float(order.qty) if order.qty else 0.0,
                 "side": str(order.side),
-                "type": str(order.type)
+                "type": str(order.type),
             }
         except Exception as e:
             raise RuntimeError(f"Alpaca order failure: {str(e)}")
@@ -85,14 +77,10 @@ class AlpacaBrokerage(IBrokerage):
         """
         if not self._available or not self.client:
             raise RuntimeError("Alpaca API keys not configured.")
-        
+
         try:
             account = self.client.get_account()
-            return {
-                "equity": float(account.equity or 0.0),
-                "cash": float(account.cash or 0.0),
-                "buying_power": float(account.buying_power or 0.0)
-            }
+            return {"equity": float(account.equity or 0.0), "cash": float(account.cash or 0.0), "buying_power": float(account.buying_power or 0.0)}
         except Exception as e:
             raise RuntimeError(f"Alpaca account fetch failure: {str(e)}")
 
@@ -102,7 +90,7 @@ class AlpacaBrokerage(IBrokerage):
         """
         if not self._available or not self.client:
             raise RuntimeError("Alpaca API keys not configured.")
-            
+
         try:
             positions = self.client.get_all_positions()
             return [
@@ -111,7 +99,7 @@ class AlpacaBrokerage(IBrokerage):
                     "qty": float(p.qty),
                     "market_value": float(p.market_value or 0.0),
                     "avg_entry_price": float(p.avg_entry_price or 0.0),
-                    "unrealized_pl": float(p.unrealized_pl or 0.0)
+                    "unrealized_pl": float(p.unrealized_pl or 0.0),
                 }
                 for p in positions
             ]

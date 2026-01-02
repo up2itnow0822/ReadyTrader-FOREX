@@ -7,6 +7,7 @@ from core.policy import PolicyEngine
 from core.risk import RiskGuardian
 from execution.alpaca_service import AlpacaBrokerage
 from execution.ibkr_service import IBKRBrokerage
+from execution.oanda_service import OandaBrokerage
 from execution.retail_services import EtradeBrokerage, RobinhoodBrokerage, SchwabBrokerage
 from execution.store import ExecutionStore
 from execution.tradier_service import TradierBrokerage
@@ -31,7 +32,7 @@ class Container:
         # Observability
         self.metrics = Metrics()
         self.audit_log = AuditLog()
-        
+
         # Core Engines
         self.paper_engine = PaperTradingEngine() if settings.PAPER_MODE else None
         self.backtest_engine = BacktestEngine()
@@ -39,26 +40,28 @@ class Container:
         self.risk_guardian = RiskGuardian()
         self.policy_engine = PolicyEngine()
         self.rate_limiter = FixedWindowRateLimiter()
-        
+
         # Stores
         self.execution_store = ExecutionStore()
         self.idempotency_store = IdempotencyStore()
         self.insight_store = InsightStore()
         self.strategy_registry = StrategyRegistry()
-        
+
         # Market Data & Execution
         self.exchange_provider = ExchangeProvider()
         self.marketdata_store = InMemoryMarketDataStore()
         self.marketdata_ws_store = InMemoryMarketDataStore()
         self.ws_manager = WsStreamManager(store=self.marketdata_ws_store, metrics=self.metrics)
-        
-        self.marketdata_bus = MarketDataBus([
-            IngestMarketDataProvider(store=self.marketdata_store),
-            IngestMarketDataProvider(store=self.marketdata_ws_store, provider_id="exchange_ws"),
-            *load_marketdata_plugins(),
-            StockMarketDataProvider(exchange_provider=self.exchange_provider),
-        ])
-        
+
+        self.marketdata_bus = MarketDataBus(
+            [
+                IngestMarketDataProvider(store=self.marketdata_store),
+                IngestMarketDataProvider(store=self.marketdata_ws_store, provider_id="exchange_ws"),
+                *load_marketdata_plugins(),
+                StockMarketDataProvider(exchange_provider=self.exchange_provider),
+            ]
+        )
+
         # Brokerages
         self.alpaca_brokerage = AlpacaBrokerage()
         self.tradier_brokerage = TradierBrokerage()
@@ -66,7 +69,13 @@ class Container:
         self.schwab_brokerage = SchwabBrokerage()
         self.etrade_brokerage = EtradeBrokerage()
         self.robinhood_brokerage = RobinhoodBrokerage()
-        
+        self.oanda_brokerage = OandaBrokerage()
+
+        # Forex Paper
+        from execution.forex_paper import ForexPaperBrokerage
+
+        self.forex_paper_brokerage = ForexPaperBrokerage(exchange_provider=self.exchange_provider)
+
         # Mapping for easy lookup
         self.brokerages = {
             "alpaca": self.alpaca_brokerage,
@@ -74,10 +83,12 @@ class Container:
             "ibkr": self.ibkr_brokerage,
             "schwab": self.schwab_brokerage,
             "etrade": self.etrade_brokerage,
-            "robinhood": self.robinhood_brokerage
+            "robinhood": self.robinhood_brokerage,
+            "oanda": self.oanda_brokerage,
+            "forex_paper": self.forex_paper_brokerage,
         }
-        
-        self.signer = None # get_signer()
+
         self.learner = Learner(db_path=self.paper_engine.db_path) if settings.PAPER_MODE and self.paper_engine else None
+
 
 global_container = Container()

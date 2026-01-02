@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "readytrader_stocks": {
+    "readytrader_forex": {
       "command": "docker",
       "args": [
         "run",
@@ -8,7 +8,7 @@
         "--rm",
         "-e",
         "PAPER_MODE=true",
-        "readytrader-stocks"
+        "readytrader-forex"
       ]
     }
   }

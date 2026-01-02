@@ -62,4 +62,3 @@ class TTLCache(Generic[K, V]):
         oldest = sorted(self._order.items(), key=lambda kv: kv[1])
         for k, _ in oldest[: max(1, len(self._data) - self._max_items)]:
             self.delete(k)
-

@@ -1,7 +1,7 @@
 [project]
-name = "readytrader-stocks"
+name = "readytrader-forex"
 version = "0.1.0"
-description = "ReadyTrader-Stocks: agent-first stock trading MCP with safety governance, backtesting, and stress testing."
+description = "ReadyTrader-FOREX: agent-first forex trading MCP with safety governance, backtesting, and stress testing."
 requires-python = ">=3.12"
 
 [tool.pytest.ini_options]
@@ -17,6 +17,6 @@ extend-exclude = ["data/"]
 select = ["E", "F", "I"]
 
 [tool.ruff.lint.per-file-ignores]
-"defi/uniswap_v3.py" = ["E501"]
+# Add any specialized ignores here
 
 

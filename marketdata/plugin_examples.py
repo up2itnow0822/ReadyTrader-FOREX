@@ -53,4 +53,3 @@ class StaticJsonFileProvider:
 
     def status(self) -> Dict[str, Any]:
         return {"provider_id": self.provider_id, "path": self.path}
-

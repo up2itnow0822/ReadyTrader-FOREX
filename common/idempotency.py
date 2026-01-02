@@ -109,4 +109,3 @@ class IdempotencyStore:
                 )
                 self._conn.commit()
             return self._conn
-

@@ -3,6 +3,8 @@ from .core import (
     fetch_financial_news,
     fetch_rss_news,
     get_cached_sentiment_score,
+    get_forex_market_brief,
+    get_forex_news,
     get_market_news,
     get_market_sentiment,
 )
@@ -17,6 +19,8 @@ __all__ = [
     "fetch_financial_news",
     "fetch_rss_news",
     "get_cached_sentiment_score",
+    "get_forex_market_brief",
+    "get_forex_news",
     "get_market_sentiment",
     "get_market_news",
     "InsightStore",

@@ -12,4 +12,3 @@ def test_render_prometheus_contains_expected_lines():
     assert "readytrader_counter_a_total 2" in out
     assert "readytrader_gauge_ws_last_message_age_sec 1.25" in out
     assert "readytrader_timer_tool_x_latency_ms_count" in out
-

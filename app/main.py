@@ -6,7 +6,7 @@ from app.tools.research import register_research_tools
 from app.tools.trading import register_trading_tools
 
 # Initialize FastMCP server
-mcp = FastMCP("ReadyTrader-Stocks")
+mcp = FastMCP("ReadyTrader-FOREX")
 
 # Register Tools
 register_market_tools(mcp)

@@ -3,12 +3,12 @@ startCommand:
   command: python
   args:
     - app/main.py
-name: ReadyTrader-Stocks
+name: ReadyTrader-FOREX
 description: >-
-  A specialized bridge that turns your AI Agent into a professional crypto trading operator.
+  A specialized bridge that turns your AI Agent into a professional forex trading operator.
   Features specific "Intelligence vs. Execution" separation of powers, a "Risk Guardian" safety layer,
   and deep DeFi integrations (Aave, Uniswap).
-projectUrl: https://github.com/up2itnow/ReadyTrader-Stocks
+projectUrl: https://github.com/up2itnow/ReadyTrader-FOREX
 configSchema:
   type: object
   properties:

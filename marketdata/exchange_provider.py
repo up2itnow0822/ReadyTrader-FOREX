@@ -26,33 +26,44 @@ def _parse_timeframe_seconds(timeframe: str) -> Optional[int]:
         return None
     return None
 
+
 def _seconds_to_next_boundary(period_sec: int) -> int:
     now = int(time.time())
     if period_sec <= 0:
         return 0
     return period_sec - (now % period_sec)
 
+
 class ExchangeProvider:
     """
-    Market-data connector layer (yfinance) for Stocks:
+    Market-data connector layer (yfinance) for Forex:
     - fetch_ticker (current info)
     - fetch_ohlcv (historical data)
-    
+
     Design notes:
     - Replaces previous CCXT implementation.
     - Uses yfinance for data.
     - Caches results to avoid rate limits (though yfinance is lenient).
     """
+
     def __init__(self):
         self._ticker_cache: TTLCache[str, Dict[str, Any]] = TTLCache(max_items=2048)
         self._ohlcv_cache: TTLCache[Tuple[str, str, int], List[Any]] = TTLCache(max_items=1024)
-        
+
     def _normalize_symbol(self, symbol: str) -> str:
         """
-        Stock symbols are straightforward (e.g. AAPL, MSFT).
-        We just uppercase them.
+        Normalize symbol for yfinance.
+        For Forex, we assume 6-character pairs (e.g., 'EURUSD') need '=X' appended (e.g., 'EURUSD=X').
         """
-        return symbol.strip().upper()
+        s = symbol.strip().upper().replace("/", "")
+        if len(s) == 6 and not s.endswith("=X"):
+            # Simple heuristic for Forex pairs: 6 chars, append =X
+            # This might capture some stocks (e.g. GOOGL is 5, NVDA is 4).
+            # Usually 6 chars without other context is likely Forex in this domain.
+            # Better safety: check if it contains numbers? Most stocks don't.
+            # Since this is a specialized fork, we can prioritize Forex.
+            return f"{s}=X"
+        return s
 
     def get_marketdata_capabilities(self, exchange_id: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -67,7 +78,7 @@ class ExchangeProvider:
             "default_type": "spot",
         }
 
-    def fetch_ohlcv(self, symbol: str, timeframe: str = '1h', limit: int = 100) -> List[Any]:
+    def fetch_ohlcv(self, symbol: str, timeframe: str = "1h", limit: int = 100) -> List[Any]:
         """
         Fetch OHLCV data using yfinance.
         Mapped to CCXT cache format: [[timestamp, open, high, low, close, volume], ...]
@@ -76,7 +87,7 @@ class ExchangeProvider:
         tf_sec = _parse_timeframe_seconds(timeframe)
         if tf_sec:
             ttl = min(ttl, float(_seconds_to_next_boundary(tf_sec) + 1))
-            
+
         sym = self._normalize_symbol(symbol)
         cache_key = ("ohlcv", sym, timeframe, int(limit))
         cached = self._ohlcv_cache.get(cache_key)
@@ -92,34 +103,27 @@ class ExchangeProvider:
                 yf_interval = "1d"
             elif timeframe == "1m":
                 yf_interval = "1m"
-            
+
             period = "1mo"
-            if timeframe == '1m':
+            if timeframe == "1m":
                 period = "5d"
-            if timeframe == '1d':
+            if timeframe == "1d":
                 period = "1y"
 
             ticker = yf.Ticker(sym)
             df = ticker.history(period=period, interval=yf_interval)
-            
+
             if df.empty:
                 raise AppError("data_not_found", f"No OHLCV history found for {sym} via yfinance.", {"symbol": sym})
 
             ohlcv = []
             for index, row in df.tail(limit).iterrows():
                 ts = int(index.timestamp() * 1000)
-                ohlcv.append([
-                    ts,
-                    float(row['Open']),
-                    float(row['High']),
-                    float(row['Low']),
-                    float(row['Close']),
-                    float(row['Volume'])
-                ])
-                
+                ohlcv.append([ts, float(row["Open"]), float(row["High"]), float(row["Low"]), float(row["Close"]), float(row["Volume"])])
+
             self._ohlcv_cache.set(cache_key, ohlcv, ttl_seconds=ttl)
             return ohlcv
-            
+
         except AppError:
             raise
         except Exception as e:
@@ -139,25 +143,35 @@ class ExchangeProvider:
         try:
             ticker = yf.Ticker(sym)
             hist = ticker.history(period="5d")
-            
+
             if hist.empty:
                 raise AppError("data_not_found", f"No price data found for {sym} via yfinance.", {"symbol": sym})
 
             last_row = hist.iloc[-1]
-            price = float(last_row['Close'])
-            open_px = float(last_row['Open'])
-            high = float(last_row['High'])
-            low = float(last_row['Low'])
-            volume = float(last_row['Volume'])
-            
+            price = float(last_row["Close"])
+            open_px = float(last_row["Open"])
+            high = float(last_row["High"])
+            low = float(last_row["Low"])
+            volume = float(last_row["Volume"])
+
+            # Simulate Spread for Forex (e.g. 1-2 pips)
+            # Standard lots: 1 pip = 0.0001 (or 0.01 for JPY)
+            is_jpy = "JPY" in sym
+            pip = 0.01 if is_jpy else 0.0001
+            spread_pips = 1.5  # Average spread
+            half_spread = (spread_pips * pip) / 2
+
+            bid = price - half_spread
+            ask = price + half_spread
+
             data = {
                 "symbol": sym,
                 "timestamp": int(time.time() * 1000),
                 "datetime": pd.Timestamp.now().isoformat(),
                 "high": high,
                 "low": low,
-                "bid": None,
-                "ask": None,
+                "bid": bid,
+                "ask": ask,
                 "vwap": None,
                 "open": open_px,
                 "close": price,
@@ -169,9 +183,9 @@ class ExchangeProvider:
                 "baseVolume": volume,
                 "quoteVolume": None,
                 "info": {},
-                "is_mock": False
+                "is_mock": False,
             }
-            
+
             self._ticker_cache.set(cache_key, data, ttl_seconds=ttl)
             return data
         except AppError:

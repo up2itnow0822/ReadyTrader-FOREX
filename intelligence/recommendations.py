@@ -44,10 +44,7 @@ def recommend_settings(stress_summary: Dict[str, Any]) -> Dict[str, Any]:
         suggest_param(
             "cooldown_bars",
             10,
-            (
-                "Stress scenarios suggest rapid compounding losses; add a cooldown after exits or losses "
-                "to reduce churn in volatility clusters."
-            ),
+            ("Stress scenarios suggest rapid compounding losses; add a cooldown after exits or losses to reduce churn in volatility clusters."),
             (0, 50),
         )
 
@@ -56,10 +53,7 @@ def recommend_settings(stress_summary: Dict[str, Any]) -> Dict[str, Any]:
         suggest_param(
             "min_signal_strength",
             0.2,
-            (
-                "5th percentile returns are strongly negative; require stronger signals before entering "
-                "to avoid overtrading in chop."
-            ),
+            ("5th percentile returns are strongly negative; require stronger signals before entering to avoid overtrading in chop."),
             (0.0, 1.0),
         )
         suggest_param(
@@ -83,10 +77,6 @@ def recommend_settings(stress_summary: Dict[str, Any]) -> Dict[str, Any]:
         "recommendations": recs,
         "notes": [
             "Recommendations are heuristic and should be validated via backtests and (later) walk-forward analysis.",
-            (
-                "If your strategy exposes PARAMS keys, matching keys are returned in recommended_params "
-                "for easy application."
-            ),
+            ("If your strategy exposes PARAMS keys, matching keys are returned in recommended_params for easy application."),
         ],
     }
-

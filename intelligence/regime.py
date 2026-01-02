@@ -25,26 +25,26 @@ class RegimeDetector:
 
         # Calculate ADX (Average Directional Index) for Trend Strength
         # Window usually 14
-        adx = ta.trend.ADXIndicator(df['high'], df['low'], df['close'], window=14)
-        df['adx'] = adx.adx()
-        df['di_plus'] = adx.adx_pos()
-        df['di_neg'] = adx.adx_neg()
-        
+        adx = ta.trend.ADXIndicator(df["high"], df["low"], df["close"], window=14)
+        df["adx"] = adx.adx()
+        df["di_plus"] = adx.adx_pos()
+        df["di_neg"] = adx.adx_neg()
+
         # Calculate ATR (Average True Range) for Volatility
-        atr = ta.volatility.AverageTrueRange(df['high'], df['low'], df['close'], window=14)
-        df['atr'] = atr.average_true_range()
-        
+        atr = ta.volatility.AverageTrueRange(df["high"], df["low"], df["close"], window=14)
+        df["atr"] = atr.average_true_range()
+
         # Get latest values
-        current_adx = df['adx'].iloc[-1]
-        current_atr = df['atr'].iloc[-1]
-        current_close = df['close'].iloc[-1]
-        current_di_plus = df['di_plus'].iloc[-1]
-        current_di_neg = df['di_neg'].iloc[-1]
+        current_adx = df["adx"].iloc[-1]
+        current_atr = df["atr"].iloc[-1]
+        current_close = df["close"].iloc[-1]
+        current_di_plus = df["di_plus"].iloc[-1]
+        current_di_neg = df["di_neg"].iloc[-1]
 
         # Logic
         regime = "RANGING"
         direction = "SIDEWAYS"
-        
+
         # ADX Thresholds: < 20 Weak/Ranging, > 25 Trending, > 50 Strong
         if current_adx > 25:
             regime = "TRENDING"
@@ -52,17 +52,17 @@ class RegimeDetector:
                 direction = "UP"
             else:
                 direction = "DOWN"
-        
+
         # Volatility Check (ATR relative to price)
         # If ATR is > 2% of price, we consider it Volatile
         atr_pct = (current_atr / current_close) * 100
         if atr_pct > 2.0:
-            regime = f"VOLATILE_{regime}" # e.g. VOLATILE_TRENDING
-            
+            regime = f"VOLATILE_{regime}"  # e.g. VOLATILE_TRENDING
+
         return {
             "regime": regime,
             "direction": direction,
             "adx": round(current_adx, 2),
             "atr_pct": round(atr_pct, 2),
-            "summary": f"Market is {regime} ({direction}). ADX: {current_adx:.1f}, Volatility: {atr_pct:.1f}%"
+            "summary": f"Market is {regime} ({direction}). ADX: {current_adx:.1f}, Volatility: {atr_pct:.1f}%",
         }

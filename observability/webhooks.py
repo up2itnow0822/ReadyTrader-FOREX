@@ -8,21 +8,21 @@ class WebhookManager:
     """
     Handles delivery of notifications to external services like Discord and Telegram.
     """
-    
+
     @staticmethod
     def send_discord_notification(message: str, embed: Optional[Dict[str, Any]] = None):
         webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
         if not webhook_url:
             return
-            
+
         payload = {"content": message}
         if embed:
             payload["embeds"] = [embed]
-            
+
         try:
             requests.post(webhook_url, json=payload, timeout=5)
-        except Exception: # nosec
-            pass # Silent failure for observability
+        except Exception:  # nosec
+            pass  # Silent failure for observability
 
     @staticmethod
     def send_telegram_notification(message: str):
@@ -30,17 +30,13 @@ class WebhookManager:
         chat_id = os.getenv("TELEGRAM_CHAT_ID")
         if not bot_token or not chat_id:
             return
-            
+
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        payload = {
-            "chat_id": chat_id,
-            "text": message,
-            "parse_mode": "Markdown"
-        }
-        
+        payload = {"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}
+
         try:
             requests.post(url, json=payload, timeout=5)
-        except Exception: # nosec
+        except Exception:  # nosec
             pass
 
     @classmethod
@@ -49,7 +45,7 @@ class WebhookManager:
         Send a notification that a trade requires manual approval.
         """
         msg = f"🛡️ **ReadyTrader: Approval Required**\nKind: {kind}\nAmount: {amount}\nSymbol: {symbol}\nRequest ID: `{request_id}`"
-        
+
         # Discord Embed
         embed = {
             "title": "Action Required: Trade Approval",
@@ -58,10 +54,10 @@ class WebhookManager:
                 {"name": "Kind", "value": kind, "inline": True},
                 {"name": "Symbol", "value": symbol, "inline": True},
                 {"name": "Amount", "value": str(amount), "inline": True},
-                {"name": "Request ID", "value": request_id, "inline": False}
+                {"name": "Request ID", "value": request_id, "inline": False},
             ],
-            "footer": {"text": "ReadyTrader-Crypto Guardian Mode"}
+            "footer": {"text": "ReadyTrader-Crypto Guardian Mode"},
         }
-        
+
         cls.send_discord_notification(msg, embed=embed)
         cls.send_telegram_notification(msg)

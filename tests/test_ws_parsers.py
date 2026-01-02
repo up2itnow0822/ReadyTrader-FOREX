@@ -45,4 +45,3 @@ def test_parse_kraken_ticker_message():
     assert snap is not None
     assert snap["symbol"] == "BTC/USDT"
     assert snap["last"] == 10.0
-

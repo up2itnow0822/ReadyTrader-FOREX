@@ -99,6 +99,7 @@ class StockMarketDataProvider(MarketDataProvider):
         # Ideally ExchangeProvider itself should be refactored to use httpx or similar
         # For now, we remain compliant with the interface
         import asyncio
+
         loop = asyncio.get_event_loop()
         raw = await loop.run_in_executor(None, self.exchange_provider.fetch_ticker, symbol)
         # Ensure canonical keys for bus scoring.
@@ -121,6 +122,7 @@ class StockMarketDataProvider(MarketDataProvider):
 
     async def fetch_ohlcv(self, symbol: str, timeframe: str, limit: int) -> List[Any]:
         import asyncio
+
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self.exchange_provider.fetch_ohlcv, symbol, timeframe, limit)
 

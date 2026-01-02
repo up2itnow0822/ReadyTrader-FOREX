@@ -1,4 +1,3 @@
-
 import asyncio
 import os
 import sys
@@ -13,7 +12,7 @@ from strategy.moving_average import SmaStrategy
 
 async def verify():
     print("--- Verifying Live Trading & Strategy ---")
-    
+
     # 1. Test StockExecutor (Mock Mode)
     print("\n[Executor] Testing StockExecutor (Paper Mode)...")
     try:
@@ -21,15 +20,15 @@ async def verify():
         executor = StockExecutor(mode="paper")
         bal = executor.fetch_balance()
         print(f"Mock Balance: {bal}")
-        
+
         order = executor.place_order("AAPL", "buy", 10, 150.0)
         print(f"Mock Order: {order}")
-        
+
         if order.get("status") == "filled":
             print("SUCCESS: StockExecutor (Paper) functional.")
         else:
             print("FAILURE: Mock order status incorrect.")
-            
+
     except Exception as e:
         print(f"FAILED StockExecutor: {e}")
 
@@ -51,14 +50,15 @@ async def verify():
         strat = SmaStrategy("AAPL", short_window=5, long_window=10)
         res = strat.analyze()
         print(f"Strategy Result: {res}")
-        
+
         if "signal" in res:
-             print("SUCCESS: Strategy generated analysis.")
+            print("SUCCESS: Strategy generated analysis.")
         else:
-             print("FAILURE: Strategy output malformed.")
-             
+            print("FAILURE: Strategy output malformed.")
+
     except Exception as e:
         print(f"FAILED Strategy: {e}")
+
 
 if __name__ == "__main__":
     asyncio.run(verify())

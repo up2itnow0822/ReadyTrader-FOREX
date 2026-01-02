@@ -11,9 +11,11 @@ def _json_ok(data: Dict[str, Any] | None = None) -> str:
     payload = {"ok": True, "data": data or {}}
     return json.dumps(payload, indent=2, sort_keys=True)
 
+
 def _json_err(code: str, message: str, data: Dict[str, Any] | None = None) -> str:
     payload = {"ok": False, "error": {"code": code, "message": message, "data": data or {}}}
     return json.dumps(payload, indent=2, sort_keys=True)
+
 
 def _rate_limit(tool_name: str) -> Optional[str]:
     # Shim to use the global rate limiter
@@ -21,10 +23,10 @@ def _rate_limit(tool_name: str) -> Optional[str]:
         global_container.rate_limiter.check(key=f"tool:{tool_name}", limit=120, window_seconds=60)
         return None
     except Exception as e:
-         return _json_err("rate_limited", str(e))
+        return _json_err("rate_limited", str(e))
+
 
 def register_research_tools(mcp: FastMCP):
-    
     @mcp.tool()
     def get_social_sentiment(symbol: str) -> str:
         """Get simulated social media sentiment (X/Reddit)."""
@@ -42,7 +44,7 @@ def register_research_tools(mcp: FastMCP):
         try:
             return _json_ok({"symbol": symbol, "news": fetch_rss_news(symbol)})
         except NameError:
-             return _json_err("import_error", "fetch_rss_news not available")
+            return _json_err("import_error", "fetch_rss_news not available")
 
     @mcp.tool()
     def post_market_insight(symbol: str, agent_id: str, signal: str, confidence: float, reasoning: str, ttl_seconds: int = 3600) -> str:
@@ -57,13 +59,13 @@ def register_research_tools(mcp: FastMCP):
         return _json_ok({"insights": [vars(i) for i in insights]})
 
     @mcp.tool()
-    def run_backtest_simulation(strategy_code: str, symbol: str, timeframe: str = '1h') -> str:
+    def run_backtest_simulation(strategy_code: str, symbol: str, timeframe: str = "1h") -> str:
         """Run a strategy simulation against historical data."""
         result = global_container.backtest_engine.run(strategy_code, symbol, timeframe)
         return _json_ok({"result": result})
 
     @mcp.tool()
-    def get_market_regime(symbol: str, timeframe: str = '1d') -> str:
+    def get_market_regime(symbol: str, timeframe: str = "1d") -> str:
         """Detect the current market regime (TRENDING, RANGING, VOLATILE)."""
         try:
             df = global_container.backtest_engine.fetch_ohlcv(symbol, timeframe, limit=100)

@@ -24,4 +24,3 @@ def test_load_marketdata_plugins_static_json_file(tmp_path, monkeypatch):
     t = p.fetch_ticker("BTC/USDT")
     assert t["last"] == 50000.0
     assert t["source"] == "file"
-

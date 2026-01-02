@@ -1,4 +1,3 @@
-
 import pandas as pd
 
 from core.stress_test import run_synthetic_stress_test
@@ -34,4 +33,3 @@ def on_candle(close, rsi, state):
     assert len(summary["seeds"]) == 25
     assert "scenario_metrics_csv" in out["artifacts"]
     assert "worst_drawdown_equity_csv" in out["artifacts"]
-

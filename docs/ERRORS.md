@@ -4,16 +4,17 @@ If you are just getting started and seeing errors, check these first:
 
 | Issue | Quick Fix | Reference |
 | :--- | :--- | :--- |
-| **Missing .env** | Run `python tools/setup_wizard.py` to generate one. | [Setup Wizard](file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/tools/setup_wizard.py) |
-| **Missing Keys** | Check `docs/SENTIMENT.md` for links to get free API keys. | [Sentiment Guide](file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/docs/SENTIMENT.md) |
-| **Blocked Trade** | Your trade might violate the `RISK_PROFILE`. Use `conservative` for safety. | [README.md](file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/README.md) |
-| **Python Errors** | Run `pip install -r requirements.txt` to ensure dependencies are met. | [requirements.txt](file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/requirements.txt) |
+| **Missing .env** | Run `python tools/setup_wizard.py` to generate one. | \[Setup Wizard\](file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/tools/setup_wizard.py) |
+| **Missing Keys** | Check `docs/SENTIMENT.md` for links to get free API keys. | \[Sentiment Guide\](file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/docs/SENTIMENT.md) |
+| **Blocked Trade** | Your trade might violate the `RISK_PROFILE`. Use `conservative` for safety. | \[README.md\](file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/README.md) |
+| **Python Errors** | Run `pip install -r requirements.txt` to ensure dependencies are met. | \[requirements.txt\](file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/requirements.txt) |
 
----
+______________________________________________________________________
 
 ### ReadyTrader-Crypto Error Codes (Operator Guide)
 
 ### Live trading governance
+
 - **`live_trading_disabled`**
   - Meaning: Live execution is blocked because `LIVE_TRADING_ENABLED` is not `true`.
   - Fix: set `LIVE_TRADING_ENABLED=true` (and restart if running in Docker with env vars baked in).
@@ -28,11 +29,13 @@ If you are just getting started and seeing errors, check these first:
   - Fix: call `get_advanced_risk_disclosure()`, then `accept_advanced_risk_disclosure(true)`.
 
 ### Execution routing
+
 - **`execution_mode_blocked`**
   - Meaning: The requested tool is blocked by `EXECUTION_MODE` (dex/cex/hybrid).
   - Fix: set `EXECUTION_MODE` to allow the venue you want, or use the corresponding venue tool.
 
 ### Rate limiting
+
 - **`rate_limited`**
   - Meaning: The per-tool (or default) rate limit was exceeded for the current 60s window.
   - Fix:
@@ -40,7 +43,9 @@ If you are just getting started and seeing errors, check these first:
     - raise limits with `RATE_LIMIT_DEFAULT_PER_MIN`, `RATE_LIMIT_EXECUTION_PER_MIN`, or `RATE_LIMIT_<TOOL>_PER_MIN`
 
 ### Policy engine (allowlists / limits)
+
 Common examples (non-exhaustive):
+
 - **`chain_not_allowed`**, **`token_not_allowed`**, **`router_not_allowed`**
   - Meaning: Allowlist is set and the requested chain/token/router is not allowed.
   - Fix: update `ALLOW_CHAINS`, `ALLOW_TOKENS`, `ALLOW_ROUTERS` (or chain-specific `ALLOW_ROUTERS_<CHAIN>`).
@@ -49,6 +54,7 @@ Common examples (non-exhaustive):
   - Fix: lower sizing, or (if appropriate) enable Advanced Risk Mode and adjust overrides/limits.
 
 ### Risk guardian (paper mode)
+
 - **`risk_blocked`**
   - Meaning: Paper-mode risk checks blocked the trade (e.g., too large relative to portfolio).
   - Fix: reduce size, deposit more paper funds, or adjust the strategy parameters.
@@ -57,6 +63,7 @@ Common examples (non-exhaustive):
   - Fix: check paper DB health, ensure prices/metrics can be computed, rerun.
 
 ### Websocket streams (Phase 2.5)
+
 - **`ws_start_error`**, **`ws_stop_error`**
   - Meaning: Public websocket stream failed to start/stop (invalid symbols, network, etc.).
   - Fix: verify exchange name, symbol formats, and network access.
@@ -65,7 +72,9 @@ Common examples (non-exhaustive):
   - Fix: verify CEX credentials and that the exchange supports the requested market type.
 
 ### CCXT / exchange connectivity
+
 Errors are normalized via `errors.py` where possible:
+
 - **`ccxt_auth_error`**, **`ccxt_permission_denied`**
   - Fix: check API keys, permissions, and allowlists.
 - **`ccxt_rate_limited`**
@@ -73,9 +82,8 @@ Errors are normalized via `errors.py` where possible:
 - **`ccxt_network_error`**, **`ccxt_exchange_unavailable`**
   - Fix: temporary outage; retry with backoff; consider switching marketdata providers.
 
-
-
 ### Market data guardrails (Phase 3)
+
 - **`marketdata_not_acceptable`**
   - Meaning: Operator enabled fail-closed market data mode and the best available ticker was stale or flagged as an outlier.
   - Fix:

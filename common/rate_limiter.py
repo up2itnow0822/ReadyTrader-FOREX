@@ -42,4 +42,3 @@ class FixedWindowRateLimiter:
                     message="Rate limit exceeded.",
                     data={"key": key, "limit": limit, "window_seconds": window_seconds, "count": count},
                 )
-

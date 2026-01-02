@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastmcp import FastMCP
 
@@ -10,41 +10,75 @@ def _json_ok(data: Dict[str, Any] | None = None) -> str:
     payload = {"ok": True, "data": data or {}}
     return json.dumps(payload, indent=2, sort_keys=True)
 
+
 def _json_err(code: str, message: str, data: Dict[str, Any] | None = None) -> str:
     payload = {"ok": False, "error": {"code": code, "message": message, "data": data or {}}}
     return json.dumps(payload, indent=2, sort_keys=True)
 
+
 def register_market_tools(mcp: FastMCP):
-    
     @mcp.tool()
     def get_market_sentiment() -> str:
-        """Get the current Stock Market Fear & Greed Index."""
+        """Get the current Forex Market Sentiment Index."""
         from intelligence import get_market_sentiment
+
         return _json_ok({"sentiment": get_market_sentiment()})
 
     @mcp.tool()
     def get_market_news() -> str:
-        """Get the latest public market news (Free RSS / Alpha Vantage)."""
+        """Get the latest public market news (RSS / Alpha Vantage)."""
         from intelligence import get_market_news
+
         return _json_ok({"news": get_market_news()})
 
     @mcp.tool()
+    def get_economic_calendar() -> str:
+        """Get real-time High Impact Economic Events (ForexFactory)."""
+        from intelligence.core import get_economic_calendar
+
+        return _json_ok({"calendar": get_economic_calendar()})
+
+    @mcp.tool()
+    def fetch_custom_feed(url: str, keyword: Optional[str] = None) -> str:
+        """Fetch headlines from a user-provided RSS or Atom feed."""
+        from intelligence.core import fetch_custom_feed
+
+        return _json_ok({"news": fetch_custom_feed(url, keyword)})
+
+    @mcp.tool()
     def fetch_rss_news(symbol: str = "") -> str:
-        """Fetch stock market news from public RSS feeds (MarketWatch, Yahoo Finance). [FREE]"""
+        """Fetch forex market news from public RSS feeds. [FREE]"""
         from intelligence.core import fetch_rss_news
+
         return _json_ok({"news": fetch_rss_news(symbol)})
 
     @mcp.tool()
     def analyze_social_sentiment(symbol: str) -> str:
         """Analyze Reddit/X sentiment for a stock. (API Keys Required)."""
         from intelligence.core import analyze_social_sentiment
+
         return _json_ok({"sentiment": analyze_social_sentiment(symbol)})
 
     @mcp.tool()
     def fetch_financial_news(symbol: str) -> str:
         """Fetch high-tier financial news for a stock (NewsAPI required)."""
         from intelligence.core import fetch_financial_news
+
         return _json_ok({"news": fetch_financial_news(symbol)})
+
+    @mcp.tool()
+    def get_forex_news(limit: int = 10) -> str:
+        """Fetch aggregated Forex news from 5+ free RSS sources. [FREE - No API Key]"""
+        from intelligence.core import get_forex_news
+
+        return _json_ok({"news": get_forex_news(limit)})
+
+    @mcp.tool()
+    def get_forex_market_brief(symbol: str = "EURUSD") -> str:
+        """One-call comprehensive Forex market overview: price, DXY trend, calendar, news. [FREE]"""
+        from intelligence.core import get_forex_market_brief
+
+        return _json_ok({"brief": get_forex_market_brief(symbol)})
 
     @mcp.tool()
     async def get_stock_price(symbol: str, exchange: str = "alpaca") -> str:
@@ -55,11 +89,7 @@ def register_market_tools(mcp: FastMCP):
             res = await global_container.marketdata_bus.fetch_ticker(symbol)
             ticker = res.data
             last_price = ticker.get("last")
-            return _json_ok({
-                "symbol": symbol, 
-                "exchange": exchange, 
-                "result": f"The current price of {symbol} is {last_price} (Source: {res.source})"
-            })
+            return _json_ok({"symbol": symbol, "exchange": exchange, "result": f"The current price of {symbol} is {last_price} (Source: {res.source})"})
         except Exception as e:
             return _json_err("fetch_price_error", str(e), {"symbol": symbol})
 
@@ -84,14 +114,14 @@ def register_market_tools(mcp: FastMCP):
         Detect the current market regime (Trending, Ranging, Volatile) for a stock.
         """
         try:
-            df = global_container.backtest_engine.fetch_ohlcv(symbol, timeframe='1h', limit=100)
+            df = global_container.backtest_engine.fetch_ohlcv(symbol, timeframe="1h", limit=100)
             regime = global_container.regime_detector.detect(df)
             return _json_ok({"symbol": symbol, "regime": regime})
         except Exception as e:
             return _json_err("regime_detection_error", str(e))
 
     @mcp.tool()
-    async def fetch_ohlcv(symbol: str, timeframe: str = '1h', limit: int = 24) -> str:
+    async def fetch_ohlcv(symbol: str, timeframe: str = "1h", limit: int = 24) -> str:
         """
         Fetch historical OHLCV data.
         """
@@ -103,8 +133,8 @@ def register_market_tools(mcp: FastMCP):
                     "symbol": symbol,
                     "timeframe": timeframe,
                     "limit": limit,
-                    "data": df.to_dict(orient="records") if hasattr(df, 'to_dict') else df,
-                    "source": res.source
+                    "data": df.to_dict(orient="records") if hasattr(df, "to_dict") else df,
+                    "source": res.source,
                 }
             )
         except Exception as e:

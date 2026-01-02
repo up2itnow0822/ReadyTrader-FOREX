@@ -187,19 +187,14 @@ class ExecutionStore:
             )
             self._items[request_id] = prop
             self._persist(prop)
-            
+
             # Phase 2: Notification callback
             if WebhookManager:
                 # Attempt to extract symbol and amount for a prettier message
                 amount = float(payload.get("amount") or 0.0)
                 symbol = str(payload.get("symbol") or payload.get("from_token", "Unknown"))
-                WebhookManager.notify_approval_required(
-                    kind=kind,
-                    amount=amount,
-                    symbol=symbol,
-                    request_id=request_id
-                )
-            
+                WebhookManager.notify_approval_required(kind=kind, amount=amount, symbol=symbol, request_id=request_id)
+
             return prop
 
     def get(self, request_id: str) -> Optional[ExecutionProposal]:
@@ -286,4 +281,3 @@ class ExecutionStore:
             self._items[request_id] = p
             self._persist(p)
             return p
-
