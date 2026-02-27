@@ -63,8 +63,8 @@ def test_initial_migration(tmp_path):
     conn.execute(
         "CREATE TABLE audit_events("
         "id INTEGER PRIMARY KEY, ts_ms INT, request_id TEXT, tool TEXT, "
-        "ok INT, error_code TEXT, mode TEXT, venue TEXT, exchange TEXT, "
-        "market_type TEXT, summary_json TEXT)"
+        "ok INT, error_code TEXT, mode TEXT, venue TEXT, "
+        "exchange TEXT, market_type TEXT, summary_json TEXT)"
     )
     conn.commit()
     conn.close()
