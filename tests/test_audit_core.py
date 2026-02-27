@@ -61,8 +61,11 @@ def test_initial_migration(tmp_path):
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     conn = sqlite3.connect(db_path)
     conn.execute(
-        "CREATE TABLE audit_events(id INTEGER PRIMARY KEY, ts_ms INT, request_id TEXT, tool TEXT, ok INT, error_code TEXT, mode TEXT, venue TEXT, exchange TEXT, market_type TEXT, summary_json TEXT)"
-    )  # noqa: E501
+        "CREATE TABLE audit_events("
+        "id INTEGER PRIMARY KEY, ts_ms INT, request_id TEXT, tool TEXT, "
+        "ok INT, error_code TEXT, mode TEXT, venue TEXT, exchange TEXT, "
+        "market_type TEXT, summary_json TEXT)"
+    )
     conn.commit()
     conn.close()
 
