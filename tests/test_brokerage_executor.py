@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 from execution.alpaca_service import AlpacaBrokerage
 
 
+@patch("execution.alpaca_service._ALPACA_PY_AVAILABLE", True)
 @patch("execution.alpaca_service.TradingClient")
 def test_alpaca_brokerage_init(mock_client):
     with patch.dict(os.environ, {"ALPACA_API_KEY": "key", "ALPACA_API_SECRET": "secret"}):
@@ -12,8 +13,12 @@ def test_alpaca_brokerage_init(mock_client):
         mock_client.assert_called_once()
 
 
+@patch("execution.alpaca_service._ALPACA_PY_AVAILABLE", True)
+@patch("execution.alpaca_service.MarketOrderRequest")
+@patch("execution.alpaca_service.TimeInForce", **{"FILL_OR_KILL": "fok", "GTC": "gtc"})
+@patch("execution.alpaca_service.OrderSide", **{"BUY": "buy", "SELL": "sell"})
 @patch("execution.alpaca_service.TradingClient")
-def test_alpaca_brokerage_place_order(mock_client):
+def test_alpaca_brokerage_place_order(mock_client, mock_side, mock_tif, mock_req):
     with patch.dict(os.environ, {"ALPACA_API_KEY": "key", "ALPACA_API_SECRET": "secret"}):
         mock_instance = MagicMock()
         mock_client.return_value = mock_instance
@@ -38,6 +43,7 @@ def test_alpaca_brokerage_place_order(mock_client):
         mock_instance.submit_order.assert_called_once()
 
 
+@patch("execution.alpaca_service._ALPACA_PY_AVAILABLE", True)
 @patch("execution.alpaca_service.TradingClient")
 def test_alpaca_brokerage_get_balance(mock_client):
     with patch.dict(os.environ, {"ALPACA_API_KEY": "key", "ALPACA_API_SECRET": "secret"}):
