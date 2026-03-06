@@ -1,6 +1,12 @@
+import json
+import logging
+import os
 import sqlite3
+import time
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 class Learner:
@@ -62,5 +68,11 @@ class Learner:
             conn.execute("INSERT INTO lessons (lesson, created_at) VALUES (?, ?)", (lesson, pd.Timestamp.now().timestamp()))
             conn.commit()
             conn.close()
-        except Exception:
-            pass  # nosec
+        except sqlite3.Error as e:
+            logger.error(f"Learning DB write failed: {e} — data: {lesson}")
+            # Don't crash the trading loop; log and continue
+            # But write to a fallback JSON log so the data isn't lost
+            fallback = os.path.join(os.path.dirname(__file__), '../logs/learning_fallback.jsonl')
+            os.makedirs(os.path.dirname(fallback), exist_ok=True)
+            with open(fallback, 'a') as f:
+                f.write(json.dumps({"record": str(lesson), "error": str(e), "ts": time.time()}) + '\n')
