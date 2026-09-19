@@ -207,7 +207,7 @@ def get_forex_news(limit: int = 10) -> str:
         return f"No Forex news available. Source status: {', '.join(source_status)}"
 
     # Format output
-    output_lines = ["\U0001f4f0 Forex News (Free Feeds):"]
+    output_lines = ["📰 Forex News (Free Feeds):"]
     output_lines.append(f"Sources: {', '.join(source_status)}\n")
 
     for i, h in enumerate(all_headlines[:limit]):
@@ -232,17 +232,17 @@ def get_forex_market_brief(symbol: str = "EURUSD") -> str:
         price = ticker.get("last", "N/A")
         bid = ticker.get("bid", "N/A")
         ask = ticker.get("ask", "N/A")
-        sections.append(f"\U0001f4ca {symbol}: {price:.5f} (Bid: {bid:.5f}, Ask: {ask:.5f})")
+        sections.append(f"📊 {symbol}: {price:.5f} (Bid: {bid:.5f}, Ask: {ask:.5f})")
     except Exception as e:
-        sections.append(f"\U0001f4ca {symbol}: Price unavailable ({str(e)[:30]})")
+        sections.append(f"📊 {symbol}: Price unavailable ({str(e)[:30]})")
 
     # 2. DXY Trend
     dxy = get_dxy_trend()
-    sections.append(f"\n\U0001f4b5 {dxy}")
+    sections.append(f"\n💵 {dxy}")
 
     # 3. Economic Calendar
     cal = get_economic_calendar()
-    sections.append(f"\n\U0001f4c5 {cal}")
+    sections.append(f"\n📅 {cal}")
 
     # 4. Recent News (condensed)
     news = get_forex_news(limit=5)
