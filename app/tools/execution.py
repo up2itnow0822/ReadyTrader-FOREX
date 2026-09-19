@@ -6,6 +6,7 @@ from fastmcp import FastMCP
 from app.core.compliance import global_compliance_ledger
 from app.core.config import settings
 from app.core.container import global_container
+from app.tools.trading import _sentiment_context, inactive_rules
 
 
 def _json_ok(data: Dict[str, Any] | None = None) -> str:
@@ -21,21 +22,53 @@ def _json_err(code: str, message: str, data: Dict[str, Any] | None = None) -> st
 # Module-level functions for testing
 
 
-def place_market_order(symbol: str, side: str, amount: float, rationale: str = "") -> str:
-    """Place a market order for a stock."""
-    return place_stock_order(symbol, side, amount, order_type="market", rationale=rationale)
+def place_market_order(symbol: str, side: str, amount: float, rationale: str = "", sentiment_score: float | None = None) -> str:
+    """Place a market order for a stock.
+
+    `sentiment_score` is your own reading on [-1, +1] (see validate_trade_risk); below -0.5
+    the Falling Knife rule blocks a BUY. Left unset, sentiment is neutral and the rule
+    cannot fire - this server does not measure sentiment.
+    """
+    return place_stock_order(symbol, side, amount, order_type="market", rationale=rationale, sentiment_score=sentiment_score)
 
 
-def place_limit_order(symbol: str, side: str, amount: float, price: float, rationale: str = "") -> str:
-    """Place a limit order for a stock or currency pair."""
-    return place_stock_order(symbol, side, amount, price=price, order_type="limit", rationale=rationale)
+def place_limit_order(symbol: str, side: str, amount: float, price: float, rationale: str = "", sentiment_score: float | None = None) -> str:
+    """Place a limit order for a stock or currency pair.
+
+    `sentiment_score` is your own reading on [-1, +1] (see validate_trade_risk); below -0.5
+    the Falling Knife rule blocks a BUY. Left unset, sentiment is neutral and the rule
+    cannot fire - this server does not measure sentiment.
+    """
+    return place_stock_order(symbol, side, amount, price=price, order_type="limit", rationale=rationale, sentiment_score=sentiment_score)
 
 
 def place_forex_order(
-    symbol: str, side: str, amount: float, order_type: str = "market", price: float = 0.0, exchange: str = "oanda", rationale: str = ""
+    symbol: str,
+    side: str,
+    amount: float,
+    order_type: str = "market",
+    price: float = 0.0,
+    exchange: str = "oanda",
+    rationale: str = "",
+    sentiment_score: float | None = None,
 ) -> str:
-    """[RISK] Place an order for a Forex pair through OANDA or another brokerage."""
-    return place_stock_order(symbol, side, amount, price=price, order_type=order_type, exchange=exchange, rationale=rationale, audit_context="forex_trade")
+    """[RISK] Place an order for a Forex pair through OANDA or another brokerage.
+
+    `sentiment_score` is your own reading on [-1, +1] (see validate_trade_risk); below -0.5
+    the Falling Knife rule blocks a BUY. Left unset, sentiment is neutral and the rule
+    cannot fire - this server does not measure sentiment.
+    """
+    return place_stock_order(
+        symbol,
+        side,
+        amount,
+        price=price,
+        order_type=order_type,
+        exchange=exchange,
+        rationale=rationale,
+        audit_context="forex_trade",
+        sentiment_score=sentiment_score,
+    )
 
 
 def place_stock_order(
@@ -47,6 +80,7 @@ def place_stock_order(
     exchange: str = "alpaca",
     rationale: str = "",
     audit_context: str = "",
+    sentiment_score: float | None = None,
 ) -> str:  # noqa: E501
     """[RISK] Place an order for a stock through the Risk Guardian."""
 
@@ -59,17 +93,34 @@ def place_stock_order(
     try:
         # Get portfolio value (simplified)
         portfolio_value = 100000.0
-        sentiment_score = 0.0
+        daily_loss = 0.0
+        drawdown = 0.0
+        # The order path previously hardcoded sentiment to 0.0 and passed neither daily loss
+        # nor drawdown, so three of the Guardian's rules were inert on every real order even
+        # though validate_trade_risk applied them.
+        sentiment = _sentiment_context(symbol, sentiment_score)
         if settings.PAPER_MODE:
             metrics = global_container.paper_engine.get_risk_metrics("agent_zero")
             portfolio_value = metrics.get("equity", 100000.0)
+            daily_loss = metrics.get("daily_pnl_pct", 0.0)
+            drawdown = metrics.get("drawdown_pct", 0.0)
 
         risk_result = global_container.risk_guardian.validate_trade(
-            side=side, symbol=symbol, amount_usd=amount * (price or 1.0), portfolio_value=portfolio_value, sentiment_score=sentiment_score
+            side=side,
+            symbol=symbol,
+            amount_usd=amount * (price or 1.0),
+            portfolio_value=portfolio_value,
+            sentiment_score=sentiment["score"],
+            daily_loss_pct=daily_loss,
+            current_drawdown_pct=drawdown,
         )
 
         if not risk_result.get("allowed", False):
-            return _json_err("risk_blocked", risk_result.get("reason", "Unknown risk rejection"))
+            return _json_err(
+                "risk_blocked",
+                risk_result.get("reason", "Unknown risk rejection"),
+                {"sentiment": sentiment, "inactive_rules": inactive_rules()},
+            )
 
         # 2. Human-in-the-loop check
         if settings.EXECUTION_APPROVAL_MODE == "approve_each":
