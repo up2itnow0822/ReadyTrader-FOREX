@@ -26,6 +26,25 @@ except ImportError:
     feedparser = None
 
 
+class Unavailable(str):
+    """
+    The text a source returns when it could not answer (no key, refused, errored). It reads like
+    any other message, and the MCP tools turn it into {"ok": false, "error": {"code": ...}} so an
+    agent never mistakes "NewsAPI Error: ..." or an unread calendar for an answer. `code` is
+    "not_configured" when a key or library is missing, else "source_unavailable".
+    """
+
+    code: str
+
+    def __new__(cls, message: str, code: str = "source_unavailable") -> "Unavailable":
+        obj = super().__new__(cls, message)
+        obj.code = code
+        return obj
+
+
+HTTP_HEADERS = {"User-Agent": "ReadyTrader-FOREX/0.1 (+https://github.com/up2itnow0822/ReadyTrader-FOREX)"}
+
+
 def get_dxy_trend() -> str:
     """
     Fetch US Dollar Index (DXY) trend using yfinance.
@@ -36,7 +55,7 @@ def get_dxy_trend() -> str:
         ticker = yf.Ticker("DX-Y.NYB")  # Yahoo Finance ticker for DXY
         hist = ticker.history(period="5d")
         if hist.empty:
-            return "DXY Trend: Data unavailable."
+            return Unavailable("DXY Trend: Data unavailable.")
 
         last = hist.iloc[-1]["Close"]
         start = hist.iloc[0]["Close"]
@@ -45,40 +64,88 @@ def get_dxy_trend() -> str:
         direction = "Bullish" if pct > 0 else "Bearish"
         return f"DXY Trend (5d): {direction} ({pct:.2f}%). Last: {last:.2f}"
     except Exception as e:
-        return f"DXY Trend: Error fetching data: {str(e)}"
+        return Unavailable(f"DXY Trend: Error fetching data: {str(e)}")
+
+
+# ForexFactory's weekly calendar as JSON (its public mirror). The ForexFactory XML feed this used
+# to read answers automated requests with 403, and an empty parse read as "no events today".
+CALENDAR_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json"
+
+
+# The mirror refuses clients that poll it more than every few minutes, so a read is kept for
+# CALENDAR_CACHE_TTL_SEC (15 minutes by default). If a refresh fails, a read up to 6 hours old is
+# used and the answer says how old it is.
+_calendar_cache: Dict[str, Any] = {"events": None, "fetched_at": 0.0}
+CALENDAR_STALE_LIMIT_SEC = 6 * 3600
+
+
+def fetch_calendar_events() -> List[Dict[str, Any]]:
+    """This week's calendar events ({title, country, date (ISO, with offset), impact, forecast,
+    previous}). Raises when there is no read to use: a calendar that could not be read is never
+    "empty"."""
+    ttl = float(os.getenv("CALENDAR_CACHE_TTL_SEC") or 900)
+    age = time.time() - _calendar_cache["fetched_at"]
+    if _calendar_cache["events"] is not None and age < ttl:
+        return _calendar_cache["events"]
+    try:
+        response = requests.get(CALENDAR_URL, timeout=10, headers=HTTP_HEADERS)
+        response.raise_for_status()
+        events = response.json()
+        if not isinstance(events, list):
+            raise ValueError("unexpected calendar format")
+    except Exception:
+        if _calendar_cache["events"] is not None and age < CALENDAR_STALE_LIMIT_SEC:
+            return _calendar_cache["events"]
+        raise
+    _calendar_cache.update(events=events, fetched_at=time.time())
+    return events
 
 
 def get_economic_calendar() -> str:
     """
-    Fetch High Impact Economic Events from ForexFactory RSS.
+    High-impact economic events for the rest of this week (ForexFactory calendar), with times in UTC.
     """
-    if not feedparser:
-        return "Economic Calendar: feedparser not installed. Using mock: No High Impact events scheduled."
+    from datetime import datetime, timezone
 
-    url = "https://www.forexfactory.com/ff_calendar_thisweek.xml"
     try:
-        feed = feedparser.parse(url)
-        events = []
-        for entry in feed.entries[:8]:
-            impact = getattr(entry, "impact", "Low")
-            if impact.lower() in ["high", "critical"]:
-                events.append(f"{entry.title} ({entry.get('country', 'N/A')}) - {impact} Impact")
-
-        if not events:
-            return "Economic Calendar: No High Impact events scheduled for today (via ForexFactory)."
-        return "High Impact Economic Events:\n" + "\n".join(events)
+        events = fetch_calendar_events()
     except Exception as e:
-        return f"Economic Calendar Error: {str(e)}"
+        return Unavailable(f"Economic Calendar unavailable: could not read the ForexFactory calendar ({str(e)[:160]}).")
+
+    now = datetime.now(timezone.utc)
+    read_at = datetime.fromtimestamp(_calendar_cache["fetched_at"] or time.time(), timezone.utc)
+    upcoming = []
+    for e in events:
+        if str(e.get("impact", "")).lower() != "high":
+            continue
+        try:
+            when = datetime.fromisoformat(str(e["date"])).astimezone(timezone.utc)
+        except (KeyError, ValueError):
+            continue
+        if when.date() >= now.date():
+            upcoming.append((when, e))
+    if not upcoming:
+        return f"Economic Calendar (ForexFactory, read {read_at:%a %H:%M} UTC, {len(events)} events this week): no high-impact events for the rest of the week."
+    upcoming.sort(key=lambda x: x[0])
+    lines = [f"High-impact economic events, rest of this week (ForexFactory, read {read_at:%a %H:%M} UTC; times UTC; now {now:%a %H:%M}):"]
+    for when, e in upcoming[:15]:
+        tag = " (today)" if when.date() == now.date() else ""
+        detail = ", ".join(f"{k} {e[k]}" for k in ("forecast", "previous") if e.get(k))
+        lines.append(f"- {when:%a %d %b %H:%M}{tag} {e.get('country', '?')}: {e.get('title', '?')}" + (f" ({detail})" if detail else ""))
+    return "\n".join(lines)
 
 
 def get_market_sentiment() -> str:
     """
-    Aggregated Forex Sentiment.
-    Combines DXY Trend and simulated Calendar.
+    Aggregated FX backdrop: the DXY trend and this week's high-impact calendar. Unavailable only
+    when neither could be read; otherwise the part that failed says so.
     """
     dxy = get_dxy_trend()
     cal = get_economic_calendar()
-    return f"Forex Sentiment:\n{dxy}\n{cal}"
+    text = f"Forex Sentiment:\n{dxy}\n{cal}"
+    if isinstance(dxy, Unavailable) and isinstance(cal, Unavailable):
+        return Unavailable(text)
+    return text
 
 
 # The volatility halt is implemented from daily bars (core/market_guard.py). The news guard is not:
@@ -120,11 +187,11 @@ def get_news_status() -> bool:
 
 def get_market_news() -> str:
     """
-    Fetch aggregated equity market news using Alpha Vantage.
+    Top market headlines from Alpha Vantage's news feed (mostly equities).
     """
     api_key = os.getenv("ALPHAVANTAGE_API_KEY")
     if not api_key:
-        return "Market News: ALPHAVANTAGE_API_KEY missing. News unavailable."
+        return Unavailable("Market News: ALPHAVANTAGE_API_KEY missing. News unavailable.", "not_configured")
 
     try:
         # Alpha Vantage News Sentiment endpoint
@@ -133,11 +200,26 @@ def get_market_news() -> str:
         data = response.json()
 
         if "feed" in data:
+            if not data["feed"]:
+                return "Alpha Vantage news: no articles found."
             headlines = [f"{i + 1}. {p['title']} ({p['source']})" for i, p in enumerate(data["feed"][:5])]
             return "Alpha Vantage news:\n" + "\n".join(headlines)
-        return "Error: No news found via Alpha Vantage."
+        # Alpha Vantage answers a bad key or a rate limit with 200 and a note instead of a feed.
+        note = data.get("Information") or data.get("Note") or data.get("Error Message") or "no feed in the response"
+        return Unavailable(f"Error: Alpha Vantage returned no news: {note}")
     except Exception as e:
-        return f"Error fetching news: {str(e)}"
+        return Unavailable(f"Error fetching news: {str(e)}")
+
+
+def _read_feed(url: str):
+    """Fetch and parse an RSS/Atom feed with a timeout (feedparser.parse(url) has none and can
+    hang a tool call). Raises on HTTP errors and when the feed has no entries."""
+    response = requests.get(url, timeout=10, headers=HTTP_HEADERS)
+    response.raise_for_status()
+    feed = feedparser.parse(response.content)
+    if not feed.entries:
+        raise ValueError("no entries in the feed")
+    return feed
 
 
 def fetch_rss_news(symbol: str = "") -> str:
@@ -145,15 +227,16 @@ def fetch_rss_news(symbol: str = "") -> str:
     Fetch free market news from RSS feeds.
     """
     if not feedparser:
-        return "Error: feedparser library not installed. Cannot fetch RSS news."
+        return Unavailable("Error: feedparser library not installed. Cannot fetch RSS news.", "not_configured")
 
     feeds = [("MarketWatch", "https://www.marketwatch.com/rss/marketupdate"), ("Yahoo Finance", "https://finance.yahoo.com/news/rssindex")]
 
     all_headlines = []
+    failures = []
 
     for name, url in feeds:
         try:
-            feed = feedparser.parse(url)
+            feed = _read_feed(url)
             # Take top 3 from each
             count = 0
             for entry in feed.entries:
@@ -166,10 +249,13 @@ def fetch_rss_news(symbol: str = "") -> str:
                 all_headlines.append(f"{entry.title} ({name})")
                 count += 1
         except Exception as e:
-            all_headlines.append(f"Error fetching {name} feed: {str(e)}")
+            # Kept out of the headlines: an error is not news.
+            failures.append(f"{name}: {str(e)}")
 
+    if not all_headlines and failures:
+        return Unavailable("RSS feeds unavailable: " + "; ".join(failures))
     if not all_headlines:
-        return f"No RSS news found matching '{symbol}' or feeds unavailable."
+        return f"No RSS news found matching '{symbol}'."
 
     return "Market News (Free RSS):\n" + "\n".join([f"{i + 1}. {h}" for i, h in enumerate(all_headlines[:6])])
 
@@ -190,14 +276,14 @@ def get_forex_news(limit: int = 10) -> str:
     Returns headlines from Investing.com, FXStreet, DailyFX, ForexLive, and Reuters.
     """
     if not feedparser:
-        return "Error: feedparser library not installed. Cannot fetch Forex news."
+        return Unavailable("Error: feedparser library not installed. Cannot fetch Forex news.", "not_configured")
 
     all_headlines = []
     source_status = []
 
     for name, url in FOREX_RSS_FEEDS:
         try:
-            feed = feedparser.parse(url)
+            feed = _read_feed(url)
             count = 0
             for entry in feed.entries:
                 if count >= 2:  # Take 2 from each source for variety
@@ -213,7 +299,7 @@ def get_forex_news(limit: int = 10) -> str:
             source_status.append(f"✗ {name}: {str(e)[:30]}")
 
     if not all_headlines:
-        return f"No Forex news available. Source status: {', '.join(source_status)}"
+        return Unavailable(f"No Forex news available. Source status: {', '.join(source_status)}")
 
     # Format output
     output_lines = ["📰 Forex News (Free Feeds):"]
@@ -382,7 +468,7 @@ def analyze_social_sentiment(symbol: str) -> str:
     """
     sym = pair(symbol)
     if not sym:
-        return "Social Sentiment Unavailable: no symbol given."
+        return Unavailable("Social Sentiment Unavailable: no symbol given.")
 
     tweets, twitter_result, twitter_state = _recent_tweets(sym)
     titles, reddit_result, reddit_state = _recent_reddit_titles(sym)
@@ -391,7 +477,7 @@ def analyze_social_sentiment(symbol: str) -> str:
 
     if not configured:
         _sentiment_cache.set(sym, 0, configured=False)
-        return "\n".join(
+        return Unavailable("\n".join(
             [
                 f"Social Sentiment Unavailable for {sym}: No sentiment APIs configured.",
                 "To enable social feeds:",
@@ -399,7 +485,12 @@ def analyze_social_sentiment(symbol: str) -> str:
                 "2. Reddit: Create an app at https://www.reddit.com/prefs/apps and set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET",
                 "The Falling Knife check has no data source and treats sentiment as neutral (0.0).",
             ]
-        )
+        ), "not_configured")
+
+    if not texts and "ok" not in (twitter_state, reddit_state):
+        # Every configured source errored: say so, rather than an empty report that reads as calm.
+        _sentiment_cache.set(sym, 0, configured=True)
+        return Unavailable("\n".join([twitter_result, reddit_result]))
 
     lines = [twitter_result, reddit_result]
     if texts:
@@ -418,34 +509,75 @@ def analyze_social_sentiment(symbol: str) -> str:
 
 def fetch_financial_news(symbol: str) -> str:
     """
-    Fetch financial news using NewsAPI.
+    NewsAPI headlines about a pair ("EUR/USD" OR EURUSD) or another symbol.
     """
     api_key = os.getenv("NEWSAPI_KEY")
     if not api_key or not NewsApiClient:
-        return "Financial News: NEWSAPI_KEY missing or NewsApiClient not installed. (Zero-Mock Policy)."
+        return Unavailable("Financial News: NEWSAPI_KEY missing or NewsApiClient not installed. (Zero-Mock Policy).", "not_configured")
 
     try:
         newsapi = NewsApiClient(api_key=api_key)
         # Search for symbol + forex or finance
-        articles = newsapi.get_everything(q=f"{symbol} stock", language="en", sort_by="relevancy", page_size=3)
+        from core.fx_account import parse_pair
 
-        if articles["status"] == "ok" and articles["articles"]:
+        try:
+            base, quote_ccy = parse_pair(symbol)
+            query = f'"{base}/{quote_ccy}" OR {base}{quote_ccy}'
+        except ValueError:
+            query = symbol
+        articles = newsapi.get_everything(q=query, language="en", sort_by="relevancy", page_size=3)
+
+        if articles.get("status") != "ok":
+            return Unavailable(f"NewsAPI Error: {articles}")
+        if articles["articles"]:
             headlines = [f"{i + 1}. {a['title']} ({a['source']['name']})" for i, a in enumerate(articles["articles"])]
             return "Financial Headlines (NewsAPI):\n" + "\n".join(headlines)
         return "NewsAPI: No articles found."
     except Exception as e:
-        return f"NewsAPI Error: {str(e)}"
+        return Unavailable(f"NewsAPI Error: {str(e)}")
+
+
+def _public_http_url(url: str) -> str:
+    """The URL if it is http(s) to a public address, else ValueError. The feed is fetched by the
+    server, so a URL from the agent's prompt must not reach local files, loopback or private
+    networks (the approval API, cloud metadata, the operator's LAN)."""
+    import ipaddress
+    import socket
+    from urllib.parse import urlparse
+
+    parsed = urlparse(str(url).strip())
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise ValueError("only http(s) URLs are fetched")
+    try:
+        infos = socket.getaddrinfo(parsed.hostname, parsed.port or (443 if parsed.scheme == "https" else 80))
+    except socket.gaierror as e:
+        raise ValueError(f"cannot resolve {parsed.hostname}: {e}")
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if not ip.is_global:
+            raise ValueError(f"{parsed.hostname} resolves to a non-public address ({ip})")
+    return url
 
 
 def fetch_custom_feed(url: str, keyword: Optional[str] = None) -> str:
     """
-    Fetch headlines from a user-provided RSS or Atom feed.
+    Fetch headlines from a user-provided RSS or Atom feed (public http(s) URLs only).
     """
     if not feedparser:
-        return "Error: feedparser not installed."
+        return Unavailable("Error: feedparser not installed.", "not_configured")
 
     try:
-        feed = feedparser.parse(url)
+        target = _public_http_url(url)
+        for _ in range(4):  # follow a few redirects, re-checking each hop
+            response = requests.get(target, timeout=10, headers=HTTP_HEADERS, allow_redirects=False)
+            if response.is_redirect and response.headers.get("location"):
+                from urllib.parse import urljoin
+
+                target = _public_http_url(urljoin(target, response.headers["location"]))
+                continue
+            break
+        response.raise_for_status()
+        feed = feedparser.parse(response.content)
         headlines = []
         for entry in feed.entries[:10]:
             if keyword and keyword.lower() not in entry.title.lower():
@@ -456,4 +588,4 @@ def fetch_custom_feed(url: str, keyword: Optional[str] = None) -> str:
             return f"No headlines found in feed: {url}"
         return f"Custom Feed ({url}):\n" + "\n".join(headlines)
     except Exception as e:
-        return f"Error fetching custom feed: {str(e)}"
+        return Unavailable(f"Error fetching custom feed: {str(e)}")

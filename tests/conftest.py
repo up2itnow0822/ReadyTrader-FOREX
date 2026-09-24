@@ -32,6 +32,33 @@ def calm_market(monkeypatch):
     monkeypatch.setattr(trading, "_fetch_daily_bars", lambda symbol: market_bars.calm())
 
 
+# Offline quotes for the paper account and the size rule (quote currency per unit of base).
+TEST_RATES = {"EURUSD": 1.1044, "USDJPY": 150.0, "GBPUSD": 1.25, "EURGBP": 0.8835, "AUDUSD": 0.66, "USDCHF": 0.80}
+
+
+@pytest.fixture(autouse=True)
+def offline_quotes(monkeypatch):
+    """No test may fetch a live quote: fetch_ticker answers from TEST_RATES (unknown pairs raise)."""
+    from app.core.container import global_container
+
+    def fetch_ticker(symbol):
+        key = str(symbol).upper().replace("/", "").replace("=X", "")
+        if key not in TEST_RATES:
+            raise ValueError(f"no test rate for {symbol}")
+        return {"symbol": key, "last": TEST_RATES[key], "close": TEST_RATES[key]}
+
+    monkeypatch.setattr(global_container.exchange_provider, "fetch_ticker", fetch_ticker)
+
+
+@pytest.fixture(autouse=True)
+def fresh_paper_account(monkeypatch, tmp_path):
+    """Each test gets its own empty paper FX account (a temporary SQLite file)."""
+    from app.core.container import global_container
+    from core.fx_account import FxPaperAccount
+
+    monkeypatch.setattr(global_container, "paper_engine", FxPaperAccount(db_path=str(tmp_path / "paper.db")))
+
+
 @pytest.fixture
 def container():
     from app.core.container import global_container

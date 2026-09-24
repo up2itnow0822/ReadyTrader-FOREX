@@ -1,33 +1,64 @@
+# Smithery configuration: https://smithery.ai/docs/config#smitheryyaml
+# ReadyTrader-FOREX: a safety-governed forex trading MCP server (paper FX account, OANDA for live
+# orders, a Risk Guardian with a data-driven market guard). https://github.com/up2itnow0822/ReadyTrader-FOREX
+# Smithery builds the Dockerfile and starts the MCP server on stdio inside it. Paper mode is the
+# default and needs no keys; live trading needs PAPER_MODE=false AND LIVE_TRADING_ENABLED=true.
 startCommand:
   type: stdio
-  command: python
-  args:
-    - app/main.py
-name: ReadyTrader-FOREX
-description: >-
-  A specialized bridge that turns your AI Agent into a professional forex trading operator.
-  Features specific "Intelligence vs. Execution" separation of powers, a "Risk Guardian" safety layer,
-  and deep DeFi integrations (Aave, Uniswap).
-projectUrl: https://github.com/up2itnow/ReadyTrader-FOREX
-configSchema:
-  type: object
-  properties:
-    PAPER_MODE:
-      type: string
-      description: "Set to 'true' for zero-risk paper trading simulation (default)."
-      default: "true"
-    RISK_PROFILE:
-      type: string
-      description: "Risk enforcement profile ('conservative', 'moderate', 'aggressive')."
-      default: "conservative"
-    EXECUTION_APPROVAL_MODE:
-      type: string
-      description: "Set to 'approve_each' to require human confirmation for every trade."
-      default: "auto"
-    CEX_API_KEY:
-      type: string
-      description: "API Key for centralized exchange execution."
-    CEX_API_SECRET:
-      type: string
-      description: "API Secret for centralized exchange execution."
-  required: []
+  configSchema:
+    type: object
+    properties:
+      PAPER_MODE:
+        type: string
+        description: "Trade the paper FX account (default). 'false' for live brokerage orders."
+        default: "true"
+      LIVE_TRADING_ENABLED:
+        type: string
+        description: "Must be exactly 'true' (with PAPER_MODE=false) for any live order."
+        default: "false"
+      TRADING_HALTED:
+        type: string
+        description: "Kill switch: any value other than empty/false/0/no/off refuses every live order."
+        default: "false"
+      EXECUTION_APPROVAL_MODE:
+        type: string
+        description: "'auto' executes orders; 'approve_each' (or any other value) makes each order a proposal to approve."
+        default: "auto"
+      MAX_BROKERAGE_ORDER_AMOUNT:
+        type: string
+        description: "Largest live order in units of the base currency (unset = no limit)."
+      ALLOW_BROKERAGE_SYMBOLS:
+        type: string
+        description: "Comma-separated pairs live orders may trade, e.g. EURUSD,GBPUSD (unset = all)."
+      OANDA_API_KEY:
+        type: string
+        description: "OANDA API token (live mode only)."
+      OANDA_ACCOUNT_ID:
+        type: string
+        description: "OANDA account id (live mode only)."
+      OANDA_ENVIRONMENT:
+        type: string
+        description: "'practice' (default, OANDA's demo API) or 'live'."
+        default: "practice"
+      NEWSAPI_KEY:
+        type: string
+        description: "NewsAPI key for get_financial_news (optional)."
+      ALPHAVANTAGE_API_KEY:
+        type: string
+        description: "Alpha Vantage key for get_market_news (optional)."
+    required: []
+  commandFunction:
+    # Every setting is passed to the server as an environment variable of the same name.
+    |-
+    (config) => ({
+      command: 'python',
+      args: ['app/main.py'],
+      env: Object.fromEntries(
+        Object.entries(config || {})
+          .filter(([, value]) => value !== undefined && value !== null && value !== '')
+          .map(([key, value]) => [key, String(value)])
+      )
+    })
+  exampleConfig:
+    PAPER_MODE: "true"
+    EXECUTION_APPROVAL_MODE: "auto"
