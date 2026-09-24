@@ -1,0 +1,8 @@
+$ .venv/bin/python -W ignore /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_qa_validate.py 2>&1 | grep -v 'Warning\|compatible\|from \|warnings.warn'
+# at 2026-09-24T12:53:14+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+True {'allowed': True, 'needs_confirmation': False, 'reason': 'Trade looks safe.'}
+True {'allowed': True, 'needs_confirmation': True, 'reason': 'Trade looks safe but requires manual confirmation.'}
+
+
+exit=0
