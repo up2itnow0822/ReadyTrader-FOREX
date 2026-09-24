@@ -5,7 +5,7 @@ PAPER_MODE='false' ALPACA_PAPER=None -> live-path Alpaca endpoint: BaseURL.TRADI
 PAPER_MODE='false' ALPACA_PAPER='true' -> live-path Alpaca endpoint: BaseURL.TRADING_LIVE
 PAPER_MODE='false' ALPACA_PAPER='false' -> live-path Alpaca endpoint: BaseURL.TRADING_LIVE
 env.example:20:# ALPACA_API_KEY=PK******************
-env.example:21:# ALPACA_SECRET_KEY=PK******************
+env.example:21:# ALPACA_SECRET_KEY=***********************************
 env.example:22:# ALPACA_BASE_URL=https://paper-api.alpaca.markets
 
 
