@@ -17,10 +17,21 @@ Done. Next: run `python examples/stress_test_demo.py` for the synthetic stress l
 exit=0
 === python examples/verify_live_strategy.py
 Traceback (most recent call last):
-  File "/tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/tools/setup_wizard.py", line 8, in "module"
+  File "/tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/examples/verify_live_strategy.py", line 8, in <module>
     from execution.stock_executor import StockExecutor
 ModuleNotFoundError: No module named 'execution.stock_executor'
+exit=1
+=== what paper_quick_demo exercises vs what the server trades in:
+examples/paper_quick_demo.py:30:    from core.paper import PaperTradingEngine
+examples/paper_quick_demo.py:34:        engine = PaperTradingEngine(db_path=db_path)
+examples/paper_quick_demo.py:39:        print(engine.deposit(user_id, "USDC", 10_000.0))
+examples/paper_quick_demo.py:41:        print("\n2) Place a limit BUY for ETH/USDT")
+examples/paper_quick_demo.py:42:        print(engine.place_limit_order(user_id, "buy", "ETH/USDT", amount=1.0, price=2000.0))
+examples/paper_quick_demo.py:45:        fill_msgs = engine.check_open_orders("ETH/USDT", current_price=1950.0)
+examples/paper_quick_demo.py:50:            "USDC": engine.get_balance(user_id, "USDC"),
+examples/paper_quick_demo.py:57:        print(engine.execute_trade(user_id, "sell", "ETH/USDT", amount=1.0, price=2200.0, rationale="Demo exit"))
+app/core/container.py:5:from core.fx_account import FxPaperAccount
+app/core/container.py:38:        self.paper_engine = FxPaperAccount() if settings.PAPER_MODE else None
 
-examples/verify_live_strategy.py
 
 exit=0
