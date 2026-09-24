@@ -1,0 +1,12 @@
+$ .venv/bin/python -W ignore /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_etrade_urls.py
+# at 2026-09-24T13:08:06+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+ETRADE_SANDBOX='true': https://apisb.etrade.com (place.json) | https://apisb.etrade.com (balance.json)
+ETRADE_SANDBOX='1': https://apisb.etrade.com (place.json) | https://apisb.etrade.com (balance.json)
+ETRADE_SANDBOX='yes': https://apisb.etrade.com (place.json) | https://apisb.etrade.com (balance.json)
+ETRADE_SANDBOX='on': https://apisb.etrade.com (place.json) | https://apisb.etrade.com (balance.json)
+ETRADE_SANDBOX='TRUE': https://apisb.etrade.com (place.json) | https://apisb.etrade.com (balance.json)
+ETRADE_SANDBOX=None: https://api.etrade.com (place.json) | https://api.etrade.com (balance.json)
+
+
+exit=0

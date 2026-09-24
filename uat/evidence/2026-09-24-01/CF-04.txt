@@ -1,0 +1,12 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_alpaca.sh
+# at 2026-09-24T11:39:26+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+PAPER_MODE='false' ALPACA_PAPER=None -> live-path Alpaca endpoint: BaseURL.TRADING_LIVE
+PAPER_MODE='false' ALPACA_PAPER='true' -> live-path Alpaca endpoint: BaseURL.TRADING_LIVE
+PAPER_MODE='false' ALPACA_PAPER='false' -> live-path Alpaca endpoint: BaseURL.TRADING_LIVE
+env.example:20:# ALPACA_API_KEY=PK******************
+env.example:21:# ALPACA_SECRET_KEY=PK******************
+env.example:22:# ALPACA_BASE_URL=https://paper-api.alpaca.markets
+
+
+exit=0
