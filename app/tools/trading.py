@@ -5,8 +5,13 @@ from fastmcp import FastMCP
 
 from app.core.config import settings
 from app.core.container import global_container
-from intelligence import get_cached_sentiment_score
-from intelligence.core import get_news_status, get_volatility_status
+from intelligence import get_cached_sentiment
+from intelligence.core import (
+    NEWS_STATUS_IMPLEMENTED,
+    VOLATILITY_STATUS_IMPLEMENTED,
+    get_news_status,
+    get_volatility_status,
+)
 
 
 def _json_ok(data: Dict[str, Any] | None = None) -> str:
@@ -17,6 +22,64 @@ def _json_ok(data: Dict[str, Any] | None = None) -> str:
 def _json_err(code: str, message: str, data: Dict[str, Any] | None = None) -> str:
     payload = {"ok": False, "error": {"code": code, "message": message, "data": data or {}}}
     return json.dumps(payload, indent=2, sort_keys=True)
+
+
+NOT_MEASURED_HINT = (
+    "This server does not score sentiment. Call get_social_sentiment(symbol) to read the posts, "
+    "and pass your own reading as sentiment_score on [-1, +1] if you want the Falling Knife rule "
+    "to act. Left unset it is neutral (0.0) and the rule cannot fire."
+)
+NO_SOURCE_HINT = (
+    "No X or Reddit credentials are set, so there are no posts to read either. "
+    "Set TWITTER_BEARER_TOKEN and/or REDDIT_CLIENT_ID + REDDIT_CLIENT_SECRET."
+)
+
+
+def _sentiment_context(symbol: str, supplied: float | None) -> Dict[str, Any]:
+    """
+    What the Falling Knife rule is working from, so a neutral 0.0 is never mistaken for a
+    measured calm market. `source` is the whole point: this server measures nothing, so a
+    non-zero score is always the caller's own judgement and is recorded as such.
+    """
+    entry = get_cached_sentiment(symbol)
+    context: Dict[str, Any] = {
+        "score": 0.0,
+        "source": "unmeasured",
+        "status": "not_measured",
+        "posts_available": entry["texts"] if entry else 0,
+        "posts_age_seconds": entry["age_seconds"] if entry else None,
+        "hint": NOT_MEASURED_HINT,
+    }
+    if entry is not None and not entry["configured"]:
+        context["status"] = "no_source_configured"
+        context["hint"] = NO_SOURCE_HINT
+    if supplied is not None:
+        score = max(-1.0, min(1.0, float(supplied)))
+        context["score"] = score
+        context["source"] = "agent_supplied"
+        context["status"] = "agent_supplied"
+        context.pop("hint", None)
+    return context
+
+
+def inactive_rules() -> Dict[str, str]:
+    """
+    Risk rules that are wired into the Guardian but cannot currently fire.
+
+    Reported alongside every verdict so that "allowed" is never read as "fully checked".
+    """
+    inactive = {}
+    if not VOLATILITY_STATUS_IMPLEMENTED:
+        inactive["volatility_halt"] = (
+            "get_volatility_status() is not implemented and always reports normal volatility (1.0), "
+            "so the 3x ATR flash-crash halt never fires."
+        )
+    if not NEWS_STATUS_IMPLEMENTED:
+        inactive["news_guard"] = (
+            "get_news_status() is not implemented and always reports no news window, "
+            "so trading is never suspended around high-impact releases."
+        )
+    return inactive
 
 
 def register_trading_tools(mcp: FastMCP):
@@ -35,10 +98,24 @@ def register_trading_tools(mcp: FastMCP):
         return _json_ok({"result": global_container.paper_engine.reset_wallet("agent_zero")})
 
     @mcp.tool()
-    def validate_trade_risk(side: str, symbol: str, amount_usd: float, portfolio_value: float) -> str:
-        """[GUARDIAN] Validate if a trade is safe to execute."""
+    def validate_trade_risk(
+        side: str, symbol: str, amount_usd: float, portfolio_value: float, sentiment_score: float | None = None
+    ) -> str:
+        """
+        [GUARDIAN] Validate if a trade is safe to execute.
+
+        `sentiment_score` is optional and is YOUR reading of the market on [-1, +1], not a
+        measurement this server makes. Below -0.5 the Falling Knife rule blocks a BUY. Call
+        get_social_sentiment(symbol) first to read the posts and form that judgement. Left
+        unset, sentiment is neutral (0.0) and the rule cannot fire.
+
+        Returns `result` ({allowed, reason}), `sentiment` ({score, source, status,
+        posts_available, posts_age_seconds}) and `inactive_rules` - risk rules that are wired
+        up but cannot currently fire, so an unblocked trade is never mistaken for a fully
+        checked one.
+        """
         try:
-            sentiment_score = get_cached_sentiment_score(symbol)
+            sentiment = _sentiment_context(symbol, sentiment_score)
             daily_loss = 0.0
             drawdown = 0.0
 
@@ -51,7 +128,7 @@ def register_trading_tools(mcp: FastMCP):
             news_block = get_news_status()
 
             result = global_container.risk_guardian.validate_trade(
-                side, symbol, amount_usd, portfolio_value, sentiment_score, daily_loss, drawdown, volatility_score=vol_score, is_news_event_window=news_block
+                side, symbol, amount_usd, portfolio_value, sentiment["score"], daily_loss, drawdown, volatility_score=vol_score, is_news_event_window=news_block
             )
             return _json_ok(
                 {
@@ -59,6 +136,8 @@ def register_trading_tools(mcp: FastMCP):
                     "symbol": symbol,
                     "amount_usd": amount_usd,
                     "result": result,
+                    "sentiment": sentiment,
+                    "inactive_rules": inactive_rules(),
                 }
             )
         except Exception as e:

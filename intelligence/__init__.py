@@ -2,11 +2,13 @@ from .core import (
     analyze_social_sentiment,
     fetch_financial_news,
     fetch_rss_news,
+    get_cached_sentiment,
     get_cached_sentiment_score,
     get_forex_market_brief,
     get_forex_news,
     get_market_news,
     get_market_sentiment,
+    pair,
 )
 from .insights import InsightStore, MarketInsight
 from .technical_analysis import (
@@ -18,7 +20,9 @@ __all__ = [
     "analyze_social_sentiment",
     "fetch_financial_news",
     "fetch_rss_news",
+    "get_cached_sentiment",
     "get_cached_sentiment_score",
+    "pair",
     "get_forex_market_brief",
     "get_forex_news",
     "get_market_sentiment",
