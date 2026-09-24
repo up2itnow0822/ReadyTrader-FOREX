@@ -81,23 +81,32 @@ def get_market_sentiment() -> str:
     return f"Forex Sentiment:\n{dxy}\n{cal}"
 
 
-# These two gates are not implemented. They return the value that lets every trade through, so
-# the Risk Guardian's volatility halt and news guard never fire. That is reported through
-# validate_trade_risk's `inactive_rules`, so an operator can see the gap rather than assume the
-# protection is running. Implementing them means wiring ATR (intelligence/regime.py already
-# computes it) and an economic calendar into the check without making a documented pure
-# validation call do network I/O per trade.
-VOLATILITY_STATUS_IMPLEMENTED = False
+# The volatility halt is implemented from daily bars (core/market_guard.py). The news guard is not:
+# get_news_status() returns the permissive value, so validate_trade_risk reports it under
+# `inactive_rules` rather than let an "allowed" verdict pass for a fully checked one.
+VOLATILITY_STATUS_IMPLEMENTED = True
 NEWS_STATUS_IMPLEMENTED = False
 
 
-def get_volatility_status(symbol: str) -> float:
+def get_volatility_status(symbol: str) -> Optional[float]:
     """
-    Volatility multiplier (current ATR / average ATR); > 3.0 would halt trading.
+    Today's close-to-close move over the mean of the 20 before it (core/market_guard.py); above
+    VOLATILITY_HALT_RATIO (4.5) the Risk Guardian halts every trade on the pair.
 
-    NOT IMPLEMENTED: always returns 1.0 (normal), so the volatility halt never fires.
+    Returns None when it cannot be computed (no data, too few bars, no bar yet for today) - never a
+    made-up "normal".
+    validate_trade_risk and the order path read the same number from their market reading.
     """
-    return 1.0
+    from app.core.container import global_container
+    from core import market_guard
+
+    try:
+        bars = global_container.exchange_provider.fetch_ohlcv(
+            symbol, market_guard.TIMEFRAME, limit=market_guard.BARS_REQUESTED
+        )
+    except Exception:
+        return None
+    return market_guard.assess(bars, session=market_guard.FX_SESSION).volatility_ratio
 
 
 def get_news_status() -> bool:

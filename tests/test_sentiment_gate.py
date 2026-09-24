@@ -8,8 +8,9 @@ Three defects motivated these tests.
    rule - which blocks below -0.5 - could never fire.
 2. `place_stock_order` (and so every order entry point) passed a hardcoded 0.0 for sentiment and
    passed neither daily loss nor drawdown, so three risk rules were inert on every real order.
-3. `get_volatility_status` and `get_news_status` are unimplemented stubs that always return the
-   permissive value, so the volatility halt and news guard silently never fire.
+3. `get_volatility_status` and `get_news_status` were unimplemented stubs that always returned the
+   permissive value, so the volatility halt and news guard silently never fired. The volatility
+   halt now reads daily bars (tests/test_market_guard.py); the news guard is still a stub.
 
 This server measures no sentiment (see `analyze_social_sentiment`), so these tests pin the honest
 contract: nothing fabricates a score, a neutral 0.0 is always reported as unmeasured, an agent may
@@ -229,36 +230,34 @@ def test_an_agent_supplied_score_is_clamped_to_the_documented_range(given, expec
 # ---------------------------------------------------------------- unimplemented rules are declared
 
 
-def test_the_stub_gates_are_declared_inactive():
+def test_the_stub_gate_is_declared_inactive():
     """An 'allowed' verdict must never be read as a fully checked one."""
     inactive = inactive_rules()
-    assert "volatility_halt" in inactive
     assert "news_guard" in inactive
-    assert "not implemented" in inactive["volatility_halt"]
+    assert "volatility_halt" not in inactive  # implemented: reads daily bars
 
 
-def test_the_stub_gates_really_are_permissive():
-    """Pins why they are declared: they return the value that lets every trade through."""
-    assert core.get_volatility_status(SYMBOL) == 1.0  # halt needs > 3.0
+def test_the_news_stub_really_is_permissive():
+    """Pins why it is declared: it returns the value that lets every trade through."""
     assert core.get_news_status() is False
-    assert core.VOLATILITY_STATUS_IMPLEMENTED is False
     assert core.NEWS_STATUS_IMPLEMENTED is False
+    assert core.VOLATILITY_STATUS_IMPLEMENTED is True
 
 
-def test_implementing_a_gate_removes_it_from_the_inactive_list(monkeypatch):
-    """The declaration must track the code, not be a hardcoded string that rots."""
+def test_the_declaration_tracks_the_code(monkeypatch):
+    """The declaration must follow the implementation flags, not be a hardcoded string that rots."""
     import app.tools.trading as trading
 
-    monkeypatch.setattr(trading, "VOLATILITY_STATUS_IMPLEMENTED", True)
-    assert "volatility_halt" not in trading.inactive_rules()
-    assert "news_guard" in trading.inactive_rules()
+    monkeypatch.setattr(trading, "VOLATILITY_STATUS_IMPLEMENTED", False)
+    assert "not implemented" in trading.inactive_rules()["volatility_halt"]
+    monkeypatch.setattr(trading, "NEWS_STATUS_IMPLEMENTED", True)
+    assert "news_guard" not in trading.inactive_rules()
 
 
 def test_the_trade_check_reports_inactive_rules():
-    from app.tools.trading import register_trading_tools  # noqa: F401
-
     payload = json.loads(_validate("buy", SYMBOL, 1000.0, 100000.0))
-    assert "volatility_halt" in payload["data"]["inactive_rules"]
+    assert "news_guard" in payload["data"]["inactive_rules"]
+    assert "volatility_halt" not in payload["data"]["inactive_rules"]
 
 
 # ---------------------------------------------------------------- the trade check

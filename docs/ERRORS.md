@@ -56,8 +56,8 @@ Common examples (non-exhaustive):
 ### Risk guardian (paper mode)
 
 - **`risk_blocked`**
-  - Meaning: Paper-mode risk checks blocked the trade (e.g., too large relative to portfolio).
-  - Fix: reduce size, deposit more paper funds, or adjust the strategy parameters.
+  - Meaning: the Risk Guardian blocked the trade: too large relative to the portfolio, drawdown or daily-loss limits, your own bearish `sentiment_score`, the price-based Falling Knife rule, or the volatility halt. The error data carries the `market` reading (see `docs/FALLING_KNIFE.md`).
+  - Fix: reduce size or deposit more paper funds for sizing limits; for a Falling Knife block or a volatility halt, wait for the pair to stop falling or for the move to subside. If the reason says the check could not run, the daily bars were unreadable - see `MARKET_GUARD_ON_DATA_ERROR`.
 - **`risk_calc_error`**
   - Meaning: Paper-mode risk calculations failed; ReadyTrader-Crypto fails closed (safer).
   - Fix: check paper DB health, ensure prices/metrics can be computed, rerun.
