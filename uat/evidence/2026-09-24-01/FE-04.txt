@@ -1,0 +1,19 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_fe_more.sh FE-04
+# at 2026-09-24T12:17:57+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== API stopped: the page must say so (not spin)
+snap exit=1
+assertions [('not reachable', True)]
+The API is not reachable at http://localhost:8000. Start it with: python app/api_server.py
+0
+0
+=== phone width 390x844 with two open positions
+snap exit=0
+
+--- stderr ---
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named 'playwright'
+
+
+exit=0

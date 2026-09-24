@@ -1,0 +1,12 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_fe_retest.sh
+# at 2026-09-24T11:38:00+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+CALL deposit_paper_funds {"asset": "USD", "amount": 25000} -> { "data": { "account": { "cash_usd": 25000.0, "equity_usd": 25000.0, "free_margin_usd": 25000.0, "leverage": 30.0, "margin_used_usd": 0.0, "net_deposits_usd": 25000.0, "positions": [], "unpriced_posit
+API portfolio: {"balances":{"USD":25000.0},"positions":[],"metrics":{"equity":25000.0,"cash":25000.0,"unrealized_pnl":0.0,"margin_used":0.0,"free_margin":25000.0,"leverage":30
+snap exit=0
+assertions [('25,000', True)] failed_requests []
+      1 Paper Mode
+hrefs: href="/" href="/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_956a0d3a._.js" href="/_next/static/chunks/src_app_globals_91e4631d.css" href="/favicon.ico?favicon.0b3bf435.ico" 
+
+
+exit=0

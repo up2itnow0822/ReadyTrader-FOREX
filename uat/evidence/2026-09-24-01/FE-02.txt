@@ -1,0 +1,13 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_fe.sh
+# at 2026-09-24T11:06:32+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+CALL deposit_paper_funds {"asset": "USD", "amount": 25000} -> { "data": { "message": "Deposited 25000.0 USD. New Balance: 25000.0" }, "ok": true }
+API portfolio: {"balances":{"balance":100000.0,"equity":100000.0,"margin_used":0.0,"free_margin":100000.0,"cash":100000.0,"buying_power":3000000.0},"positions":[],"metrics":{"
+snap exit=1
+assertions [('25,000', False)] failed_requests []
+      1 $48,500.00
+      1 +7.4% Today
+      2 Paper Mode
+
+
+exit=0
