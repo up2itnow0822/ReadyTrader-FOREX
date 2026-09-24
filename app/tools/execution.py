@@ -75,6 +75,51 @@ def place_forex_order(
     )
 
 
+def pre_trade_check(
+    symbol: str, side: str, amount: float, price: float = 0.0, sentiment_score: float | None = None
+) -> Dict[str, Any]:
+    """
+    The Risk Guardian check an order must pass, with fresh market data: {allowed, reason,
+    sentiment, market}. place_stock_order runs it before anything is proposed or executed, and
+    the approval API (app/api_server.py) runs it again at execution time, because a proposal can
+    wait up to its expiry while the market moves.
+    """
+    portfolio_value = 100000.0
+    daily_loss = 0.0
+    drawdown = 0.0
+    # The order path previously hardcoded sentiment to 0.0 and passed neither daily loss
+    # nor drawdown, so three of the Guardian's rules were inert on every real order even
+    # though validate_trade_risk applied them.
+    sentiment = _sentiment_context(symbol, sentiment_score)
+    # Previously the order path passed neither a volatility score nor the news window, so the
+    # volatility halt could not fire on a real order even once it was implemented.
+    market = _market_context(symbol)
+    if settings.PAPER_MODE:
+        metrics = global_container.paper_engine.get_risk_metrics("agent_zero")
+        portfolio_value = metrics.get("equity", 100000.0)
+        daily_loss = metrics.get("daily_pnl_pct", 0.0)
+        drawdown = metrics.get("drawdown_pct", 0.0)
+
+    risk_result = global_container.risk_guardian.validate_trade(
+        side=side,
+        symbol=symbol,
+        amount_usd=amount * (price or 1.0),
+        portfolio_value=portfolio_value,
+        sentiment_score=sentiment["score"],
+        daily_loss_pct=daily_loss,
+        current_drawdown_pct=drawdown,
+        market=market,
+        volatility_score=market.get("volatility_ratio"),
+        is_news_event_window=get_news_status(),
+    )
+    return {
+        "allowed": bool(risk_result.get("allowed", False)),
+        "reason": risk_result.get("reason", "Unknown risk rejection"),
+        "sentiment": sentiment,
+        "market": market,
+    }
+
+
 def place_stock_order(
     symbol: str,
     side: str,
@@ -95,41 +140,12 @@ def place_stock_order(
 
     # 1. Risk Guardian Check
     try:
-        # Get portfolio value (simplified)
-        portfolio_value = 100000.0
-        daily_loss = 0.0
-        drawdown = 0.0
-        # The order path previously hardcoded sentiment to 0.0 and passed neither daily loss
-        # nor drawdown, so three of the Guardian's rules were inert on every real order even
-        # though validate_trade_risk applied them.
-        sentiment = _sentiment_context(symbol, sentiment_score)
-        # Previously the order path passed neither a volatility score nor the news window, so the
-        # volatility halt could not fire on a real order even once it was implemented.
-        market = _market_context(symbol)
-        if settings.PAPER_MODE:
-            metrics = global_container.paper_engine.get_risk_metrics("agent_zero")
-            portfolio_value = metrics.get("equity", 100000.0)
-            daily_loss = metrics.get("daily_pnl_pct", 0.0)
-            drawdown = metrics.get("drawdown_pct", 0.0)
-
-        risk_result = global_container.risk_guardian.validate_trade(
-            side=side,
-            symbol=symbol,
-            amount_usd=amount * (price or 1.0),
-            portfolio_value=portfolio_value,
-            sentiment_score=sentiment["score"],
-            daily_loss_pct=daily_loss,
-            current_drawdown_pct=drawdown,
-            market=market,
-            volatility_score=market.get("volatility_ratio"),
-            is_news_event_window=get_news_status(),
-        )
-
-        if not risk_result.get("allowed", False):
+        check = pre_trade_check(symbol, side, amount, price, sentiment_score)
+        if not check["allowed"]:
             return _json_err(
                 "risk_blocked",
-                risk_result.get("reason", "Unknown risk rejection"),
-                {"sentiment": sentiment, "market": market, "inactive_rules": inactive_rules()},
+                check["reason"],
+                {"sentiment": check["sentiment"], "market": check["market"], "inactive_rules": inactive_rules()},
             )
 
         # 2. Human-in-the-loop check
@@ -144,6 +160,8 @@ def place_stock_order(
                     "order_type": order_type,
                     "rationale": rationale,
                     "exchange": exchange,
+                    # Kept so the approval path can re-run the same check at execution time.
+                    "sentiment_score": sentiment_score,
                 },
             )
             return _json_ok(

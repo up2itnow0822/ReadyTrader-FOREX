@@ -11,6 +11,7 @@ from app.core.config import settings
 
 # Import core components from the main server
 from app.core.container import global_container
+from app.tools.execution import pre_trade_check
 from marketdata.store import TickerSnapshot
 from observability import build_log_context, log_event
 
@@ -116,6 +117,21 @@ async def approve_trade(req: ApprovalRequest):
             # 2. Execute based on kind
             if proposal.kind == "stock_order":
                 p = proposal.payload
+
+                # A proposal can wait until it expires while the market moves: re-run the Risk
+                # Guardian, with fresh daily bars, before anything executes. The volatility halt
+                # applies to both sides, so a SELL can be refused here too.
+                check = pre_trade_check(p["symbol"], p["side"], p["amount"], p.get("price", 0.0), p.get("sentiment_score"))
+                if not check["allowed"]:
+                    log_event(
+                        "api_approval_risk_blocked",
+                        ctx=API_CTX,
+                        data={"request_id": req.request_id, "reason": check["reason"]},
+                    )
+                    raise HTTPException(
+                        status_code=409,
+                        detail={"code": "risk_blocked", "reason": check["reason"], "market": check["market"]},
+                    )
 
                 if settings.PAPER_MODE:
                     # Use Forex Paper Brokerage
