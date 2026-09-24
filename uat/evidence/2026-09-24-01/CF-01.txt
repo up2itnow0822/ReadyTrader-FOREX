@@ -8,6 +8,5 @@ in example but never read: ALPACA_BASE_URL ALPACA_SECRET_KEY HTTP_TIMEOUT_SEC TA
 14:API_HOST=0.0.0.0
 21:# ALPACA_SECRET_KEY=***********************************
 
-21:API_HOST=0.0.0.0
 
-21:# ALPACA_SECRET_KEY=***********************************
+exit=0
