@@ -7,15 +7,17 @@ real-bar fixture pins the shipped code to actual episodes, including ones it mus
 """
 
 import json
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock
+from zoneinfo import ZoneInfo
 
 import market_bars as mb
 import pytest
 
 import app.tools.trading as trading
 import intelligence.core as core
-from app.core.config import settings
+from app.core.config import safety_switch_on, settings
 from app.core.container import global_container
 from app.tools.execution import place_forex_order, place_limit_order, place_market_order, place_stock_order
 from core import market_guard as mg
@@ -355,3 +357,180 @@ def test_get_volatility_status_is_none_when_it_cannot_be_computed(monkeypatch):
     assert core.get_volatility_status(SYMBOL) is None
     monkeypatch.setattr(global_container, "exchange_provider", FakeProvider(bars=mb.calm(n=5)))
     assert core.get_volatility_status(SYMBOL) is None
+
+
+# ---------------------------------------------------------------- today's session must have a bar
+
+LONDON = ZoneInfo("Europe/London")
+
+
+def london_ms(year, month, day, hour=0, minute=0):
+    return int(datetime(year, month, day, hour, minute, tzinfo=LONDON).timestamp() * 1000)
+
+
+def bars_through(year, month, day, maker=mb.calm, **kw):
+    """Daily bars stamped at London midnight, as yfinance stamps FX bars, the last on that date."""
+    return maker(end_ms=london_ms(year, month, day), **kw)
+
+
+def at(monkeypatch, now_ms):
+    monkeypatch.setattr(mg, "_now_ms", lambda: now_ms)
+
+
+def test_the_fx_session_is_the_london_weekday():
+    assert (mg.FX_SESSION.tz, mg.FX_SESSION.open_hhmm, mg.FX_SESSION.weekdays) == ("Europe/London", "00:00", (0, 1, 2, 3, 4))
+
+
+def test_yesterdays_bar_is_stale_during_todays_session():
+    # Thursday 2026-09-24, 10:00 London: the provider still ends at Wednesday.
+    reading = mg.assess(bars_through(2026, 9, 23), now_ms=london_ms(2026, 9, 24, 10), session=mg.FX_SESSION)
+    assert reading.status == mg.STATUS_STALE and reading.volatility_ratio is None
+    assert "no daily bar yet for today's session (2026-09-24" in reading.detail
+
+
+def test_a_halt_today_is_not_hidden_by_yesterdays_calm_bars():
+    calm_until_yesterday = bars_through(2026, 9, 23)
+    assert mg.assess(calm_until_yesterday, now_ms=london_ms(2026, 9, 24, 10)).status == mg.STATUS_OK
+    assert mg.assess(calm_until_yesterday, now_ms=london_ms(2026, 9, 24, 10), session=mg.FX_SESSION).status == mg.STATUS_STALE
+
+
+@pytest.mark.parametrize(
+    "now,last_bar",
+    [
+        (london_ms(2026, 9, 24, 10), (2026, 9, 24)),  # today's partial bar
+        (london_ms(2026, 9, 26, 12), (2026, 9, 25)),  # Saturday
+        (london_ms(2026, 9, 27, 22, 30), (2026, 9, 25)),  # Sunday evening: no London session day yet
+        (london_ms(2026, 12, 3, 15), (2026, 12, 3)),  # a winter (GMT) day
+    ],
+    ids=["today", "saturday", "sunday-evening", "winter"],
+)
+def test_outside_a_missing_session_the_last_bar_is_current(now, last_bar):
+    assert mg.assess(bars_through(*last_bar), now_ms=now, session=mg.FX_SESSION).status == mg.STATUS_OK
+
+
+def test_monday_needs_mondays_bar():
+    reading = mg.assess(bars_through(2026, 9, 25), now_ms=london_ms(2026, 9, 28, 0, 30), session=mg.FX_SESSION)
+    assert reading.status == mg.STATUS_STALE
+
+
+def test_a_live_buy_with_no_bar_for_today_is_blocked(monkeypatch):
+    monkeypatch.setattr(settings, "PAPER_MODE", False)
+    monkeypatch.setattr(settings, "MARKET_GUARD_ON_DATA_ERROR", "")
+    at(monkeypatch, london_ms(2026, 9, 24, 10))
+    use_bars(monkeypatch, bars_through(2026, 9, 23))
+    payload = validate("buy")
+    assert payload["data"]["result"]["allowed"] is False
+    assert payload["data"]["market"]["status"] == "stale"
+    assert "today's session" in payload["data"]["market"]["detail"]
+
+
+def test_a_sell_with_no_bar_for_today_is_not_blocked(monkeypatch):
+    """Missing data never blocks a SELL; the halt needs today's move, which is not there to read."""
+    monkeypatch.setattr(settings, "PAPER_MODE", False)
+    monkeypatch.setattr(settings, "MARKET_GUARD_ON_DATA_ERROR", "")
+    at(monkeypatch, london_ms(2026, 9, 24, 10))
+    use_bars(monkeypatch, bars_through(2026, 9, 23, maker=mb.spike, move=0.06))
+    payload = validate("sell")
+    assert payload["data"]["result"]["allowed"] is True
+    assert payload["data"]["market"]["status"] == "stale"
+
+
+def test_get_volatility_status_is_none_without_todays_bar(monkeypatch):
+    at(monkeypatch, london_ms(2026, 9, 24, 10))
+    monkeypatch.setattr(global_container, "exchange_provider", FakeProvider(bars=bars_through(2026, 9, 23, maker=mb.spike)))
+    assert core.get_volatility_status(SYMBOL) is None
+    monkeypatch.setattr(global_container, "exchange_provider", FakeProvider(bars=bars_through(2026, 9, 24, maker=mb.spike)))
+    assert core.get_volatility_status(SYMBOL) > mg.VOLATILITY_HALT_RATIO
+
+
+# ---------------------------------------------------------------- the on/off switch
+
+
+@pytest.mark.parametrize(
+    "raw,on",
+    [("true", True), ("", True), (None, True), ("treu", True), ("1", True), ("yes", True),
+     ("false", False), (" FALSE ", False), ("0", False), ("no", False), ("off", False)],
+)
+def test_only_an_explicit_off_value_disables_the_guard(raw, on):
+    assert safety_switch_on(raw) is on
+
+
+# ---------------------------------------------------------------- approval-time recheck
+
+
+@pytest.fixture
+def approvals(monkeypatch, quiet_ledger):
+    from fastapi.testclient import TestClient
+
+    import app.api_server as api
+
+    monkeypatch.setattr(settings, "PAPER_MODE", True)
+    monkeypatch.setattr(settings, "EXECUTION_APPROVAL_MODE", "approve_each")
+    executed = []
+
+    class PaperBrokerage:
+        def is_available(self):
+            return True
+
+        def place_order(self, **kw):
+            executed.append(kw)
+            return {"status": "filled"}
+
+    monkeypatch.setattr(global_container, "forex_paper_brokerage", PaperBrokerage())
+    return TestClient(api.app), executed
+
+
+def propose(side):
+    payload = json.loads(place_stock_order(SYMBOL, side, 10.0, price=1.05))
+    assert payload["data"]["status"] == "pending_approval", payload
+    return payload["data"]
+
+
+def approve(client, proposal):
+    return client.post(
+        "/api/approve-trade",
+        json={"request_id": proposal["request_id"], "confirm_token": proposal["confirm_token"], "approve": True},
+    )
+
+
+def test_an_approved_buy_is_rechecked_against_fresh_bars(monkeypatch, approvals):
+    client, executed = approvals
+    proposal = propose("buy")
+    use_bars(monkeypatch, mb.collapse(drop=0.08))  # the pair falls while the proposal waits
+    response = approve(client, proposal)
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "risk_blocked"
+    assert response.json()["detail"]["market"]["falling_knife"] is True
+    assert executed == []
+
+
+def test_an_approved_sell_is_refused_during_a_volatility_halt(monkeypatch, approvals):
+    client, executed = approvals
+    proposal = propose("sell")
+    use_bars(monkeypatch, mb.spike(move=0.06))
+    response = approve(client, proposal)
+    assert response.status_code == 409 and "Volatility Halt" in response.json()["detail"]["reason"]
+    assert executed == []
+
+
+def test_an_approved_trade_on_a_calm_tape_executes(approvals):
+    client, executed = approvals
+    response = approve(client, propose("buy"))
+    assert response.status_code == 200 and response.json()["ok"] is True
+    assert len(executed) == 1 and executed[0]["side"] == "buy"
+
+
+def test_the_recheck_uses_the_proposals_sentiment_reading(monkeypatch, approvals):
+    client, executed = approvals
+    guardian = global_container.risk_guardian
+    seen = []
+    real = guardian.validate_trade
+
+    def spy(*args, **kwargs):
+        seen.append(kwargs.get("sentiment_score"))
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(guardian, "validate_trade", spy)
+    payload = json.loads(place_stock_order(SYMBOL, "buy", 10.0, price=1.05, sentiment_score=-0.4))
+    assert approve(client, payload["data"]).status_code == 200
+    assert seen == [-0.4, -0.4]  # at proposal and again at approval

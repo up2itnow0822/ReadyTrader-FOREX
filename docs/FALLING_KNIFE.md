@@ -46,12 +46,24 @@ dislocation, in either direction.
   `detail`, the `rule` thresholds and the data-error policy. A blocked order returns the same
   block in its error data. `inactive_rules` lists any rule that cannot fire (the news guard is
   still a stub; both rules here appear if `MARKET_GUARD_ENABLED=false`).
+- **Approvals**: with `EXECUTION_APPROVAL_MODE=approve_each`, an order is checked when it is
+  proposed and checked again, with fresh bars, when `/api/approve-trade` approves it: a proposal
+  can wait until it expires while the market moves. An approval the check refuses (a Falling
+  Knife BUY, or either side during a volatility halt) answers `409` with
+  `{"code": "risk_blocked", "reason", "market"}` and nothing executes.
 
 ### When the bars cannot be read
 
-`status` is `ok`, `insufficient_data` (fewer than 4 usable bars), `stale` (latest bar more than
-5 days old — a weekend plus a holiday is fine), `unavailable` (the provider raised), or `disabled`.
-The volatility ratio needs 22 bars; with fewer it is `null` and the halt cannot fire.
+`status` is `ok`, `insufficient_data` (fewer than 4 usable bars), `stale`, `unavailable` (the
+provider raised), or `disabled`. The volatility ratio needs 22 bars; with fewer it is `null` and
+the halt cannot fire.
+
+`stale` means either the latest bar is more than 5 days old (a weekend plus a holiday is fine), or
+today's session has started and the provider has no bar for it yet. Yahoo's FX daily bars are
+London days, Monday to Friday, stamped at London midnight, so from 00:00 London on a weekday the
+latest bar must be today's; without it both rules would read yesterday's closes while missing a
+move happening now. On a day with no FX bar at all (25 December, 1 January) that reads as stale,
+which is the safe answer for a BUY.
 
 | `MARKET_GUARD_ON_DATA_ERROR` | A BUY whose check could not run |
 | :--- | :--- |
@@ -67,7 +79,7 @@ A SELL is never blocked for missing data.
 
 | Variable | Default | Effect |
 | :--- | :--- | :--- |
-| `MARKET_GUARD_ENABLED` | `true` | `false` turns off both rules; they are then listed in `inactive_rules` |
+| `MARKET_GUARD_ENABLED` | `true` | `false` (or `0`, `no`, `off`) turns off both rules; they are then listed in `inactive_rules`. Any other value, including a typo, leaves them on |
 | `MARKET_GUARD_ON_DATA_ERROR` | unset | see the table above |
 | `OHLCV_CACHE_TTL_SEC` | `60` | cache lifetime for the daily bars |
 
