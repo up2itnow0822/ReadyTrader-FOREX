@@ -1,115 +1,110 @@
-## ReadyTrader-FOREX Runbook (Equity-Focused)
+## ReadyTrader-FOREX Runbook
+
+Two processes make up a deployment:
+
+- **The MCP server** (`python app/main.py`, stdio): the tools your agent calls. An MCP client
+  launches it; it has no port.
+- **The API server** (`python app/api_server.py`, `127.0.0.1:8000` by default): health, the paper
+  account, pending approvals and the approval endpoint the dashboard uses. Only needed for
+  `approve_each` and the dashboard.
+
+Every setting is read when a process starts, so **restart both processes after changing `.env`**.
 
 ### Common operations
 
-#### Verify health
-
-- Use MCP tool: `get_health()`
-- If health fails:
-  - confirm required environment variables are set
-  - confirm exchange endpoints are reachable (REST + websocket if enabled)
-  - confirm rate limits and policy allowlists are not blocking requests
-
-#### View metrics
-
-- Use MCP tool: `get_metrics_snapshot()`
-- Prometheus text format (no HTTP server): `get_metrics_prometheus()`
+#### Check that it is up
+- MCP server: in your client, list the tools (29 are registered; see `docs/TOOLS.md`), or call
+  `get_stock_price("EURUSD")` and `get_paper_account()`.
+- API server: `curl -s 127.0.0.1:8000/api/health` returns `{"status": "ok", "mode": "paper"}`
+  (or `"live"`).
+- Environment: `python tools/setup_wizard.py` checks the dependencies, the FX data sources and
+  the keys it finds.
 
 #### Kill switch (live trading)
+- Set `TRADING_HALTED=true` (any value other than empty, `false`, `0`, `no` or `off` halts) and
+  restart both processes. Every live order, and every approval of one, is then refused with
+  `trading_halted`. Paper trading is unaffected.
+- To stop live trading entirely, set `PAPER_MODE=true` or `LIVE_TRADING_ENABLED=false` and restart.
 
-- Set `TRADING_HALTED=true` and restart the container.
+#### Approve trades (`EXECUTION_APPROVAL_MODE=approve_each`)
+- Start both processes with the same `EXECUTION_DB_PATH` and `EXECUTION_SESSION_ID`; without them
+  the API cannot see the MCP server's proposals.
+- `curl -s 127.0.0.1:8000/api/pending-approvals` lists proposals (they expire after 120 s).
+- Approve: `POST /api/approve-trade` with `{"request_id", "confirm_token", "approve": true}`; the
+  agent received the `confirm_token` with the proposal. The Risk Guardian (with fresh daily bars),
+  the kill switch and the live policy are checked again before anything executes; a refusal
+  answers `409` with its `code` (`mode_mismatch` if the proposal was made in the other mode), an
+  unknown proposal `404`, a wrong token `403`.
+- Cancel: the same call with `"approve": false` (the `confirm_token` is required here too).
+- The dashboard (`frontend/`) does the same from a browser at `http://localhost:3000`. Other
+  browser origins are refused unless listed in `API_CORS_ORIGINS`.
 
-#### Rotate secrets
+#### Rotate brokerage credentials
+- Update `OANDA_API_KEY` / `OANDA_ACCOUNT_ID` (or the other brokerage variables in
+  `env.example`), then restart. Keys live only in the environment; nothing is written to disk.
 
-- Prefer keystore or remote signer in live environments.
-- Rotate `CEX_*` credentials by updating env vars and restarting.
+#### Debug a refused or failed order
+- Every tool answers `{"ok": false, "error": {"code", "message", "data"}}` on failure; the codes
+  are listed in `docs/ERRORS.md`. `risk_blocked` carries the Risk Guardian's reason, the market
+  guard's `market` reading and the rules that are not active (`inactive_rules`).
+- The API server writes one JSON log line per event to stdout (`api_server_started`,
+  `api_approval_risk_blocked`, ...); set `LOG_LEVEL=DEBUG` for more. The MCP server keeps stdout
+  for the protocol and does not log there.
 
-#### Debug execution failures
+---
 
-- Look for JSON logs with `event=tool_error` (and check `level`).
-- In approve-each mode, use `list_pending_executions()` to inspect pending proposals.
-- Re-run failed operations with an `idempotency_key` to avoid duplicates.
+### Incident playbooks
 
-#### Websocket market streams
+#### 1) Orders refused with `risk_blocked`
+- **Read the reason** in the error. Common ones:
+  - `Position size too large`: the part of the order that opens or adds to a position is more than
+    5% of the account's equity (paper equity, or the brokerage's reported equity in live mode).
+    Reducing or closing a position is never refused by this rule. Reduce the size.
+  - `Daily Loss Limit Hit` / `Max Drawdown`: the account lost 5% today or is 10% below its peak;
+    orders that add exposure (long or short) resume when the condition clears; orders that reduce
+    or close a position are allowed.
+  - Falling Knife: the pair fell 5%+ over four daily closes and is still at its low; BUYs that add
+    exposure only (buying back a short is an exit).
+  - Volatility Halt: today's move is more than 4.5x the pair's 20-day norm. Every trade on that
+    pair, SELLs included, is refused until the move subsides; close urgent positions through the
+    broker. See `docs/FALLING_KNIFE.md`.
+  - `Could not value` / `equity`: the check could not price the order in USD or read the
+    account, so it refused an order that adds exposure (fail closed). In live mode the position is
+    read from the brokerage; if it cannot be read, every order counts as adding exposure. Check the
+    brokerage keys and the network.
 
-- Start public streams with `start_marketdata_ws(...)` and stop with `stop_marketdata_ws(...)`.
-- For Binance private order updates, use `start_cex_private_ws(...)` / `stop_cex_private_ws(...)`, and inspect with
-  `list_cex_private_updates(...)`.
+#### 2) Market data unavailable (yfinance)
+- **Symptoms**: `fetch_price_error` / `fetch_ohlcv_error`, or a market guard `market.status` of
+  `unavailable` or `stale`.
+- **Behaviour**: in live mode a BUY is refused while the daily bars cannot be read (unless
+  `MARKET_GUARD_ON_DATA_ERROR=allow`); SELLs are not refused for missing data.
+- **Mitigation**: wait for the provider to recover. Yahoo rate-limits bursts; bars are cached for
+  `OHLCV_CACHE_TTL_SEC` (60 s) and rates for `TICKER_CACHE_TTL_SEC` (5 s).
 
-______________________________________________________________________
+#### 3) Calendar or news sources failing
+- **Symptoms**: `source_unavailable` from `get_economic_calendar`, `get_forex_news` or the other
+  news tools; `not_configured` when a key is missing.
+- **Behaviour**: a source that cannot answer is never reported as "no events". The calendar is
+  cached for `CALENDAR_CACHE_TTL_SEC` (900 s) and, when a refresh is refused, the last read (up to
+  6 hours old) is served with its time.
 
-### Incident playbooks (Phase 4)
+#### 4) Brokerage outage or rejected order
+- **Symptoms**: `execution_error` with the brokerage's message, or `brokerage_not_configured`.
+- **Mitigation**: set `TRADING_HALTED=true` and restart while the brokerage recovers; check the
+  order and positions with the brokerage directly. This server does not cancel or list brokerage
+  orders.
 
-#### 1) Rate limit storm (tools returning `rate_limited`)
-
-- **Symptoms**:
-  - Tools start failing with `rate_limited`
-  - Metrics show rising `counters.rate_limited_total`
-- **Triage**:
-  - Call `get_metrics_snapshot()` and inspect:
-    - `counters.rate_limit_checks_total`
-    - `counters.rate_limited_total`
-  - Check tool call patterns (agents may be looping/retrying too aggressively)
-- **Mitigation**:
-  - Reduce call frequency (prefer caching, batch calls, or use websocket streams)
-  - Raise limits (carefully):
-    - `RATE_LIMIT_DEFAULT_PER_MIN`
-    - `RATE_LIMIT_EXECUTION_PER_MIN`
-    - `RATE_LIMIT_<TOOL>_PER_MIN`
-
-#### 2) Websocket disconnect loop (public streams)
-
-- **Symptoms**:
-  - `get_marketdata_status()` shows websocket stream `last_error`
-  - Metrics show increasing websocket error/connect counters (e.g. `ws_*_error_total`)
-- **Triage**:
-  - Call `get_marketdata_status()` and inspect:
-    - `ws_streams`
-    - `stores.ws` freshness
-  - Ensure outbound network access is available in the deployment environment
-- **Mitigation**:
-  - Stop and restart the stream:
-    - `stop_marketdata_ws(exchange, market_type)`
-    - `start_marketdata_ws(exchange, symbols_json, market_type)`
-  - If unreliable, fall back to `ccxt_rest` and/or ingest your own feed.
-
-#### 3) Exchange outage / degraded mode
-
-- **Symptoms**:
-  - CCXT calls failing (`ccxt_exchange_unavailable`, `ccxt_network_error`)
-  - Private update pollers show errors / lag
-- **Triage**:
-  - Check `docs/EXCHANGES.md` (Supported vs Experimental expectations)
-  - Use `get_cex_capabilities(exchange)` for `has.*` and market metadata
-  - Check market data: `get_ticker(symbol)` meta → `candidates`
-- **Mitigation**:
-  - Switch market data sources (prefer websocket/ingest, reduce REST usage)
-  - Temporarily disable live execution with `TRADING_HALTED=true`
-
-#### 4) Signer unreachable (remote signer / keystore issues)
-
-- **Symptoms**:
-  - Live DEX execution fails with signing errors
-  - Errors like `remote_signer_error` or signer initialization failures
-- **Triage**:
-  - Confirm signer configuration (`SIGNER_TYPE`, keystore path/password, remote signer URL)
-  - Check logs for `tool_error` around execution tools
-- **Mitigation**:
-  - Halt live trading (`TRADING_HALTED=true`)
-  - Fix signer connectivity/credentials, then restart
-
-#### 5) Policy blocks (allowlists / limits)
-
-- **Symptoms**:
-  - Errors like `token_not_allowed`, `trade_amount_too_large`, `router_not_allowed`
-- **Triage**:
-  - Review `env.example` and current env values for `ALLOW_*`, `MAX_*`
-  - If you are intentionally loosening limits, ensure Advanced Risk consent is accepted
-- **Mitigation**:
-  - Adjust allowlists/limits, or set a stricter risk profile
-  - Keep `EXECUTION_APPROVAL_MODE=approve_each` while validating new configs
+#### 5) Live policy refusals
+- **Symptoms**: `symbol_not_allowed`, `exchange_not_allowed`, `order_amount_too_large` or
+  `invalid_policy_config`.
+- **Triage**: the error data names the rule and its limit. `invalid_policy_config` means
+  `MAX_BROKERAGE_ORDER_AMOUNT` is not a number; every live order is refused until it is fixed or
+  unset.
+- **Mitigation**: adjust `ALLOW_BROKERAGE_SYMBOLS`, `ALLOW_EXCHANGES` or
+  `MAX_BROKERAGE_ORDER_AMOUNT` and restart. Keep `EXECUTION_APPROVAL_MODE=approve_each` while
+  validating a new configuration.
 
 ### Backup/restore (paper mode)
-
-- Paper ledger is stored in `data/paper.db` (ignored by git).
-- Back up by copying the file while the container is stopped.
+- The paper account is `data/paper.db` (`PAPER_DB_PATH`; ignored by git; with Docker, the
+  `readytrader-forex-data` volume). Back it up by copying the file while the processes are
+  stopped. `reset_paper_account()` clears it.

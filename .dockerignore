@@ -10,8 +10,21 @@ __pycache__/
 # Local secrets / env
 .env
 
-# Local runtime artifacts
+# Local runtime artifacts: never bake a local paper ledger, audit log or UAT evidence into an image
 paper.db
+data/
+artifacts/
+uat/
+
+# Local environments and VCS
+.git/
+.venv/
+venv/
+env/
+
+# The dashboard is built and run separately (frontend/README or the main README)
+frontend/node_modules/
+frontend/.next/
 
 # Dev-only
 tests/
@@ -20,3 +33,6 @@ requirements.lock.txt
 requirements-dev.txt
 docs/
 tools/
+
+# Kept for history, never shipped
+_deprecated/

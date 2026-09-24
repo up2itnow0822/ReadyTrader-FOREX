@@ -1,0 +1,19 @@
+services:
+  sentinel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: uvicorn sentinel.app:app --host 0.0.0.0 --port 8888
+    environment:
+      - SIGNER_TYPE=env_private_key
+      - PRIVATE_KEY=${PRIVATE_KEY}
+    ports:
+      - "8888:8888"
+
+  readytrader:
+    build: .
+    environment:
+      - SIGNER_TYPE=remote
+      - SIGNER_REMOTE_URL=http://sentinel:8888
+    depends_on:
+      - sentinel

@@ -23,7 +23,8 @@ COPY . .
 # Ensure data directory exists
 RUN mkdir -p data
 
-# Entry point: Run the MCP server. 
-# Optional Sidecar: If you want to run the FastAPI server, use 
-# 'uvicorn api_server:app --host 0.0.0.0 --port 8000'
+# Entry point: the MCP server on stdio.
+# Optional API sidecar (approvals + dashboard), from the same image:
+#   docker run --rm -p 127.0.0.1:8000:8000 -e API_HOST=0.0.0.0 -v readytrader-forex-data:/app/data readytrader-forex python app/api_server.py
+# Give it and the MCP server the same EXECUTION_SESSION_ID and data volume for approvals.
 CMD ["python", "app/main.py"]
