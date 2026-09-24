@@ -1,1 +1,19 @@
-TEST-3BACKSLASH: Draghi: \“ no \— test
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_data.sh
+# at 2026-09-24T11:52:58+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== process 1 (write)
+CALL deposit_paper_funds {"asset": "USD", "amount": 50000} -> { "data": { "account": { "cash_usd": 50000.0, "equity_usd": 50000.0, "free_margin_usd": 50000.0, "leverage": 30.0, "margin_used_usd": 0.0, "net_deposits_usd": 50000.0, "positions": [], "unpriced_positions": [], "unrealized_usd": 0.0 }, "message": "Deposited 50
+CALL place_forex_order {"symbol": "EURUSD", "side": "buy", "amount": 2000, "rationale": "Draghi: “no rate cut” — <b>bold</b> <img src=x onerror=alert(1)> ✓ 日本円"} -> { "data": { "account": { "cash_usd": 50000.0, "equity_usd": 50000.0, "free_margin_usd": 49924.17, "leverage": 30.0, "margin_used_usd": 75.83, "net_deposits_usd": 50000.0, "positions": [ { "avg_price": 1.1373976469039917, "margin_usd": 75.83, "mark": 1.13739764
+CALL post_market_insight {"symbol": "EURUSD", "agent_id": "a1", "signal": "bearish", "confidence": 0.7, "reasoning": "Draghi: “no rate cut” — <b>bold</b> <img src=x onerror=alert(1)> ✓ 日本円", "ttl_seconds": 86400} -> { "data": { "insight": { "agent_id": "a1", "confidence": 0.7, "expires_at_ms": 1790337182031, "insight_id": "2788596225dadecb", "meta": {}, "reasoning": "Draghi: “no rate cut” — <b>bold</b> <img src=x onerror=alert(1)> ✓ 日本円"
+== files: compliance_audit.log
+insights.db
+paper.db
+strategies.db
+== process 2 (read after restart)
+CALL get_paper_account {} -> { "data": { "cash_usd": 50000.0, "equity_usd": 50000.0, "free_margin_usd": 49924.17, "leverage": 30.0, "margin_used_usd": 75.83, "net_deposits_usd": 50000.0, "positions": [ { "avg_price": 1.1373976469039917, "margin_usd": 75.83, "mark": 1.1373976469039917, "qty": 2000.0, "symbol": "EURUSD", "unrealized_usd": 0.0 } ], "unpriced_positions": [], "unrealized_usd": 0.0 }, "ok": true }
+CALL get_latest_insights {"symbol": "EURUSD"} -> { "data": { "insights": [ { "agent_id": "a1", "confidence": 0.7, "expires_at_ms": 1790337182031, "insight_id": "2788596225dadecb", "meta": {}, "reasoning": "Draghi: “no rate cut” — <b>bold</b> <img src=x onerror=alert(1)> ✓ 日本円", "signal": "bearish", "symbol": "EURUSD", "timestamp_ms": 1790250782031 } ] }, "ok": true }
+== trade rationale as stored:
+[(1, 'agent_zero', '2026-09-24T11:53:02.021581+00:00', 'EURUSD', 'buy', 2000.0, 1.1373976469039917, 0.0, 'Draghi: “no rate cut” — <b>bold</b> <img src=x onerror=alert(1)> ✓ 日本円')]
+
+
+exit=0
