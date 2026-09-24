@@ -19,6 +19,25 @@ def _json_ok(data: Dict[str, Any] | None = None) -> str:
     return json.dumps(payload, indent=2, sort_keys=True)
 
 
+def _invalid_request(side: Any, symbol: Any, amount_usd: Any, portfolio_value: Any) -> str | None:
+    """Why validate_trade_risk cannot judge this request, or None. A malformed request used to be
+    answered 'Trade looks safe' (a 'hold' of -5 USD; a 1e9 USD buy against a zero portfolio)."""
+    import math
+
+    if str(side).strip().lower() not in ("buy", "sell"):
+        return f"side must be 'buy' or 'sell', got {side!r}"
+    if not str(symbol or "").strip():
+        return "symbol is required"
+    for name, value in (("amount_usd", amount_usd), ("portfolio_value", portfolio_value)):
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return f"{name} must be a number, got {value!r}"
+        if not math.isfinite(number) or number <= 0:
+            return f"{name} must be a positive number, got {value!r}"
+    return None
+
+
 def _json_err(code: str, message: str, data: Dict[str, Any] | None = None) -> str:
     payload = {"ok": False, "error": {"code": code, "message": message, "data": data or {}}}
     return json.dumps(payload, indent=2, sort_keys=True)
@@ -125,19 +144,8 @@ def inactive_rules() -> Dict[str, str]:
 
 
 def register_trading_tools(mcp: FastMCP):
-    @mcp.tool()
-    def deposit_paper_funds(asset: str, amount: float) -> str:
-        """[PAPER MODE] Deposit fake funds into the paper trading account."""
-        if not settings.PAPER_MODE:
-            return _json_err("paper_mode_required", "Paper mode is NOT enabled.")
-        return _json_ok({"result": global_container.paper_engine.deposit("agent_zero", asset, amount)})
-
-    @mcp.tool()
-    def reset_paper_account() -> str:
-        """[PAPER MODE] Reset the paper trading account and trade history."""
-        if not settings.PAPER_MODE:
-            return _json_err("paper_mode_required", "Paper mode is NOT enabled.")
-        return _json_ok({"result": global_container.paper_engine.reset_wallet("agent_zero")})
+    # deposit_paper_funds, reset_paper_account and get_paper_account are registered with the order
+    # tools (app/tools/execution.py); a second copy here registered the same names twice.
 
     @mcp.tool()
     def validate_trade_risk(
@@ -159,7 +167,16 @@ def register_trading_tools(mcp: FastMCP):
         A BUY is blocked while the pair is still falling after a 5%+ drop from its highest close
         of the last four days; every trade is halted while the day's move is more than 4.5x its
         20-day norm. This check reads recent daily bars (cached for up to a minute).
+
+        `side` is buy or sell, `amount_usd` the trade's USD value and `portfolio_value` the
+        account's equity, both positive. A BUY is taken to add exposure and a SELL to reduce it;
+        the order tools work that out from the actual position, so an order can still be refused
+        (or allowed) differently - e.g. a SELL that opens a short.
         """
+        problem = _invalid_request(side, symbol, amount_usd, portfolio_value)
+        if problem:
+            return _json_err("invalid_request", problem)
+        side = side.strip().lower()
         try:
             sentiment = _sentiment_context(symbol, sentiment_score)
             market = _market_context(symbol)
