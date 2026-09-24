@@ -1,0 +1,26 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_examples.sh
+# at 2026-09-24T11:56:13+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== python examples/paper_quick_demo.py
+
+5) Execute a market SELL (paper) and re-check portfolio value
+Insufficient fund. Have 0.0 ETH, need 1.0
+Portfolio value (USD): 10000.00
+
+6) Risk metrics snapshot
+{
+  "daily_pnl_pct": 0.0,
+  "drawdown_pct": 0.0
+}
+
+Done. Next: run `python examples/stress_test_demo.py` for the synthetic stress lab.
+exit=0
+=== python examples/verify_live_strategy.py
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/tools/setup_wizard.py", line 8, in "module"
+    from execution.stock_executor import StockExecutor
+ModuleNotFoundError: No module named 'execution.stock_executor'
+
+examples/verify_live_strategy.py
+
+exit=0

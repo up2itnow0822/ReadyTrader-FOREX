@@ -1,0 +1,14 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_secrets.sh
+# at 2026-09-24T11:52:28+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+commits scanned: 25
+--- key-shaped strings in any commit (AWS, Alpaca live/paper, OpenAI/Anthropic, GitHub, Slack, private keys, 64-hex):
+--- .env files ever committed:
+--- .gitignore covers .env and data:
+2:.env
+11:data/
+--- would 'git add -A' pick up the virtualenv the README creates? (untracked, not ignored)
+?? .venv/
+
+
+exit=0
