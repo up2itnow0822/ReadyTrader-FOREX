@@ -314,8 +314,20 @@ def test_the_order_path_lets_a_sell_of_a_falling_pair_through(monkeypatch, quiet
 
 
 def test_the_order_path_blocks_a_live_buy_when_data_is_unreadable(monkeypatch, quiet_ledger):
+    class Broker:  # configured, with a readable account, so only the market guard can refuse
+        def is_available(self):
+            return True
+
+        def get_account_balance(self):
+            return {"equity": 1_000_000.0}
+
+        def list_positions(self):
+            return []
+
     monkeypatch.setattr(settings, "PAPER_MODE", False)
     monkeypatch.setattr(settings, "MARKET_GUARD_ON_DATA_ERROR", "")
+    monkeypatch.setitem(global_container.brokerages, "alpaca", Broker())
+    monkeypatch.setitem(global_container.brokerages, "oanda", Broker())
     fail_fetch(monkeypatch)
     payload = json.loads(place_stock_order(SYMBOL, "buy", 10.0, price=1.05))
     assert payload["error"]["code"] == "risk_blocked"
@@ -467,16 +479,15 @@ def approvals(monkeypatch, quiet_ledger):
     monkeypatch.setattr(settings, "PAPER_MODE", True)
     monkeypatch.setattr(settings, "EXECUTION_APPROVAL_MODE", "approve_each")
     executed = []
+    account = global_container.paper_engine
+    account.deposit("agent_zero", "USD", 100_000)
+    real = account.execute_trade
 
-    class PaperBrokerage:
-        def is_available(self):
-            return True
+    def record(**kw):
+        executed.append(kw)
+        return real(**kw)
 
-        def place_order(self, **kw):
-            executed.append(kw)
-            return {"status": "filled"}
-
-    monkeypatch.setattr(global_container, "forex_paper_brokerage", PaperBrokerage())
+    monkeypatch.setattr(account, "execute_trade", record)
     return TestClient(api.app), executed
 
 
