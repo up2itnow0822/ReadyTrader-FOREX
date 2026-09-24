@@ -1,0 +1,19 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_intel.sh
+# at 2026-09-24T11:02:03+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+CALL get_market_sentiment {} -> { "data": { "sentiment": "Forex Sentiment:\nDXY Trend (5d): Bullish (0.82%). Last: 101.25\nEconomic Calendar: No High Impact events scheduled for today (via ForexFactory)." }, "ok": true }
+CALL get_market_news {} -> { "data": { "news": "Market News: ALPHAVANTAGE_API_KEY missing. News unavailable." }, "ok": true }
+CALL get_economic_calendar {} -> { "data": { "calendar": "Economic Calendar: No High Impact events scheduled for today (via ForexFactory)." }, "ok": true }
+CALL fetch_rss_news {"symbol": ""} -> { "data": { "news": "Market News (Free RSS):\n1. What is a good savings account interest rate in 2026? (Yahoo Finance)\n2. What credit score do you need for a balance transfer credit card? (Yahoo Finance)\n3. $5 Billion Flurry of Nearly Identical Kalshi Trades
+CALL get_forex_news {"limit": 3} -> { "data": { "news": "\ud83d\udcf0 Forex News (Free Feeds):\nSources: \u2713 Investing.com Forex, \u2713 FXStreet News, \u2713 DailyFX, \u2713 ForexLive, \u2713 Reuters Forex\n\n1. Wall St futures fall on Middle East uncertainties ahead of Trump-Xi talks (Inves
+CALL get_forex_market_brief {"symbol": "EURUSD"} -> { "data": { "brief": "\ud83d\udcca EURUSD: 1.13766 (Bid: 1.13758, Ask: 1.13773)\n\n\ud83d\udcb5 DXY Trend (5d): Bullish (0.82%). Last: 101.25\n\n\ud83d\udcc5 Economic Calendar: No High Impact events scheduled for today (via ForexFactory).\n\n\ud83d\udcf0 Forex
+CALL get_financial_news {"symbol": "EURUSD"} -> { "data": { "financial_news": "Financial News: NEWSAPI_KEY missing or NewsApiClient not installed. (Zero-Mock Policy).", "symbol": "EURUSD" }, "ok": true }
+CALL fetch_financial_news {"symbol": "EURUSD"} -> { "data": { "news": "Financial News: NEWSAPI_KEY missing or NewsApiClient not installed. (Zero-Mock Policy)." }, "ok": true }
+CALL get_free_news {"symbol": ""} -> { "data": { "news": "Market News (Free RSS):\n1. What is a good savings account interest rate in 2026? (Yahoo Finance)\n2. What credit score do you need for a balance transfer credit card? (Yahoo Finance)\n3. Claiming Social Security at 63 and Earning $60K? Th
+CALL get_social_sentiment {"symbol": "EURUSD"} -> { "data": { "social_sentiment": "Social Sentiment Unavailable for EURUSD: No sentiment APIs configured.\nTo enable social feeds:\n1. X (Twitter): Get a Bearer Token from https://developer.x.com/ and set TWITTER_BEARER_TOKEN\n2. Reddit: Create an app at https:/
+CALL analyze_social_sentiment {"symbol": "EURUSD"} -> { "data": { "sentiment": "Social Sentiment Unavailable for EURUSD: No sentiment APIs configured.\nTo enable social feeds:\n1. X (Twitter): Get a Bearer Token from https://developer.x.com/ and set TWITTER_BEARER_TOKEN\n2. Reddit: Create an app at https://www.re
+CALL fetch_custom_feed {"url": "http://127.0.0.1:1/private"} -> { "data": { "news": "No headlines found in feed: http://127.0.0.1:1/private" }, "ok": true }
+CALL fetch_custom_feed {"url": "file:///etc/hostname"} -> { "data": { "news": "No headlines found in feed: file:///etc/hostname" }, "ok": true }
+
+
+exit=0
