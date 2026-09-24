@@ -5,6 +5,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def safety_switch_on(value: str | None) -> bool:
+    """A safety check's on/off setting: only an explicit false/0/no/off turns it off, so a typo
+    such as "treu" can never silently disable it."""
+    return (value or "").strip().lower() not in ("false", "0", "no", "off")
+
+
 class Settings:
     PROJECT_NAME: str = "ReadyTrader-FOREX"
     VERSION: str = "0.1.0"
@@ -27,8 +33,8 @@ class Settings:
     RISK_PROFILE: str = os.getenv("RISK_PROFILE", "conservative").strip().lower()
 
     # Falling Knife (price) and volatility halt - docs/FALLING_KNIFE.md. Every trade check and order
-    # reads recent daily bars for the pair.
-    MARKET_GUARD_ENABLED: bool = os.getenv("MARKET_GUARD_ENABLED", "true").strip().lower() == "true"
+    # reads recent daily bars for the pair. Only an explicit false/0/no/off turns it off.
+    MARKET_GUARD_ENABLED: bool = safety_switch_on(os.getenv("MARKET_GUARD_ENABLED", "true"))
     # What a BUY does when the daily bars cannot be read: "block" or "allow". Unset means block in
     # live mode (a missed buy is recoverable, a buy into a collapse is not) and allow in paper mode.
     # A SELL is never blocked for missing data.

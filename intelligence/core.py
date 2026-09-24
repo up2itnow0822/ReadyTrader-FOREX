@@ -93,7 +93,8 @@ def get_volatility_status(symbol: str) -> Optional[float]:
     Today's close-to-close move over the mean of the 20 before it (core/market_guard.py); above
     VOLATILITY_HALT_RATIO (4.5) the Risk Guardian halts every trade on the pair.
 
-    Returns None when it cannot be computed (no data, too few bars) - never a made-up "normal".
+    Returns None when it cannot be computed (no data, too few bars, no bar yet for today) - never a
+    made-up "normal".
     validate_trade_risk and the order path read the same number from their market reading.
     """
     from app.core.container import global_container
@@ -105,7 +106,7 @@ def get_volatility_status(symbol: str) -> Optional[float]:
         )
     except Exception:
         return None
-    return market_guard.assess(bars).volatility_ratio
+    return market_guard.assess(bars, session=market_guard.FX_SESSION).volatility_ratio
 
 
 def get_news_status() -> bool:

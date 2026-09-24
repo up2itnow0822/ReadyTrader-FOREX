@@ -95,7 +95,7 @@ def _market_context(symbol: str) -> Dict[str, Any]:
         reading = market_guard.MarketReading(status=market_guard.STATUS_DISABLED, detail="MARKET_GUARD_ENABLED=false")
     else:
         try:
-            reading = market_guard.assess(_fetch_daily_bars(symbol))
+            reading = market_guard.assess(_fetch_daily_bars(symbol), session=market_guard.FX_SESSION)
         except Exception as e:
             reading = market_guard.MarketReading(
                 status=market_guard.STATUS_UNAVAILABLE, detail=f"{type(e).__name__}: {str(e)[:160]}"
