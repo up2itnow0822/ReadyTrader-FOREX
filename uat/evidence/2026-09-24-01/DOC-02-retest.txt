@@ -1,0 +1,36 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_pack.sh
+# at 2026-09-24T12:12:19+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== docker build context under .dockerignore
+build context: 0.7 MB
+        0.3 MB  frontend/
+        0.1 MB  core/
+        0.1 MB  marketdata/
+        0.1 MB  app/
+        0.1 MB  research/
+        0.0 MB  execution/
+        0.0 MB  intelligence/
+        0.0 MB  README.md
+would copy into the image: none of data/.venv/uat/artifacts/.git
+=== docker daemon: not available here
+=== documented docker run lines (a --rm container without a volume loses the paper account on exit):
+README.md:94:docker run --rm -i -v readytrader-forex-data:/app/data readytrader-forex
+README.md:196:*   **Args**: `run`, `-i`, `--rm`, `-v`, `readytrader-forex-data:/app/data`, `-e`, `PAPER_MODE=true`, `readytrader-forex`
+README.md:206:      - "run"
+README.md:210:      - "readytrader-forex-data:/app/data"
+README.md:226:        "run",
+README.md:229:        "-v", "readytrader-forex-data:/app/data",
+configs/agent_zero.mcp.yaml:5:      - "run"
+configs/agent_zero.mcp.yaml:9:      - "readytrader-forex-data:/app/data"
+configs/claude_desktop.mcp-server-config.json:6:        "run",
+configs/claude_desktop.mcp-server-config.json:10:        "readytrader-forex-data:/app/data",
+=== Dockerfile sidecar hint:
+28:#   docker run --rm -p 127.0.0.1:8000:8000 -e API_HOST=0.0.0.0 -v readytrader-forex-data:/app/data readytrader-forex python app/api_server.py
+=== docker-compose.sentinel.yml (the sentinel service it builds):
+ls: cannot access 'sentinel': No such file or directory
+
+--- stderr ---
+grep: docker-compose.sentinel.yml: No such file or directory
+
+
+exit=0
