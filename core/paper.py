@@ -3,11 +3,13 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
+from common.paths import data_path, ensure_parent
+
 
 class PaperTradingEngine:
     def __init__(self, db_path: Optional[str] = None):
-        self.db_path = db_path or os.getenv("READYTRADER_PAPER_DB_PATH", os.getenv("PAPER_DB_PATH", "data/paper.db"))
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        self.db_path = db_path or os.getenv("READYTRADER_PAPER_DB_PATH", os.getenv("PAPER_DB_PATH", data_path("paper.db")))
+        ensure_parent(self.db_path)
         self._init_db()
 
     def _init_db(self):

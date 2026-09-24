@@ -1,50 +1,41 @@
-## Key Custody & Rotation (Phase 5)
+# Custody & API Management (ReadyTrader-FOREX)
 
-This document describes recommended custody patterns for ReadyTrader-Crypto when operating in live mode.
+ReadyTrader-FOREX holds no funds and no private keys. Your money stays at your broker; the server
+reaches it only through the brokerage API credentials you give it (OANDA by default).
 
-### CEX API keys (least privilege)
+## 🛡️ API credential security
+In live mode the server uses your brokerage credentials to read the account's equity (for sizing)
+and to place orders. Protecting them is your main security responsibility.
 
-- Create **trade-only** keys when possible
-- Disable withdrawal permissions
-- Restrict IPs (if your exchange supports it)
-- Rotate regularly and immediately upon suspicion
+### 1. Minimal permissions
+- **Needed**: trade execution and account read (OANDA: a personal access token for the account you
+  trade).
+- **Never needed**: funding, withdrawals, transfers or password changes. Use a dedicated
+  sub-account where the broker offers one, so the token can only touch the capital you allot.
 
-### EVM signing options
+### 2. Secret management
+- **Never** commit `.env` (it is in `.gitignore`); pass credentials as environment variables.
+- Use a secrets manager (AWS Secrets Manager, GitHub Actions secrets, Docker secrets) when you
+  deploy anywhere shared.
+- Rotate by replacing `OANDA_API_KEY` (and revoking the old token at OANDA), then restart both
+  processes. Nothing is written to disk.
 
-#### 1) `SIGNER_TYPE=env_private_key` (dev only)
+### 3. Practice first
+`OANDA_ENVIRONMENT` defaults to `practice`: with a practice-account token you can exercise the whole
+live path (`PAPER_MODE=false`, `LIVE_TRADING_ENABLED=true`) without real money.
 
-- Uses `PRIVATE_KEY` in the environment.
-- Fast for local testing, **not recommended** for production.
+---
 
-#### 2) `SIGNER_TYPE=keystore` (baseline production)
+## 🤝 Human-in-the-Loop (HITL)
+The agent can propose a trade and a human confirms it before anything executes:
 
-- Uses `KEYSTORE_PATH` + `KEYSTORE_PASSWORD`.
-- Keeps key encrypted at rest; still protect the passphrase.
+```bash
+EXECUTION_APPROVAL_MODE=approve_each
+```
 
-#### 3) `SIGNER_TYPE=remote` (enterprise-friendly)
+The agent gets a `request_id` and `confirm_token`; you approve through the API or the dashboard
+(`RUNBOOK.md`), and the Risk Guardian checks the trade again with fresh data before it executes.
 
-- Uses `SIGNER_REMOTE_URL` to sign via HTTP.
-- Recommended for HSM/KMS-backed signing proxies.
-- ReadyTrader-Crypto includes explicit `intent` in signing requests (Phase 5) to enable safer signer-side policy.
-
-### Defense in depth
-
-Use both layers when possible:
-
-- **PolicyEngine** allowlists:
-  - `ALLOW_SIGNER_ADDRESSES`
-  - signer-intent guardrails: `ALLOW_SIGN_CHAIN_IDS`, `ALLOW_SIGN_TO_ADDRESSES`, `MAX_SIGN_*`
-- **Signer policy wrapper** (local, defense-in-depth):
-  - `SIGNER_POLICY_ENABLED=true`
-  - `SIGNER_ALLOWED_CHAIN_IDS`, `SIGNER_ALLOWED_TO_ADDRESSES`, `SIGNER_MAX_*`
-
-### Rotation procedure (high level)
-
-- Set `TRADING_HALTED=true`
-- Rotate secrets (CEX keys / keystore / signer endpoint)
-- Restart the container/service to ensure in-memory state is reset
-- Validate with:
-  - `get_health()`
-  - `get_metrics_snapshot()`
-  - small paper-mode dry run (if applicable)
-- Re-enable trading only after controlled validation
+## Checking what the server did
+- `data/compliance_audit.log`: one JSON line per order request and outcome.
+- `get_paper_account()` in paper mode; your broker's own statements in live mode.
