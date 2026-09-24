@@ -132,6 +132,8 @@ Create a `.env` file or pass environment variables. Start from `env.example` (co
 | `EXECUTION_APPROVAL_MODE` | `auto` | `auto` executes immediately; `approve_each` requires manual confirmation. |
 | `API_PORT` | `8000` | Port for the FastAPI/WebSocket server (`api_server.py`). |
 | `DISCORD_WEBHOOK_URL`| `""` | Optional webhook for trade approval notifications. |
+| `MARKET_GUARD_ENABLED` | `true` | Price-based Falling Knife check and volatility halt on every trade check and order. See `docs/FALLING_KNIFE.md`. |
+| `MARKET_GUARD_ON_DATA_ERROR` | unset | What a BUY does when the daily bars cannot be read: `block` or `allow`. Unset blocks in live mode and allows (flagged) in paper mode. |
 
 </details>
 
@@ -294,6 +296,8 @@ The agent can query the "weather" before flying.
 **The Guardian (Passive Safety):**
 You don't need to do anything. If the agent tries to bet 50% of the portfolio on a whim, `validate_trade_risk` will **BLOCK** the trade automatically.
 
+It also refuses a **BUY into a collapsing currency** (a pair down 5%+ over four days and still at its lowest close) and **halts every trade on a pair** while its daily move is more than 4.5x its 20-day norm. The rules, the data they read and the evidence behind the thresholds (tested on 24 pairs they had never seen) are in [`docs/FALLING_KNIFE.md`](docs/FALLING_KNIFE.md).
+
 ______________________________________________________________________
 
 ## 🧰 Tool Reference
@@ -359,6 +363,8 @@ ______________________________________________________________________
 - `docs/EXCHANGES.md`: exchange capability matrix (Supported vs Experimental)
 - `docs/MARKETDATA.md`: market data routing, freshness scoring, plugins, and guardrails
 - `docs/THREAT_MODEL.md`: operator-focused threat model (live trading)
+- `docs/FALLING_KNIFE.md`: the price-based Falling Knife rule and volatility halt, and the study behind the thresholds
+- `docs/SENTIMENT.md`: why this server does not score sentiment, and how to supply your own reading
 - `docs/CUSTODY.md`: key custody + rotation guidance
 - `docs/POSITIONING.md`: credibility-safe marketing + messaging
 - `RELEASE_READINESS_CHECKLIST.md`: what must be green before distribution
