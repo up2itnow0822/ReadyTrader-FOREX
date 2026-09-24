@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, List, Optional
 
+from common.switches import safety_switch_on
 from execution.base import IBrokerage
 
 # Conditional import to allow safe loading if dependencies missing
@@ -30,7 +31,10 @@ class AlpacaBrokerage(IBrokerage):
     def __init__(self):
         self.api_key = os.getenv("ALPACA_API_KEY")
         self.api_secret = os.getenv("ALPACA_API_SECRET")
-        self.paper_mode = os.getenv("PAPER_MODE", "true").lower() == "true"
+        # The Alpaca account this connector trades. Orders reach it only in live mode (in paper mode
+        # the server fills orders in its own ledger), and like Tradier's sandbox the default is
+        # Alpaca's paper account: only ALPACA_PAPER=false/0/no/off sends orders to a real account.
+        self.paper_mode = safety_switch_on(os.getenv("ALPACA_PAPER", "true"))
 
         if not self.api_key or not self.api_secret or not _ALPACA_PY_AVAILABLE:
             self._available = False

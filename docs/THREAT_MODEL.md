@@ -1,90 +1,64 @@
-## ReadyTrader-FOREX Threat Model (Live Trading)
+# ReadyTrader-FOREX Threat Model
 
-This document is an operator-focused threat model for ReadyTrader-FOREX when configured for **live trading** (`PAPER_MODE=false`). It is intentionally concise and actionable.
+An operator-focused threat model for ReadyTrader-FOREX configured for **live trading**
+(`PAPER_MODE=false`, `LIVE_TRADING_ENABLED=true`).
 
-### Scope
+## 🌟 Security philosophy
+ReadyTrader-FOREX is a safety-first bridge: it limits what a mistaken, manipulated or compromised
+agent can do with your brokerage account, and it fails closed when it cannot check something.
 
-- **In scope**:
-  - Brokerage credentials (OANDA, Alpaca, etc.)
-  - Live execution path (Forex orders, PnL management)
-  - Market data correctness (stale/outlier data leading to bad execution)
-- **Out of scope**:
-  - Brokerage-side compromise (assumed handled by broker security)
-  - OS/hypervisor compromise (assumed handled by your infra)
+---
 
-______________________________________________________________________
+## 🚫 1. Brokerage credential compromise
+- **Threat**: an attacker reads `.env` or the process environment and obtains `OANDA_API_KEY`.
+- **Mitigation**:
+    - Use a token scoped to one (sub-)account with no withdrawal rights (`docs/CUSTODY.md`).
+    - Set the live policy (`MAX_BROKERAGE_ORDER_AMOUNT`, `ALLOW_BROKERAGE_SYMBOLS`, `ALLOW_EXCHANGES`;
+      enforced in `core/policy.py`). It limits the server, not someone holding the token directly.
+    - Run the server in a container or an isolated user account; never bake `.env` into an image
+      (`.dockerignore` excludes it and `data/`).
 
-## Primary assets
+## 🚫 2. Rogue agent / "fat finger" trades
+- **Threat**: the agent sends an oversized order, the wrong side, or trades into a crash.
+- **Mitigation**:
+    - **Approval**: `EXECUTION_APPROVAL_MODE=approve_each` requires a human for every order.
+    - **Position size**: the Risk Guardian refuses any order that adds exposure worth over 5% of the
+      account's equity, and every order that adds exposure (long or short) after a 5% daily loss or
+      a 10% drawdown; reducing or closing a position stays possible. An order that adds exposure and
+      cannot be valued or sized is refused.
+    - **Mode**: a proposal made in paper mode is never executed live (and the reverse).
+    - **Market guard**: BUYs into a pair still falling after a 5% drop are refused, and every trade
+      on a pair whose daily move is over 4.5x its 20-day norm is halted (`docs/FALLING_KNIFE.md`).
+    - **Policy limits**: `MAX_BROKERAGE_ORDER_AMOUNT` caps units per live order; an unreadable
+      value refuses every live order.
+    - **Kill switch**: `TRADING_HALTED` refuses every live order and approval.
+    - Not active in this release: the price-collar, Pattern Day Trader and news-blackout rules in
+      `core/risk.py` are never given the inputs they need, so they never fire; verdicts list the
+      news blackout under `inactive_rules`. Use `approve_each` and `MAX_BROKERAGE_ORDER_AMOUNT` for
+      fat-finger protection.
 
-- **Funds**: brokerage account balances
-- **Keys**:
-  - Brokerage API keys / Tokens
-- **Execution authority**: ability to place orders and manage positions
-- **Operational evidence**: audit logs and operator telemetry
+## 🚫 3. Prompt injection / social engineering
+- **Threat**: text the agent reads (news, posts, a custom feed) or a user tells it to bypass the
+  rules or trade maliciously.
+- **Mitigation**:
+    - The Risk Guardian is Python code the agent cannot change or skip: every order tool runs the
+      same checks as `validate_trade_risk`, and an approved proposal is checked again.
+    - News, calendar and social text returned to the agent is untrusted; the server never acts on
+      it. `fetch_custom_feed` fetches only public http(s) URLs (no local or private addresses, and
+      redirects are re-checked).
 
-______________________________________________________________________
+## 🚫 4. The approval API
+- **Threat**: another local program or web page approves a proposal.
+- **Mitigation**: the API listens on `127.0.0.1` by default; approving or cancelling needs the
+  proposal's `confirm_token`; only the dashboard's origins may call it from a browser
+  (`API_CORS_ORIGINS`). It has no login, so do not expose it beyond the host without an
+  authenticating proxy.
 
-## Threats and mitigations
+---
 
-### 1) Secret leakage (keys logged or committed)
-
-- **Threat**: accidental logging of secrets; committing `.env`; exposing keystore/password.
-- **Mitigations**:
-  - Never commit `.env` (use `env.example`).
-  - Phase 4 logging redaction reduces risk, but do not rely on it—avoid logging secrets entirely.
-  - Prefer **keystore** or **remote signer** for production over `PRIVATE_KEY`.
-
-### 2) Wrong-account / wrong-broker usage
-
-- **Threat**: ReadyTrader-FOREX points at an unintended account or live vs paper misconfiguration.
-- **Mitigations**:
-  - Use `ALLOW_EXCHANGES` (PolicyEngine) to pin the expected brokerage venues.
-  - Verify account IDs at startup.
-
-### 3) Overbroad execution authority
-
-- **Threat**: compromised agent places massive orders or drains account.
-- **Mitigations**:
-  - Enforce via PolicyEngine:
-    - `ALLOW_BROKERAGE_SYMBOLS`
-    - `MAX_BROKERAGE_ORDER_AMOUNT`
-    - `ALLOW_BROKERAGE_MARKET_TYPES`
-
-### 4) Malicious or stale market data drives bad trades
-
-- **Threat**: stale/outlier tick causes market order at wrong time/venue.
-- **Mitigations**:
-  - Phase 3 guardrails:
-    - `MARKETDATA_FAIL_CLOSED=true`
-    - tune `MARKETDATA_MAX_AGE_MS*` and outlier thresholds
-  - Prefer websocket-first + ingest-first for trusted feeds.
-
-### 5) Execution replay / double-submit from agent retries
-
-- **Threat**: an agent retries and duplicates an order or tx.
-- **Mitigations**:
-  - Use `idempotency_key` wherever supported (CEX order placement, swaps).
-  - Use approve-each mode for early deployments (`EXECUTION_APPROVAL_MODE=approve_each`).
-
-### 6) Operator mistakes / unsafe configuration
-
-- **Threat**: loosening limits too far, disabling policy allowlists, enabling live trading without supervision.
-- **Mitigations**:
-  - Live-trading consent gate + kill switch (`TRADING_HALTED=true`).
-  - Advanced Risk Mode requires additional consent.
-  - Keep policy allowlists/limits enabled in production.
-
-______________________________________________________________________
-
-## Recommended production baseline
-
-- **Execution**:
-  - start with `EXECUTION_APPROVAL_MODE=approve_each`
-  - use `TRADING_HALTED=true` by default; enable only during controlled windows
-- **Keys**:
-  - never commit API keys
-  - set `ALLOW_EXCHANGES=<expected>`
-  - enable order-side policy (`MAX_BROKERAGE_ORDER_AMOUNT` + allowlists)
-- **Market data**:
-  - enable `MARKETDATA_FAIL_CLOSED=true`
-  - use WS + trusted ingest feeds; REST as fallback
+## 🔒 Best practices
+1.  **Never** reuse API tokens across apps.
+2.  **Enable MFA** on your brokerage account.
+3.  **Audit**: review `data/compliance_audit.log` for unexpected order requests.
+4.  **Paper, then practice**: run a strategy with `PAPER_MODE=true`, then against OANDA's practice
+    account (`OANDA_ENVIRONMENT=practice`, the default), before `OANDA_ENVIRONMENT=live`.

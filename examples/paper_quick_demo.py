@@ -1,70 +1,88 @@
 """
-ReadyTrader-Crypto Phase 6 — Paper-mode quick demo (offline).
+ReadyTrader-FOREX paper-mode quick demo (offline).
 
-Goal: give a new user a 1-command way to validate that the paper trading engine works:
-- deposits
-- limit orders
-- fills
-- portfolio valuation + basic risk metrics
+Exercises the paper FX account the server trades in (core/fx_account.FxPaperAccount) with fixed,
+made-up rates, so it needs no network and no MCP client:
 
-This script does NOT run the MCP server; it exercises the underlying engine directly so it
-works without any MCP client configuration.
+- a USD deposit
+- a EURUSD long, marked to a new rate (unrealized P&L in USD)
+- a USDJPY short, whose P&L is in JPY and is converted to USD
+- closing both (realized P&L), margin, and the risk metrics the Risk Guardian reads
+
+It writes to a temporary database and leaves your real paper account (data/paper.db) untouched.
+Exit code 0 means every step did what it should.
 """
 
 import json
+import sys
 import tempfile
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from core.fx_account import FxPaperAccount  # noqa: E402
+
+USER = "demo_user"
+# Made-up rates for the demo: {pair: rate}. The account asks this function for every rate it needs.
+RATES = {"EURUSD": 1.1000, "USDJPY": 150.00}
+
+
+def quote(symbol: str) -> float:
+    return RATES[symbol.replace("/", "").upper()]
+
+
+def show(title: str, account: FxPaperAccount) -> dict:
+    snap = account.account(USER)
+    print(f"\n{title}")
+    print(json.dumps({k: snap[k] for k in ("cash_usd", "equity_usd", "unrealized_usd", "margin_used_usd", "free_margin_usd", "positions")}, indent=2))
+    return snap
+
 
 def main() -> int:
-    # Allow running from repo root without installing as a package.
-    # (If executed from a different CWD, we add the repo root to sys.path.)
-    import sys
+    failures = []
 
-    user_id = "demo_user"
-
-    root = Path(__file__).resolve().parents[1]
-    if str(root) not in sys.path:
-        sys.path.insert(0, str(root))
-
-    from core.paper import PaperTradingEngine
+    def expect(condition: bool, what: str) -> None:
+        print(f"  {'ok  ' if condition else 'FAIL'} {what}")
+        if not condition:
+            failures.append(what)
 
     with tempfile.TemporaryDirectory() as td:
-        db_path = str(Path(td) / "paper_demo.db")
-        engine = PaperTradingEngine(db_path=db_path)
+        account = FxPaperAccount(db_path=str(Path(td) / "paper_demo.db"), quote=quote, leverage=30)
+        print("=== ReadyTrader-FOREX paper-mode quick demo (rates are made up) ===")
 
-        print("\n=== ReadyTrader-Crypto paper-mode quick demo ===")
+        print("\n1) Deposit 10,000 USD")
+        print(" ", account.deposit(USER, "USD", 10_000))
 
-        print("\n1) Deposit paper funds")
-        print(engine.deposit(user_id, "USDC", 10_000.0))
+        print("\n2) Buy 10,000 EURUSD at 1.1000 (a long of 10,000 EUR)")
+        print(" ", account.execute_trade(USER, "buy", "EURUSD", 10_000, RATES["EURUSD"], rationale="demo entry"))
+        snap = show("   Account after the buy:", account)
+        expect(abs(snap["margin_used_usd"] - 10_000 * 1.10 / 30) < 0.01, "margin is the USD notional / leverage (366.67)")
 
-        print("\n2) Place a limit BUY for ETH/USDT")
-        print(engine.place_limit_order(user_id, "buy", "ETH/USDT", amount=1.0, price=2000.0))
+        print("\n3) EURUSD rises to 1.1100: the long is worth 100 USD more")
+        RATES["EURUSD"] = 1.1100
+        snap = show("   Marked to 1.1100:", account)
+        expect(abs(snap["unrealized_usd"] - 100.0) < 0.01, "unrealized P&L is +100.00 USD")
 
-        print("\n3) Simulate market moving down and fill open orders")
-        fill_msgs = engine.check_open_orders("ETH/USDT", current_price=1950.0)
-        print("\n".join(fill_msgs) if fill_msgs else "(no fills)")
+        print("\n4) Short 5,000 USDJPY at 150.00 (sell 5,000 USD for 750,000 JPY)")
+        print(" ", account.execute_trade(USER, "sell", "USDJPY", 5_000, RATES["USDJPY"], rationale="demo short"))
+        RATES["USDJPY"] = 148.50
+        snap = show("   USDJPY falls to 148.50 (the short gains 7,500 JPY, about 50.51 USD):", account)
+        expect(abs(snap["unrealized_usd"] - (100.0 + 5_000 * 1.5 / 148.50)) < 0.01, "JPY P&L is converted to USD at the current rate")
 
-        print("\n4) Check balances + portfolio value")
-        balances = {
-            "USDC": engine.get_balance(user_id, "USDC"),
-            "ETH": engine.get_balance(user_id, "ETH"),
-        }
-        print(json.dumps(balances, indent=2))
-        print(f"Portfolio value (USD): {engine.get_portfolio_value_usd(user_id):.2f}")
+        print("\n5) Close both positions at the current rates")
+        print(" ", account.execute_trade(USER, "sell", "EURUSD", 10_000, RATES["EURUSD"], rationale="demo exit"))
+        print(" ", account.execute_trade(USER, "buy", "USDJPY", 5_000, RATES["USDJPY"], rationale="demo exit"))
+        snap = show("   Flat again:", account)
+        expect(not snap["positions"] and snap["margin_used_usd"] == 0, "no open positions, no margin in use")
+        expect(abs(snap["cash_usd"] - (10_000 + 100.0 + 5_000 * 1.5 / 148.50)) < 0.01, "realized P&L is in cash")
 
-        print("\n5) Execute a market SELL (paper) and re-check portfolio value")
-        print(engine.execute_trade(user_id, "sell", "ETH/USDT", amount=1.0, price=2200.0, rationale="Demo exit"))
-        print(f"Portfolio value (USD): {engine.get_portfolio_value_usd(user_id):.2f}")
+        print("\n6) Risk metrics (what the Risk Guardian reads before every BUY)")
+        print(json.dumps(account.get_risk_metrics(USER), indent=2))
 
-        try:
-            metrics = engine.get_risk_metrics(user_id)
-        except Exception:
-            metrics = {}
-        print("\n6) Risk metrics snapshot")
-        print(json.dumps(metrics, indent=2))
-
-    print("\nDone. Next: run `python examples/stress_test_demo.py` for the synthetic stress lab.")
+    if failures:
+        print(f"\nFAILED: {len(failures)} step(s) did not do what they should: {failures}")
+        return 1
+    print("\nDone: every step checked out. Next: python examples/stress_test_demo.py for the synthetic stress lab.")
     return 0
 
 

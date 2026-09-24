@@ -8,7 +8,8 @@ bars and applies two rules:
   **every** trade on the pair is refused, BUY or SELL, as an exchange circuit breaker would.
 - **Falling Knife** (Rule 2b): a **BUY** is refused while the pair is still falling after a 5%
   drop over four days. A SELL is never refused by this rule, because a SELL may be the exit from a
-  long.
+  long; nor is a BUY that only buys back a short (the order path works out from the position which
+  part of an order adds exposure).
 
 ## The rules
 

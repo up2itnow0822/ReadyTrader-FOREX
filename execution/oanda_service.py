@@ -11,6 +11,21 @@ from execution.base import IBrokerage
 logger = logging.getLogger(__name__)
 
 
+def _oanda_reason(e: Exception) -> str:
+    """OANDA's own explanation (its JSON errorMessage) when the HTTP call failed, else the exception."""
+    response = getattr(e, "response", None)
+    if response is not None:
+        try:
+            body = response.json()
+            reason = body.get("errorMessage") or body.get("orderRejectTransaction", {}).get("rejectReason")
+            if reason:
+                return f"HTTP {response.status_code}: {reason}"
+        except Exception:  # nosec B110 - fall back to the exception text below
+            pass
+        return f"HTTP {response.status_code}: {response.text[:200]}"
+    return str(e)
+
+
 class OandaBrokerage(IBrokerage):
     """
     OANDA v20 REST API Integration.
@@ -39,12 +54,18 @@ class OandaBrokerage(IBrokerage):
         if not self._available:
             raise RuntimeError("OANDA API not configured (missing OANDA_API_KEY or OANDA_ACCOUNT_ID).")
 
-        # OANDA expects instruments like "EUR_USD"
-        oanda_symbol = symbol.replace("/", "_").replace("=X", "")
-        if "_" not in oanda_symbol and len(oanda_symbol) == 6:
-            oanda_symbol = f"{oanda_symbol[:3]}_{oanda_symbol[3:]}"
+        # OANDA expects instruments like "EUR_USD" (any spelling the tools accept maps to it).
+        from core.fx_account import parse_pair
 
-        # Units: side + quantity
+        try:
+            base, quote_ccy = parse_pair(symbol)
+        except ValueError as e:
+            raise RuntimeError(f"OANDA trades currency pairs: {e}") from None
+        oanda_symbol = f"{base}_{quote_ccy}"
+
+        # Units: whole units of the base currency, signed by side.
+        if int(abs(qty)) < 1:
+            raise RuntimeError(f"OANDA trades whole units of the base currency; {qty} rounds to 0.")
         units = str(int(qty)) if side.lower() == "buy" else str(int(-qty))
 
         url = f"{self.base_url}/accounts/{self.account_id}/orders"
@@ -66,6 +87,11 @@ class OandaBrokerage(IBrokerage):
             response = requests.post(url, headers=self._headers(), json=order_data, timeout=10)
             response.raise_for_status()
             data = response.json()
+            # A FOK market order OANDA could not fill comes back 201 with a cancel transaction:
+            # nothing traded, so it must not be reported as submitted.
+            cancel = data.get("orderCancelTransaction")
+            if cancel and "orderFillTransaction" not in data:
+                raise RuntimeError(f"OANDA cancelled the order: {cancel.get('reason', 'no reason given')}")
 
             # Extract transaction ID
             tx_id = data.get("orderFillTransaction", {}).get("id") or data.get("orderCreateTransaction", {}).get("id")
@@ -80,10 +106,8 @@ class OandaBrokerage(IBrokerage):
                 "raw": data,
             }
         except Exception as e:
-            logger.error(f"OANDA order failed: {e}")
-            if hasattr(e, "response") and e.response is not None:
-                logger.error(f"Response: {e.response.text}")
-            raise RuntimeError(f"OANDA order failure: {str(e)}")
+            logger.error(f"OANDA order failed: {_oanda_reason(e)}")
+            raise RuntimeError(f"OANDA order failure: {_oanda_reason(e)}") from None
 
     def get_account_balance(self) -> Dict[str, float]:
         if not self._available:
@@ -103,7 +127,7 @@ class OandaBrokerage(IBrokerage):
                 "cash": float(account.get("balance", 0.0)),
             }
         except Exception as e:
-            raise RuntimeError(f"OANDA balance fetch failed: {str(e)}")
+            raise RuntimeError(f"OANDA balance fetch failed: {_oanda_reason(e)}") from None
 
     def list_positions(self) -> List[Dict[str, Any]]:
         if not self._available:
