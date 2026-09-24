@@ -1,0 +1,19 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_api.sh
+# at 2026-09-24T11:22:15+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== python app/api_server.py (README: api_server.py)
+INFO:     Application shutdown complete.
+INFO:     Finished server process [17145]
+=== python -m app.api_server, MCP proposal (approve_each, shared EXECUTION_DB_PATH), approval through the API
+CALL deposit_paper_funds {"asset": "USD", "amount": 25000} -> { "data": { "account": { "cash_usd": 25000.0, "equity_usd": 25000.0, "free_margin_usd": 25000.0, "leverage": 30.0, "margin_used_usd": 0.0,
+CALL place_limit_order {"symbol": "EURUSD", "side": "buy", "amount": 1000, "price": 1.2} -> { "data": { "confirm_token": "d712afe6ec26858839979b017c83123a", "message": "Order for 1000.0 EURUSD (buy) r
+API pending: {"pending":[{"request_id":"ca3bba41c9b6f6e87d7ace41","kind":"stock_order","created_at":1790248957.147178,"expires_at":1790249077.147178}]}
+API approve: {"ok":true,"venue":"paper","result":"Paper Trade Executed: BUY 1000 EURUSD @ 1.13779. Realized P&L: 0.00 USD. Position: +1000 EURUSD @ 1.13779. Rationale: api_approved","account":{"cash_usd":25000.0,"equity_usd":25000.0,"unrealized_usd":0.0,"margin_used_usd":37.93,"free_margin_usd":24962.07,"leverage":30.0,"positions":[{"symbol":"EURUSD","qty":1000.0,"avg_price":1.1377859115600586,"mark":1.1377859115600586,"unrealized_usd":0.0,"margin_usd":37.93}],"unpriced_positions":[],"net_deposits_usd":25000.0}} HTTP 200
+API portfolio (the MCP account holds 25,000 USD): {"balances":{"USD":25000.0,"EURUSD":1000.0},"positions":[{"symbol":"EURUSD","qty":1000.0,"avg_price":1.1377859115600586,"mark":1.1377859115600586,"unrealized_usd":0.0,"margin_usd":37.93}],"metrics":{"equity":25000.0,"cash":25000.0,"unrealized_pnl":0.0,"margin_used":37.93,"free_margin":24962.07,"leve
+CORS for Origin https://evil.example: 
+second proposal pending: 1
+cancel it with a guessed token: {"ok":false}
+still pending: 1
+
+
+exit=0

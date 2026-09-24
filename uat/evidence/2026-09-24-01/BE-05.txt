@@ -1,0 +1,14 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_be2.sh
+# at 2026-09-24T11:00:23+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== sizing: a 4,000-unit USDJPY BUY (notional $4,000 = 4% of a $100k account)
+CALL deposit_paper_funds {"asset": "USD", "amount": 100000} -> { "data": { "message": "Deposited 100000.0 USD. New Balance: 100000.0" }, "ok": true }
+CALL place_forex_order {"symbol": "USDJPY", "side": "buy", "amount": 4000, "order_type": "limit", "price": 159} -> { "error": {  ... "code": "risk_blocked" "message": "Position size too large (636.0%). Max allowed is 5%."
+=== live mode, LIVE_TRADING_ENABLED=false (no keys)
+CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": 1000} -> { "error": { "code": "execution_error", "data": {}, "message": "PolicyEngine.validate_brokerage_order() missing 1 required keyword-only argument: 'order_type'" }, "ok": false }
+=== live mode, LIVE_TRADING_ENABLED=true, TRADING_HALTED=true (no keys)
+CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": 1000} -> { "error": { "code": "execution_error", "data": {}, "message": "PolicyEngine.validate_brokerage_order() missing 1 required keyword-only argument: 'order_type'" }, "ok": false }
+CALL start_brokerage_private_ws {"exchange": "oanda", "market_type": "spot"} -> { "data": { "mode": "ws", "status": "connected" }, "ok": true }
+
+
+exit=0

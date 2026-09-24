@@ -1,0 +1,8 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_multi.sh
+# at 2026-09-24T11:59:51+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+CALL get_multiple_prices {"symbols": "EURUSD, GBP/USD,NOTAPAIR"} -> { "data": { "prices": { "EURUSD": 1.1371389627456665, "GBP/USD": 1.3221917152404785, "NOTAPAIR": "Error" } }, "ok": true }
+CALL get_multiple_prices {"symbols": ""} -> { "data": { "prices": { "": "Error" } }, "ok": true }
+
+
+exit=0
