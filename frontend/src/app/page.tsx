@@ -1,70 +1,136 @@
 "use client";
 
-import { useMarketData } from '@/hooks/useMarketData';
-import { usePendingApprovals } from '@/hooks/usePendingApprovals';
-import { AreaChart, Area, Tooltip, ResponsiveContainer } from 'recharts';
+import { useEffect, useState } from 'react';
 import { ShieldCheck, Zap } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useMarketData } from '@/hooks/useMarketData';
+import { usePendingApprovals, type PendingOrder } from '@/hooks/usePendingApprovals';
+import { API_URL } from '@/lib/api';
 
-// Dummy data for the chart
-const dummyChartData = [
-  { time: '00:00', value: 45000 },
-  { time: '04:00', value: 45200 },
-  { time: '08:00', value: 44800 },
-  { time: '12:00', value: 46100 },
-  { time: '16:00', value: 45900 },
-  { time: '20:00', value: 47200 },
-  { time: '23:59', value: 48500 },
-];
+type Position = { symbol: string; qty: number; avg_price: number; mark: number; unrealized_usd: number };
+
+type Portfolio = {
+  balances?: Record<string, number>;
+  positions?: Position[];
+  metrics?: {
+    equity?: number;
+    cash?: number;
+    unrealized_pnl?: number;
+    margin_used?: number;
+    free_margin?: number;
+    leverage?: number;
+    daily_pnl_pct?: number;
+    drawdown_pct?: number;
+  };
+  error?: string;
+};
+
+// A value that rounds to zero cents shows as $0.00, never -$0.00.
+const usd = (n: number) => (Math.abs(n) < 0.005 ? 0 : n).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+const pct = (n: number) => `${n >= 0 ? '+' : ''}${(n * 100).toFixed(2)}%`;
 
 export default function Dashboard() {
   const { tickers, connected } = useMarketData();
-  const { approvals } = usePendingApprovals();
-  const [, setPortfolio] = useState<unknown>(null);
+  const { approvals, handleApproval } = usePendingApprovals();
+  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+  const [portfolioError, setPortfolioError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch initial portfolio
     const fetchPortfolio = async () => {
-      const res = await fetch('http://localhost:8000/api/portfolio');
-      if (res.ok) {
-        const data = await res.json();
-        setPortfolio(data);
+      try {
+        const res = await fetch(`${API_URL}/api/portfolio`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        setPortfolio(await res.json());
+        setPortfolioError(null);
+      } catch {
+        setPortfolioError(`The API is not reachable at ${API_URL}. Start it with: python app/api_server.py`);
       }
     };
     fetchPortfolio();
+    const timer = setInterval(fetchPortfolio, 15000);
+    return () => clearInterval(timer);
   }, []);
+
+  // The API approves or rejects a proposal only with its confirm_token, which the agent received
+  // when it placed the order; an approval re-runs the Risk Guardian before anything executes.
+  const review = async (requestId: string, approve: boolean) => {
+    const verb = approve ? 'approve' : 'reject';
+    const token = window.prompt(`Paste the confirm_token your agent received with this proposal to ${verb} it:`);
+    if (!token) return;
+    const ok = await handleApproval(requestId, token.trim(), approve);
+    window.alert(
+      approve
+        ? ok
+          ? 'Approved: the trade was re-checked and executed.'
+          : 'Not approved: the token was wrong, the proposal expired, or the Risk Guardian refused it on re-check.'
+        : ok
+          ? 'Rejected: the proposal was cancelled.'
+          : 'Not rejected: the token was wrong or the proposal is no longer pending.'
+    );
+  };
+
+  const describe = (o?: PendingOrder) =>
+    o && o.symbol
+      ? `${(o.side ?? '').toUpperCase()} ${Number(o.amount ?? 0).toLocaleString()} ${o.symbol} ${o.order_type ?? 'market'}` +
+        `${o.price ? ` @ ${o.price}` : ''}${o.paper_mode === false ? ` - LIVE via ${o.exchange ?? '?'}` : ' - paper account'}`
+      : 'Order details unavailable';
+
+  const metrics = portfolio?.metrics;
+  const positions = portfolio?.positions ?? [];
 
   return (
     <div className="dashboard-grid">
-      {/* Portfolio Overview */}
+      {/* Paper account */}
       <section className="col-span-2 card">
         <div className="card-header">
           <div>
-            <h3>Portfolio Performance</h3>
-            <p className="muted">Total value across all accounts</p>
+            <h3>Paper Account</h3>
+            <p className="muted">Cash, open positions and margin, from the API</p>
           </div>
-          <div className="value-pnl">
-            <h2>$48,500.00</h2>
-            <span className="success">+7.4% Today</span>
+          {metrics?.equity !== undefined && (
+            <div className="value-pnl">
+              <h2>{usd(metrics.equity)}</h2>
+              {metrics.daily_pnl_pct !== undefined && (
+                <span className={metrics.daily_pnl_pct >= 0 ? 'success' : 'danger'}>{pct(metrics.daily_pnl_pct)} today</span>
+              )}
+            </div>
+          )}
+        </div>
+        {portfolioError ? (
+          <p className="muted">{portfolioError}</p>
+        ) : portfolio?.error ? (
+          <p className="muted">{portfolio.error}</p>
+        ) : !portfolio ? (
+          <p className="muted">Loading…</p>
+        ) : !metrics?.equity && positions.length === 0 ? (
+          <p className="muted">The paper account is empty. Fund it with deposit_paper_funds(&quot;USD&quot;, amount).</p>
+        ) : (
+          <div className="strategy-list">
+            <div className="strategy-item">
+              <span>Cash</span>
+              <span>{usd(metrics?.cash ?? 0)}</span>
+            </div>
+            {positions.map((p) => (
+              <div key={p.symbol} className="strategy-item">
+                <span>
+                  {p.symbol} {p.qty > 0 ? 'long' : 'short'} {Math.abs(p.qty).toLocaleString()} @ {p.avg_price.toFixed(5)}
+                </span>
+                <span className={p.unrealized_usd >= 0 ? 'success' : 'danger'}>{usd(p.unrealized_usd)}</span>
+              </div>
+            ))}
+            <div className="strategy-item">
+              <span className="muted">Margin used / free ({metrics?.leverage ?? '?'}x)</span>
+              <span>
+                {usd(metrics?.margin_used ?? 0)} / {usd(metrics?.free_margin ?? 0)}
+              </span>
+            </div>
+            {metrics?.drawdown_pct !== undefined && (
+              <div className="strategy-item">
+                <span className="muted">Drawdown from peak</span>
+                <span>{(metrics.drawdown_pct * 100).toFixed(2)}%</span>
+              </div>
+            )}
           </div>
-        </div>
-        <div className="chart-container">
-          <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={dummyChartData}>
-              <defs>
-                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#00f2ff" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#00f2ff" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <Tooltip
-                contentStyle={{ background: '#16161a', border: '1px solid #2d2d35', borderRadius: '8px' }}
-                itemStyle={{ color: '#00f2ff' }}
-              />
-              <Area type="monotone" dataKey="value" stroke="#00f2ff" fillOpacity={1} fill="url(#colorValue)" strokeWidth={3} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        )}
       </section>
 
       {/* Real-time Ticker */}
@@ -75,12 +141,12 @@ export default function Dashboard() {
         </div>
         <div className="ticker-list">
           {Object.values(tickers).length === 0 ? (
-            <p className="muted">Waiting for stream...</p>
+            <p className="muted">No market-data stream is running.</p>
           ) : (
             Object.values(tickers).map((t) => (
               <div key={t.symbol} className="ticker-item">
                 <span className="symbol">{t.symbol}</span>
-                <span className="price">${t.last.toLocaleString()}</span>
+                <span className="price">{t.last.toLocaleString()}</span>
                 <span className="source muted">{t.source}</span>
               </div>
             ))
@@ -107,28 +173,21 @@ export default function Dashboard() {
             approvals.map((a) => (
               <div key={a.request_id} className="approval-item">
                 <div className="approval-info">
-                  <span className="kind">{a.kind.replace('_', ' ')}</span>
+                  <span className="kind">{describe(a.order)}</span>
+                  {a.order?.rationale && <span className="muted">{a.order.rationale}</span>}
                   <span className="muted">ID: {a.request_id.slice(0, 8)}...</span>
                 </div>
-                <button className="btn btn-primary compact">Review</button>
+                <div className="approval-actions">
+                  <button className="btn btn-primary compact" onClick={() => review(a.request_id, true)}>
+                    Approve
+                  </button>
+                  <button className="btn compact" onClick={() => review(a.request_id, false)}>
+                    Reject
+                  </button>
+                </div>
               </div>
             ))
           )}
-        </div>
-      </section>
-
-      {/* Strategy Performance */}
-      <section className="card">
-        <h3>Active Strategies</h3>
-        <div className="strategy-list">
-          <div className="strategy-item">
-            <span>Trend Follower / AAPL</span>
-            <span className="success">+2.1%</span>
-          </div>
-          <div className="strategy-item">
-            <span>Mean Reversion / TSLA</span>
-            <span className="danger">-1.4%</span>
-          </div>
         </div>
       </section>
     </div>
