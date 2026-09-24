@@ -25,7 +25,7 @@ def ask(prompt: str) -> str:
 
 
 def print_banner():
-    print(f"\n{BOLD}ReadyTrader-FOREX Setup Wizard \U0001F6E1️{RESET}")
+    print(f"\n{BOLD}ReadyTrader-FOREX Setup Wizard 🛡️{RESET}")
     print("-----------------------------------")
     print("This script will help you prepare your environment for AI-agentic trading.\n")
 
