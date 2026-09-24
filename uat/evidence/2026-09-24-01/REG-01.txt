@@ -1,0 +1,49 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_sweep_report.sh
+# at 2026-09-24T12:52:15+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+PRE-01 exit=0 PRE-02 exit=0 PRE-05 exit=0 BE-01 exit=0 BE-05 exit=0 BE-09 exit=0 BE-13 exit=0 IN-02 exit=0 IN-01 exit=0 CF-01 exit=0 CF-02 exit=0 FE-02 exit=0 CF-03 exit=0 CF-04 exit=0 BE-22 exit=0 CF-05 exit=0 CF-06 exit=0 BE-23 exit=0 CL-01 exit=0 CL-02 exit=0 DOC-01 exit=0 BE-24 exit=0 DOC-02 exit=0 BE-25 exit=0 DOC-04 exit=0 ME-02 exit=0 FE-05 exit=0 IN-04 exit=0 
+BE-01: 8 lines differ from BE-01-retest.txt
+BE-05: 0 lines differ from BE-05-retest.txt
+BE-09: 4 lines differ from BE-09-retest.txt
+BE-13: 0 lines differ from BE-13-retest.txt
+BE-22: 2 lines differ from BE-22-retest.txt
+BE-23: 0 lines differ from BE-23-retest.txt
+BE-24: 0 lines differ from BE-24-retest.txt
+BE-25: 0 lines differ from BE-25-retest.txt
+CF-01: 0 lines differ from CF-01-retest.txt
+CF-02: 0 lines differ from CF-02-retest.txt
+CF-03: 0 lines differ from CF-03-retest.txt
+CF-04: 7 lines differ from CF-04-retest.txt
+CF-05: 0 lines differ from CF-05-retest.txt
+CF-06: 0 lines differ from CF-06-retest.txt
+CL-01: 0 lines differ from CL-01-retest.txt
+CL-02: 0 lines differ from CL-02-retest.txt
+DOC-01: 0 lines differ from DOC-01-retest.txt
+DOC-02: 3 lines differ from DOC-02-retest.txt
+DOC-04: 2 lines differ from DOC-04-retest.txt
+FE-02: 0 lines differ from FE-02-retest.txt
+FE-05: 0 lines differ from FE-05-retest.txt
+IN-01: 4 lines differ from IN-01-retest.txt
+IN-02: 0 lines differ from IN-02-retest.txt
+IN-04: 0 lines differ from IN-04-retest.txt
+ME-02: 0 lines differ from ME-02-retest.txt
+PRE-01: 4 lines differ from PRE-01-retest.txt
+PRE-02: 8 lines differ from PRE-02-retest.txt
+PRE-05: 34 lines differ from PRE-05-retest.txt
+--- differences worth reading (all explained by later fixes or live market data):
+[BE-01]
+< CALL get_multiple_prices {"symbols": "EURUSD,USDJPY"} -> { "data": { "prices": { "EURUSD": N, "USDJPY": N } }, "ok": true }
+> CALL get_multiple_prices {"symbols": "EURUSD,USDJPY"} -> { "data": { "errors": {}, "prices": { "EURUSD": N, "USDJPY": N } }, "ok": true }
+< CALL deposit_paper_funds {"asset": "USD", "amount": N} -> { "data": { "account": { "cash_usd": N, "equity_usd": N, "free_margin_usd": N, "leverage": N, "margin_used_usd": N, "net_deposits_usd": N, "
+> CALL deposit_paper_funds {"asset": "USD", "amount": N} -> { "data": { "account": { "cash_usd": N, "equity_usd": N, "free_margin_usd": N, "leverage": N, "margin_used_usd": N, "net_deposits_usd": N, "
+[CF-04]
+< env.example:N:# ALPACA_API_KEY=PK******************
+< env.example:N:# ALPACA_SECRET_KEY=***********************************
+< env.example:N:# ALPACA_BASE_URL=https://paper-api.alpaca.markets
+> env.example:N:# ALPACA_API_KEY=
+[DOC-04]
+< CALL get_economic_calendar {} -> { "error": { "code": "source_unavailable", "data": {}, "message": "Economic Calendar unavailable: could not read the ForexFactory calendar (N Client Error: Too Many 
+> CALL get_economic_calendar {} -> { "data": { "calendar": "High-impact economic events, rest of this week (ForexFactory, read Thu N:N UTC; times UTC; now Thu N:N):\n- Thu N Sep N:N (today) AUD: Emplo
+
+
+exit=0

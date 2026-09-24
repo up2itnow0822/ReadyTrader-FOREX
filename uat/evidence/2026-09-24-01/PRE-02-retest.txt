@@ -1,0 +1,18 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_start.sh
+# at 2026-09-24T10:55:26+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+--- python app/main.py
+                    INFO     Starting MCP server                  server.py:2527
+                             'ReadyTrader-FOREX' with transport                 
+                             'stdio'                                            
+--- python -m app.main
+                    INFO     Starting MCP server                  server.py:2527
+                             'ReadyTrader-FOREX' with transport                 
+                             'stdio'                                            
+--- MCP client: python -m app.main
+TOOLS 27: analyze_social_sentiment, deposit_paper_funds, fetch_custom_feed, fetch_financial_news, fetch_ohlcv, fetch_rss_news, get_economic_calendar, get_financial_news, get_forex_market_brief, get_forex_news, get_free_news, get_latest_insights, get_market_news, get_market_regime, get_market_sentiment, get_multiple_prices, get_social_sentiment, get_stock_price, place_forex_order, place_limit_order, place_market_order, place_stock_order, post_market_insight, reset_paper_account, run_backtest_simulation, start_brokerage_private_ws, validate_trade_risk
+--- MCP client: python app/main.py
+TOOLS 27: analyze_social_sentiment, deposit_paper_funds, fetch_custom_feed, fetch_financial_news, fetch_ohlcv, fetch_rss_news, get_economic_calendar, get_financial_news, get_forex_market_brief, get_forex_news, get_free_news, get_latest_insights, get_market_news, get_market_regime, get_market_sentiment, get_multiple_prices, get_social_sentiment, get_stock_price, place_forex_order, place_limit_order, place_market_order, place_stock_order, post_market_insight, reset_paper_account, run_backtest_simulation, start_brokerage_private_ws, validate_trade_risk
+
+
+exit=0

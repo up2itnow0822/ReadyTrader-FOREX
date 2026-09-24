@@ -1,0 +1,17 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_fresh_install.sh
+# at 2026-09-24T10:51:37+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+resolved: fastmcp 2.14.1;mcp 2.2.0;
+--- python app/main.py (stdin closed)
+    from fastmcp.settings import Settings
+  File "/tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/fx_fresh/lib/python3.12/site-packages/fastmcp/settings.py", line 12, in <module>
+    from pydantic_settings import (
+ModuleNotFoundError: No module named 'pydantic_settings'
+--- python -m app.main (stdin closed)
+    from fastmcp.settings import Settings
+  File "/tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/fx_fresh/lib/python3.12/site-packages/fastmcp/settings.py", line 12, in <module>
+    from pydantic_settings import (
+ModuleNotFoundError: No module named 'pydantic_settings'
+
+
+exit=0

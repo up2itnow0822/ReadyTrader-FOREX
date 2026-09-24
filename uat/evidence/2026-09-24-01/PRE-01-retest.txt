@@ -1,0 +1,17 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_fresh_install.sh
+# at 2026-09-24T10:54:20+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+resolved: fastmcp 2.14.1;mcp 1.30.0;
+--- python app/main.py (stdin closed)
+
+                    INFO     Starting MCP server                  server.py:2527
+                             'ReadyTrader-FOREX' with transport                 
+                             'stdio'                                            
+--- python -m app.main (stdin closed)
+
+                    INFO     Starting MCP server                  server.py:2527
+                             'ReadyTrader-FOREX' with transport                 
+                             'stdio'                                            
+
+
+exit=0
