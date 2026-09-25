@@ -136,9 +136,16 @@ class FakeBroker:
         return {"id": "fake-1", **kw}
 
 
+# The approval API approves a live proposal only with the operator token (the agent holds the
+# confirm_token, so on its own that token never proved a human approved).
+OPERATOR_TOKEN = "test-operator-token"
+HEADERS = {"Authorization": f"Bearer {OPERATOR_TOKEN}"}
+
+
 @pytest.fixture
 def live(monkeypatch):
     broker = FakeBroker()
+    monkeypatch.setenv("API_OPERATOR_TOKEN", OPERATOR_TOKEN)
     monkeypatch.setattr(settings, "PAPER_MODE", False)
     monkeypatch.setattr(settings, "MARKET_GUARD_ON_DATA_ERROR", "")
     monkeypatch.setattr(settings, "LIVE_TRADING_ENABLED", True)
@@ -206,7 +213,7 @@ def test_a_live_order_without_keys_is_refused(monkeypatch, live):
 def api():
     import app.api_server as api_server
 
-    return TestClient(api_server.app)
+    return TestClient(api_server.app, headers=HEADERS)
 
 
 def propose(monkeypatch, *args, **kwargs):
@@ -344,6 +351,7 @@ def test_a_live_exit_needs_no_equity(monkeypatch, live):
 def test_a_paper_proposal_never_executes_live(monkeypatch, funded, api):
     proposal = propose(monkeypatch, "EURUSD", "buy", 1_000)
     broker = FakeBroker()
+    monkeypatch.setenv("API_OPERATOR_TOKEN", OPERATOR_TOKEN)
     monkeypatch.setattr(settings, "PAPER_MODE", False)
     monkeypatch.setattr(settings, "LIVE_TRADING_ENABLED", True)
     monkeypatch.setitem(global_container.brokerages, "oanda", broker)
@@ -354,7 +362,7 @@ def test_a_paper_proposal_never_executes_live(monkeypatch, funded, api):
 
 def test_the_pending_list_shows_the_order_but_never_the_token(monkeypatch, funded, api):
     proposal = propose(monkeypatch, "EURUSD", "buy", 1_000)
-    pending = api.get("/api/pending-approvals").json()["pending"]
+    pending = [p for p in api.get("/api/pending-approvals").json()["pending"] if p["request_id"] == proposal["request_id"]]
     assert pending[0]["order"]["symbol"] == "EURUSD" and pending[0]["order"]["side"] == "buy"
     assert pending[0]["order"]["amount"] == 1_000 and pending[0]["order"]["paper_mode"] is True
     assert proposal["confirm_token"] not in json.dumps(pending)
