@@ -6,10 +6,10 @@
 ## Run 2026-09-24-01 — ReadyTrader-FOREX
 
 - Branch: `uat/2026-09-24-forex`  |  Base: `main@417a104`
-- Started: 2026-09-24T10:51:11+00:00  |  Updated: 2026-09-24T13:11:03+00:00
+- Started: 2026-09-24T10:51:11+00:00  |  Updated: 2026-09-25T11:58:10+00:00
 - Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tools, paper trading, risk guardian + FX Falling Knife/halt, api_server approvals, dashboard, CLI scripts, config, docs, registry manifest, Docker configs (static). Out: live brokerage orders (no credentials; live trading is a hard gate), Docker build (no daemon in sandbox)
 - Verdict: **CLEAN with BLOCKED items**
-- Totals: 60 checks · 6 pass · 52 fail (52 verified fixed, 0 open, 0 fixed-unverified, 0 regressed, 0 wontfix) · 2 blocked
+- Totals: 89 checks · 11 pass · 77 fail (77 verified fixed, 0 open, 0 fixed-unverified, 0 regressed, 0 wontfix) · 1 blocked
 
 ### User journeys exercised
 
@@ -25,17 +25,17 @@
 | Section | Pass | Fail | Verified fixed | Blocked |
 |---|---|---|---|---|
 | preflight | 1 | 5 | 5 | 0 |
-| backend | 0 | 24 | 24 | 0 |
-| data | 1 | 0 | 0 | 0 |
+| backend | 0 | 36 | 36 | 0 |
+| data | 1 | 4 | 4 | 0 |
 | memory | 0 | 2 | 2 | 0 |
-| frontend | 2 | 5 | 5 | 0 |
+| frontend | 2 | 6 | 6 | 0 |
 | integrations | 0 | 4 | 4 | 1 |
 | cli | 0 | 2 | 2 | 0 |
-| config | 0 | 7 | 7 | 0 |
-| docs | 0 | 3 | 3 | 1 |
-| regression | 2 | 0 | 0 | 0 |
+| config | 0 | 10 | 10 | 0 |
+| docs | 1 | 7 | 7 | 0 |
+| regression | 6 | 1 | 1 | 0 |
 
-### Findings (54)
+### Findings (78)
 
 #### PRE-01 — README local install (pip install -r requirements-dev.txt) then python app/main.py  [FAIL · critical · **VERIFIED**]
 
@@ -64,6 +64,19 @@
   - Commit: `a12f405`
   - Regression test: tests/test_server_startup.py
 - Retest 1 (2026-09-24T10:55:50+00:00): **PASS** — python -m app.main starts and an MCP client lists 27 tools (registration no longer raises) · evidence: [PRE-02-retest.txt](evidence/2026-09-24-01/PRE-02-retest.txt)
+
+#### AR-01 — The operator token cannot be steered past (Host header, root path)  [FAIL · high · **VERIFIED**]
+
+- Section: `backend`
+- Expected: With API_OPERATOR_TOKEN set, every /api/ route but /api/health needs the bearer token, whatever the Host header or path prefix.
+- Observed: The middleware checked request.url.path, built from the Host header: Host '127.0.0.1:8000#', '?' or '/x' reached /api/portfolio without a token (200), and with root_path /rt a live approval carrying only the agent's confirm_token executed (order sent to the brokerage).
+- Evidence: [AR-01.txt](evidence/2026-09-24-01/AR-01.txt)
+- Fix: require_operator is a dependency of the operator_api router that holds every protected route; the middleware no longer checks paths.
+  - Root cause: A middleware compared request.url.path (Host header + root_path) instead of the path the router matched.
+  - Files: `app/api_server.py`
+  - Commit: `fc571242`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_the_operator_token_cannot_be_steered_past
+- Retest 1 (2026-09-25T11:38:39+00:00): **PASS** — Every Host variant ('#', '?', '/x') answers 401 without the token; behind root_path /rt the agent's confirm_token alone answers 401 and no live order is sent. · evidence: [AR-01-retest.txt](evidence/2026-09-24-01/AR-01-retest.txt)
 
 #### BE-01 — Paper market order executes (README: place_market_order('EUR/USD','buy',1000))  [FAIL · high · **VERIFIED**]
 
@@ -343,6 +356,104 @@
   - Commit: `9551325`
 - Retest 1 (2026-09-24T10:57:02+00:00): **PASS** — the workflow's python steps (ruff, pytest, bandit) run and pass locally; the dashboard lint/build steps are checked in the frontend section · evidence: [PRE-05-retest.txt](evidence/2026-09-24-01/PRE-05-retest.txt)
 
+#### XR-01 — Every spelling of a pair gets the same market checks  [FAIL · high · **VERIFIED**]
+
+- Section: `backend`
+- Observed: Live, volatility halt on EURUSD (7.3x normal): SELL 4,000 'EURUSD' or 'EUR/USD' is risk_blocked, but 'EUR_USD' or 'eur-usd' is sent with market status unavailable; with MARKET_GUARD_ON_DATA_ERROR=allow, BUY 'EUR_USD' into an 8% collapse is sent. The bar fetch strips only '/', the position lookup also '_' and '-'.
+- Evidence: [XR-01.txt](evidence/2026-09-24-01/XR-01.txt)
+- Fix: canonical_symbol() maps every pair spelling to EURUSD before validate_trade_risk, pre_trade_check and place_stock_order run any check.
+  - Root cause: The bar lookup read the symbol as given and the provider stripped only '/', so EUR_USD / eur-usd found no bars; the SELL-side halt and the data-error policy then let the order through.
+  - Files: `app/tools/trading.py`, `app/tools/execution.py`
+  - Commit: `4f72e15d`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_every_spelling_of_a_pair_gets_the_same_market_checks
+- Retest 1 (2026-09-24T21:51:19+00:00): **PASS** — Live volatility halt: SELL 4,000 in every spelling (EURUSD, EUR/USD, EUR_USD, eur-usd) is risk_blocked with market.status ok (ratio 7.28); the Falling Knife BUY with EUR_USD is blocked too; orders sent to OANDA: []. · evidence: [XR-01-retest.txt](evidence/2026-09-24-01/XR-01-retest.txt)
+
+#### XR-02 — Resting limit orders cannot build exposure the Guardian never sees  [FAIL · high · **VERIFIED**]
+
+- Section: `backend`
+- Observed: Live, long 100,000 EUR_USD: five SELL LIMIT 100,000 @1.20 are each sized as reducing (0 added) and all sent GTC: if filled, a net short of 400,000 EUR (~$432k) on $100k equity. Open orders are never counted.
+- Evidence: [XR-02.txt](evidence/2026-09-24-01/XR-02.txt)
+- Fix: Every OANDA order is fill-or-kill: a limit is a MARKET order with priceBound=limit, timeInForce FOK; positionFill REDUCE_FIRST nets as the Guardian sizes (an account that cannot net rejects the order). Nothing rests at the broker.
+  - Root cause: Live limits went to OANDA as GTC LIMIT orders; the Guardian sizes against current positions, so resting orders (and their later fills) were never counted and outlived the kill switch.
+  - Files: `execution/oanda_service.py`, `docs/EXCHANGES.md`, `README.md`
+  - Commit: `4f72e15d`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_a_live_limit_order_never_rests_at_oanda; tests/test_oanda.py::test_a_limit_order_fills_now_at_its_price_or_better_or_not_at_all
+- Retest 1 (2026-09-24T21:51:19+00:00): **PASS** — Through the tools and the real OANDA connector (fake v20 API): five SELL LIMIT 100,000 @1.20 are sent as MARKET/FOK/REDUCE_FIRST with priceBound 1.2 and cancelled (BOUNDS_VIOLATION, execution_error); a marketable SELL LIMIT @1.07 fills; order types sent: only (MARKET, FOK); orders left resting at OANDA: 0. · evidence: [XR-02-retest.txt](evidence/2026-09-24-01/XR-02-retest.txt)
+
+#### XR-03 — Orders at every brokerage are valued at the market, not the caller's price  [FAIL · high · **VERIFIED**]
+
+- Section: `backend`
+- Observed: Live via alpaca: MARKET BUY 10,000 AAPL with price=0.0001 (market 190) is valued at $1 and sent; the approval API re-executes it (200); a MARKET SELL that opens a short is sent even with no quote. Currency pairs are valued at the market quote.
+- Evidence: [XR-03.txt](evidence/2026-09-24-01/XR-03.txt)
+- Fix: The reference price is the market price (a limit at max(limit, market)); a market order's price is dropped; without a market price an order that adds exposure is refused. The approval API re-runs the check with the order type.
+  - Root cause: pre_trade_check used the caller's price as the reference whenever one was given, so a non-pair order carrying price=0.0001 was valued at almost nothing.
+  - Files: `app/tools/execution.py`, `app/api_server.py`
+  - Commit: `4f72e15d`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_an_order_at_any_brokerage_is_valued_at_the_market; tests/test_uat_review_2026_09_24.py::test_without_a_market_price_an_order_that_adds_exposure_is_refused
+- Retest 1 (2026-09-24T21:51:19+00:00): **PASS** — Alpaca MARKET BUY 10,000 AAPL price=0.0001 is valued at 190 (notional 1.9M) and refused; no quote: SELL opening a short is refused 'Could not value'; the approval section: the proposal is refused up front; orders sent to the recorders: []. · evidence: [XR-03-retest.txt](evidence/2026-09-24-01/XR-03-retest.txt)
+
+#### XR-04 — A paper deposit does not end a drawdown halt  [FAIL · high · **VERIFIED**]
+
+- Section: `data`
+- Observed: After a 14.9% drawdown a BUY is refused; after deposit_paper_funds(USD, 1,000,000) drawdown reads 1.2% and BUY 40,000 GBPUSD executes (the drawdown divides by current equity).
+- Evidence: [XR-04.txt](evidence/2026-09-24-01/XR-04.txt)
+- Fix: get_risk_metrics chains results into a time-weighted index (per period: equity change less deposits, over the prior equity): a deposit is neither a gain nor a loss and cannot end a halt.
+  - Root cause: The drawdown was the fall in (equity - deposits) divided by the current equity, so new capital shrank it.
+  - Files: `core/fx_account.py`
+  - Commit: `4f72e15d`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_a_deposit_does_not_end_a_drawdown_halt; tests/test_uat_review_2026_09_24.py::test_the_order_check_halts_on_a_drawdown_a_deposit_cannot_hide
+- Retest 1 (2026-09-24T21:51:19+00:00): **PASS** — After a 12.96% loss recorded yesterday the BUY is refused (Max Drawdown 13.0%); after deposit_paper_funds(1,000,000) the drawdown still reads 0.1296 and BUY 40,000 GBPUSD is refused. · evidence: [XR-04-retest.txt](evidence/2026-09-24-01/XR-04-retest.txt)
+
+#### XR-05 — Docs say which loss limits apply to live orders  [FAIL · high · **VERIFIED**]
+
+- Section: `docs`
+- Observed: Live equity 100,000 -> 80,000 today: a BUY is allowed ('Trade looks safe'): only paper mode computes the loss metrics. README:37, THREAT_MODEL:26-27, RUNBOOK:63 and ERRORS:23 state the limits without saying paper only.
+- Evidence: [XR-05.txt](evidence/2026-09-24-01/XR-05.txt)
+- Fix: Live verdicts (and executed orders) list daily_loss_limit and max_drawdown under inactive_rules; README, THREAT_MODEL, RUNBOOK and ERRORS say the limits run on the paper account only and how to watch a live account.
+  - Root cause: Only paper mode computes loss metrics, and the docs stated the limits without saying so.
+  - Files: `app/tools/trading.py`, `app/tools/execution.py`, `README.md`, `docs/THREAT_MODEL.md`, `RUNBOOK.md`, `docs/ERRORS.md`
+  - Commit: `4f72e15d`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_live_orders_say_which_loss_rules_do_not_run
+- Retest 1 (2026-09-24T21:51:20+00:00): **PASS** — Live, equity down 20% today: the check still allows (no loss history for a live account), and now says so: inactive_rules lists daily_loss_limit and max_drawdown in the verdict and in the executed order; README:37/172, THREAT_MODEL:34, RUNBOOK:73 and ERRORS:28 say 'paper account only'. · evidence: [XR-05-retest.txt](evidence/2026-09-24-01/XR-05-retest.txt)
+
+#### XR-06 — A live approve_each order needs an approval the agent cannot give itself  [FAIL · high · **VERIFIED**]
+
+- Section: `backend`
+- Observed: The agent receives each proposal's confirm_token; POST /api/approve-trade needs only that token, so an agent that can make HTTP requests approves its own live order (200, order sent). THREAT_MODEL:24 says approve_each requires a human for every order.
+- Evidence: [XR-06.txt](evidence/2026-09-24-01/XR-06.txt)
+- Fix: API_OPERATOR_TOKEN: when set, every /api/ route but /api/health needs Authorization: Bearer; a live proposal is approved only when it is set (403 operator_token_required, checked before the proposal is consumed). The dashboard sends it (asked once per tab).
+  - Root cause: Approval needed only the confirm_token, which the agent receives with the proposal.
+  - Files: `app/api_server.py`, `frontend/src/lib/api.ts`, `frontend/src/hooks/usePendingApprovals.ts`, `frontend/src/app/page.tsx`, `env.example`, `README.md`, `RUNBOOK.md`, `docs/THREAT_MODEL.md`
+  - Commit: `4f72e15d`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_a_live_proposal_needs_the_operator_token
+- Retest 1 (2026-09-24T21:51:20+00:00): **PASS** — Without API_OPERATOR_TOKEN a live approval answers 403 operator_token_required (0 orders); with it set, the agent's confirm_token alone or a wrong bearer answers 401 (0 orders); the operator's bearer approves (200, 1 order); /api/health stays open, /api/pending-approvals needs the token. · evidence: [XR-06-retest.txt](evidence/2026-09-24-01/XR-06-retest.txt)
+
+#### AR-02 — The dashboard can read a 401 and ask for the operator token  [FAIL · medium · **VERIFIED**]
+
+- Section: `frontend`
+- Expected: 401 and 500 answers carry the CORS headers for the dashboard's origin.
+- Observed: request_context ran outside CORSMiddleware: the 401 and the JSON 500 had no Access-Control-Allow-Origin, so the browser hid them and the dashboard showed 'API not reachable' instead of asking for the token.
+- Evidence: [AR-02.txt](evidence/2026-09-24-01/AR-02.txt)
+- Fix: CORS is added after request_context and wraps every answer.
+  - Root cause: CORSMiddleware was added before the http middleware, so it sat inside it.
+  - Files: `app/api_server.py`
+  - Commit: `fc571242`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_every_answer_carries_the_cors_headers
+- Retest 1 (2026-09-25T11:38:39+00:00): **PASS** — CORS is now the outermost middleware: the 401s and the JSON 500 carry Access-Control-Allow-Origin for the dashboard. · evidence: [AR-02-retest.txt](evidence/2026-09-24-01/AR-02-retest.txt)
+
+#### AR-03 — A NaN quote is no price  [FAIL · medium · **VERIFIED**]
+
+- Section: `backend`
+- Expected: A non-finite quote is treated as missing: an order that adds exposure is refused, and no NaN reaches JSON.
+- Observed: _quote returned NaN (truthy): a live BUY of 1,000,000 AAPL at alpaca passed the size rule (notional nan) and was sent; a refused pair order carried reference_price NaN (invalid JSON); a paper approval answered 500.
+- Evidence: [AR-03.txt](evidence/2026-09-24-01/AR-03.txt)
+- Fix: Quotes must be finite and positive, else they are no price (the fail-closed paths then refuse).
+  - Root cause: The quote functions tested 'if not price', and NaN is truthy.
+  - Files: `app/tools/execution.py`, `core/fx_account.py`
+  - Commit: `fc571242`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_a_nan_quote_is_no_price
+- Retest 1 (2026-09-25T11:38:39+00:00): **PASS** — With a NaN AAPL quote the order is refused (valued from the last close instead, 1104%), nothing is sent, no NaN in the JSON; the paper approval with a NaN rate answers 400 with a reason instead of 500, nothing executed. · evidence: [AR-03-retest.txt](evidence/2026-09-24-01/AR-03-retest.txt)
+
 #### BE-03 — Malformed trade requests are refused (unknown side, non-positive amount)  [FAIL · medium · **VERIFIED**]
 
 - Section: `backend`
@@ -561,6 +672,157 @@
   - Commit: `9551325`
 - Retest 1 (2026-09-24T10:57:02+00:00): **PASS** — README prerequisites and local install state Python 3.12+ · evidence: [PRE-05-retest.txt](evidence/2026-09-24-01/PRE-05-retest.txt)
 
+#### XR-07 — Paper loss limits measure losses against the capital now in the account and today's start  [FAIL · medium · **VERIFIED**]
+
+- Section: `data`
+- Observed: Deposit 1k, small dip, top up 1M, lose $990 (0.099%): daily -99.0% and 'Daily Loss Limit Hit'; with the last snapshot a week old and a -6.5% drift, every adding order today is refused as a daily loss, even after a trade today.
+- Evidence: [XR-07.txt](evidence/2026-09-24-01/XR-07.txt)
+- Fix: Daily P&L is the index change since the previous UTC day's last snapshot, else the day's first; mark_day_open records one snapshot at the first check of a day.
+  - Root cause: Daily P&L divided the day's loss by the first equity of the day (before a top-up), and a week-old snapshot counted as the start of today.
+  - Files: `core/fx_account.py`, `app/tools/execution.py`, `app/tools/trading.py`
+  - Commit: `4f72e15d`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_a_small_loss_after_a_large_top_up_is_a_small_loss; tests/test_uat_review_2026_09_24.py::test_a_week_old_snapshot_is_not_the_start_of_today
+- Retest 1 (2026-09-24T21:51:20+00:00): **PASS** — (c) 1k deposit, dip, 1M top-up, ~990 USD loss: daily_pnl_pct -0.14% (was -99%), BUY allowed; (d) week-old snapshot with -6.5% drift: daily 0.0 and the BUY allowed, drawdown 6.48% kept. · evidence: [XR-07-retest.txt](evidence/2026-09-24-01/XR-07-retest.txt)
+
+#### XR-08 — An unpriceable position does not hide a loss  [FAIL · medium · **VERIFIED**]
+
+- Section: `data`
+- Observed: If EURUSD cannot be priced, account() raises, the metrics fall back to the last snapshot (equity 100,000, drawdown 0) and BUY GBPUSD is allowed during a 14.9% drawdown.
+- Evidence: [XR-08.txt](evidence/2026-09-24-01/XR-08.txt)
+- Fix: Equity is None when a position cannot be priced (account() raises or reports unpriced positions); snapshots skip that state; the order checks refuse new exposure; /api/portfolio and the dashboard show the unpriced positions.
+  - Root cause: When a position could not be priced, get_risk_metrics fell back to the last snapshot's equity and _snapshot recorded positions at their entry price.
+  - Files: `core/fx_account.py`, `app/tools/execution.py`, `app/api_server.py`, `frontend/src/app/page.tsx`
+  - Commit: `4f72e15d`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_an_unpriceable_position_does_not_hide_a_loss
+- Retest 1 (2026-09-24T21:51:20+00:00): **PASS** — EURUSD unpriceable: equity reads None (not the last snapshot's 100,000), the 12.96% drawdown is kept and BUY GBPUSD is refused. · evidence: [XR-08-retest.txt](evidence/2026-09-24-01/XR-08-retest.txt)
+
+#### XR-09 — A market order's price is validated or ignored  [FAIL · medium · **VERIFIED**]
+
+- Section: `backend`
+- Observed: A market order with price NaN/inf/-1/0 is accepted and stored in the proposal; GET /api/pending-approvals then answers 500 (JSON cannot encode NaN) with no headers, for as long as the proposal is pending.
+- Evidence: [XR-09.txt](evidence/2026-09-24-01/XR-09.txt)
+- Fix: A market order's price is dropped (0.0) before sizing, proposals and the brokerage; the pending list and approval responses are JSON-safe.
+  - Root cause: A market order's price was stored unvalidated in the proposal; JSON cannot encode NaN, so the pending list answered 500.
+  - Files: `app/tools/execution.py`, `app/api_server.py`
+  - Commit: `4f72e15d`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_a_market_orders_price_is_ignored_and_the_pending_list_still_answers
+- Retest 1 (2026-09-24T21:51:20+00:00): **PASS** — A market order with price NaN is proposed with price 0.0; GET /api/pending-approvals answers 200 (with headers), approving executes, and the list answers 200 after; NaN/inf market prices never reach a proposal. · evidence: [XR-09-retest.txt](evidence/2026-09-24-01/XR-09-retest.txt)
+
+#### XR-10 — The kill switch and its way out are documented as they work  [FAIL · medium · **VERIFIED**]
+
+- Section: `docs`
+- Observed: With TRADING_HALTED on, a SELL closing a long is refused like a new order; the server has no cancel/close/list tools; GTC limits placed before the halt keep working at OANDA; every emergency-style route is 404.
+- Evidence: [XR-10.txt](evidence/2026-09-24-01/XR-10.txt)
+- Fix: Docs: the kill switch refuses closing orders too; flatten on the OANDA platform. With fill-or-kill orders (XR-02) nothing the server sent rests at the broker behind the switch.
+  - Root cause: The docs did not say the kill switch refuses closes, nor how to flatten; GTC limits sent before a halt kept working at OANDA.
+  - Files: `RUNBOOK.md`, `docs/THREAT_MODEL.md`, `README.md`, `docs/EXCHANGES.md`, `execution/oanda_service.py`
+  - Commit: `4f72e15d`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_the_kill_switch_docs_say_what_it_refuses_and_how_to_flatten
+- Retest 1 (2026-09-24T21:51:20+00:00): **PASS** — Halted: closes and adds are refused (trading_halted) as documented; RUNBOOK:23-28 and THREAT_MODEL:44 now say closes are refused and to flatten on the OANDA platform; OANDA orders are only (MARKET, FOK), so nothing rests at the broker behind the switch. · evidence: [XR-10-retest.txt](evidence/2026-09-24-01/XR-10-retest.txt)
+
+#### XR-11 — The Docker build context keeps secrets and local state out  [FAIL · medium · **VERIFIED**]
+
+- Section: `config`
+- Observed: .dockerignore excludes only a root .env: .env.live, prod.env, frontend/.env.local, app/.env, configs/.env, *.pem, *.key, secrets/, app/paper.db, execution.db, subfolder .pyc would be sent (COPY . .); the image runs as root and ships frontend/.
+- Evidence: [XR-11.txt](evidence/2026-09-24-01/XR-11.txt)
+- Fix: **/ patterns for secrets, keys, databases, caches and logs; frontend/ left out; USER readytrader (uid 10001) owning only /app/data.
+  - Root cause: Patterns without **/ match only at the context root, so .env/.pem/.key/.db files in subfolders reached COPY . .; the image ran as root.
+  - Files: `.dockerignore`, `Dockerfile`
+  - Commit: `4f72e15d bcf733b8`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_the_docker_build_context_leaves_out_secrets_in_any_folder
+- Retest 1 (2026-09-24T21:51:20+00:00): **PASS** — Synthetic tree: every .env*/prod.env, .pem/.key, secrets/, *.db (any folder), pycache and the compliance log are excluded; only app/main.py and Dockerfile are sent; the Dockerfile creates readytrader (uid 10001) and runs as USER readytrader. · evidence: [XR-11-retest.txt](evidence/2026-09-24-01/XR-11-retest.txt)
+
+#### AR-04 — A deposit cannot end a drawdown halt while a position is unpriced  [FAIL · low · **VERIFIED**]
+
+- Section: `data`
+- Expected: A deposit is recorded with the account's value, or refused.
+- Observed: Deposit while EURUSD priced: drawdown 11.00% -> 10.51% (still halted); the same deposit while EURUSD could not be priced skipped its snapshot and later read as a gain: 11.00% -> 5.50%, halt lifted.
+- Evidence: [AR-04.txt](evidence/2026-09-24-01/AR-04.txt)
+- Fix: deposit() refuses while the account cannot be valued (an unpriced position or no USD rate).
+  - Root cause: _snapshot skipped an unpriced state, so a deposit then went unrecorded and the next period counted it as a gain.
+  - Files: `core/fx_account.py`
+  - Commit: `fc571242`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_a_deposit_waits_while_a_position_cannot_be_priced
+- Retest 1 (2026-09-25T11:38:39+00:00): **PASS** — A deposit while EURUSD cannot be priced is refused ('the account cannot be valued now'). With no new capital the later +5,499 is a real trading gain on 89,000 (94,499/100,000: 5.50%, by hand too); a recorded deposit still keeps the halt (10.51%). · evidence: [AR-04-retest.txt](evidence/2026-09-24-01/AR-04-retest.txt)
+
+#### AR-05 — The docs say how the daily-loss baseline is taken  [FAIL · low · **VERIFIED**]
+
+- Section: `docs`
+- Expected: RUNBOOK/THREAT_MODEL describe the daily baseline as the code computes it.
+- Observed: RUNBOOK:73 says 'lost 5% since the day began'; the code measures from the previous UTC day's last recorded value, so a late move a day never recorded counts toward the next day too (S2: -5.5% all Tuesday with no move since midnight).
+- Evidence: [AR-05.txt](evidence/2026-09-24-01/AR-05.txt)
+- Fix: RUNBOOK and THREAT_MODEL describe the baseline (previous UTC day's last recorded value, else today's first) and that it errs toward halting.
+  - Root cause: The docs described the intent, not the baseline the code uses.
+  - Files: `RUNBOOK.md`, `docs/THREAT_MODEL.md`
+  - Commit: `fc571242`
+  - Regression test: evidence only (docs)
+- Retest 1 (2026-09-25T11:38:39+00:00): **PASS** — RUNBOOK:73-78 and THREAT_MODEL:34-36 now describe the baseline the code uses (previous UTC day's last recorded value, else today's first) and that a late unrecorded move counts toward the next day, erring toward halting; the S2 numbers match that description. · evidence: [AR-05-retest.txt](evidence/2026-09-24-01/AR-05-retest.txt)
+
+#### AR-06 — Orders the switches refuse are audited  [FAIL · low · **VERIFIED**]
+
+- Section: `backend`
+- Expected: Every well-formed order request writes trade_start to the compliance log, refused or not.
+- Observed: Since the switches answer first (REG-03), a halted order returned before the audit record: audit events=[] (35668a03 recorded it).
+- Evidence: [AR-06.txt](evidence/2026-09-24-01/AR-06.txt)
+- Fix: trade_start is recorded right after input validation, before any refusal.
+  - Root cause: REG-03 moved the switch refusal above the audit record.
+  - Files: `app/tools/execution.py`
+  - Commit: `fc571242`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_orders_the_switches_refuse_are_still_audited
+- Retest 1 (2026-09-25T11:38:39+00:00): **PASS** — A halted order answers trading_halted and writes trade_start (EURUSD buy 5,000,000) to the audit log again. · evidence: [AR-06-retest.txt](evidence/2026-09-24-01/AR-06-retest.txt)
+
+#### AR-07 — An approval while halted answers trading_halted  [FAIL · low · **VERIFIED**]
+
+- Section: `backend`
+- Expected: RUNBOOK: every approval is refused with trading_halted while the kill switch is set, without calling the brokerage.
+- Observed: The approval ran pre_trade_check first: 409 risk_blocked 'Could not read the account's equity' and get_account_balance was called during the halt.
+- Evidence: [AR-07.txt](evidence/2026-09-24-01/AR-07.txt)
+- Fix: In live mode the switches and the live policy are checked first; pre_trade_check runs only if they pass (execute_order checks them again).
+  - Root cause: approve_trade ran pre_trade_check (which reads the brokerage) before live_order_refusal.
+  - Files: `app/api_server.py`
+  - Commit: `fc571242`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_an_approval_while_halted_answers_halted_without_calling_the_brokerage
+- Retest 1 (2026-09-25T11:38:39+00:00): **PASS** — An approval while halted answers 409 trading_halted; the brokerage is not called; no order sent. · evidence: [AR-07-retest.txt](evidence/2026-09-24-01/AR-07-retest.txt)
+
+#### AR-08 — An existing Docker data volume keeps working after the upgrade  [FAIL · low · **VERIFIED**]
+
+- Section: `config`
+- Expected: A volume written by the previous (root) image works with the new image, or the docs say the one step that makes it work.
+- Observed: Docker: the image at 35668a03 (root) wrote root-owned paper.db/insights.db/strategies.db to a volume; the new image (uid 10001) on that volume fails deposit_paper_funds with 'attempt to write a readonly database'. Nothing documents it.
+- Evidence: [AR-08.txt](evidence/2026-09-24-01/AR-08.txt)
+- Fix: RUNBOOK 'Upgrading a Docker data volume' and a CHANGELOG breaking note give the one-time chown to uid 10001.
+  - Root cause: The image changed its user (XR-11) without an upgrade note.
+  - Files: `RUNBOOK.md`, `CHANGELOG.md`
+  - Commit: `fc571242`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_the_runbook_says_how_to_upgrade_a_volume_and_quotes_the_code
+- Retest 1 (2026-09-25T11:38:40+00:00): **PASS** — The RUNBOOK's one-time chown, run on the volume the root image wrote, hands the files to 10001; the new image then deposits and reads the account (cash 2,000: the old deposit kept). · evidence: [AR-08-retest.txt](evidence/2026-09-24-01/AR-08-retest.txt)
+
+#### AR-09 — The RUNBOOK quotes refusal text as the code writes it  [FAIL · low · **VERIFIED**]
+
+- Section: `docs`
+- Expected: Quoted messages match the code.
+- Observed: RUNBOOK:79 quotes "Could not read the account's equity (paper) (a position cannot be priced now)"; the code writes '... (paper) for the position-size check (a position cannot be priced now).'
+- Evidence: [AR-09.txt](evidence/2026-09-24-01/AR-09.txt)
+- Fix: RUNBOOK quotes the message the code writes, and the empty-account variant.
+  - Root cause: The quote was written from memory.
+  - Files: `RUNBOOK.md`
+  - Commit: `fc571242`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_the_runbook_says_how_to_upgrade_a_volume_and_quotes_the_code
+- Retest 1 (2026-09-25T11:38:40+00:00): **PASS** — RUNBOOK:82 quotes the message as execution.py:217 writes it ('... for the position-size check (a position cannot be priced now)'). · evidence: [AR-09-retest.txt](evidence/2026-09-24-01/AR-09-retest.txt)
+
+#### AR-10 — Every numeric tool parameter refuses true  [FAIL · low · **VERIFIED**]
+
+- Section: `backend`
+- Expected: true/false is refused for every numeric MCP parameter, not just the trading ones.
+- Observed: Of 19 numeric parameters, 4 accepted true as 1: get_forex_news.limit, fetch_ohlcv.limit, post_market_insight.confidence (stored at full confidence) and ttl_seconds.
+- Evidence: [AR-10.txt](evidence/2026-09-24-01/AR-10.txt)
+- Fix: app/tools/params.py defines Number and Integer; every numeric tool parameter uses one.
+  - Root cause: Number covered only the trading tools.
+  - Files: `app/tools/params.py`, `app/tools/trading.py`, `app/tools/market_data.py`, `app/tools/research.py`
+  - Commit: `fc571242`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_every_numeric_tool_parameter_refuses_true
+- Retest 1 (2026-09-25T11:38:40+00:00): **PASS** — All 19 numeric MCP parameters refuse true (was 15 of 19). · evidence: [AR-10-retest.txt](evidence/2026-09-24-01/AR-10-retest.txt)
+
 #### BE-04 — deposit_paper_funds accepts only a positive amount  [FAIL · low · **VERIFIED**]
 
 - Section: `backend`
@@ -746,14 +1008,54 @@
   - Regression test: tests/test_research_tools.py
 - Retest 1 (2026-09-24T11:23:13+00:00): **PASS** — sideways-ish / 7.5 refused with invalid_request; nothing stored · evidence: [BE-13-retest.txt](evidence/2026-09-24-01/BE-13-retest.txt)
 
-#### DOC-03 — docker build and docker run from the README produce a working MCP server  [BLOCKED · **BLOCKED**]
+#### REG-03 — The operator switches answer first; a refusal for an unreadable live account says why  [FAIL · low · **VERIFIED**]
 
-- Section: `docs`
-- Steps: docker build -t readytrader-forex . ; docker run --rm -i -v readytrader-forex-data:/app/data readytrader-forex (list tools)
-- Expected: The image builds and the container answers list_tools with 29 tools
-- Observed: Not runnable here: the docker client is installed but no daemon is reachable in this sandbox. Unblock: run the two README commands on a host with Docker (the build context and configs were verified in DOC-02; the same entrypoint python app/main.py was verified in PRE-02/PRE-03).
-- Blocked on: A host with a running Docker daemon (this sandbox has the client only): run docker build -t readytrader-forex . and the README's docker run line, then list tools.
-- Evidence: [DOC-02-retest.txt](evidence/2026-09-24-01/DOC-02-retest.txt)
+- Section: `regression`
+- Expected: With LIVE_TRADING_ENABLED off or TRADING_HALTED set, a live order is refused as such; a refusal because the brokerage cannot be read names the brokerage's reason.
+- Observed: Regression sweep: with LIVE_TRADING_ENABLED=false (or TRADING_HALTED=true) and no OANDA keys, place_forex_order answers brokerage_not_configured (it answered live_trading_disabled / trading_halted before BE-26 moved the brokerage check first), so a kill-switch test reads as a configuration problem; IN-04's SELL against OANDA with a bogus token is refused 'Could not read the account's equity (oanda)' with OANDA's reason swallowed.
+- Evidence: [REG-03.txt](evidence/2026-09-24-01/REG-03.txt)
+- Fix: place_stock_order checks live_execution_refusal() first in live mode; _live_equity returns (equity, why) and the equity refusal carries why.
+  - Root cause: BE-26 put the brokerage-configured check before the operator switches, and _live_equity returned None without the exception text.
+  - Files: `app/tools/execution.py`, `docs/ERRORS.md`, `CHANGELOG.md`, `tests/test_market_guard.py`
+  - Commit: `f875f5ab`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_the_operator_switches_answer_before_the_brokerage_configuration; tests/test_uat_review_2026_09_24.py::test_an_unreadable_live_account_is_refused_with_the_brokerages_reason
+- Retest 1 (2026-09-25T11:03:04+00:00): **PASS** — No keys: LIVE_TRADING_ENABLED=false answers live_trading_disabled and TRADING_HALTED=true answers trading_halted again; against OANDA with a bogus token both orders are refused before anything is sent, with OANDA's own reason ('HTTP 400: Invalid value specified for accountID'). · evidence: [REG-03-retest.txt](evidence/2026-09-24-01/REG-03-retest.txt)
+
+#### XR-12 — API responses and logs identify each request  [FAIL · low · **VERIFIED**]
+
+- Section: `backend`
+- Observed: Two approvals log the same request_id and ts_ms (fixed at import); responses carry no security headers.
+- Evidence: [XR-12.txt](evidence/2026-09-24-01/XR-12.txt)
+- Fix: request_context middleware: per-request X-Request-ID (in the log lines), security headers, JSON 500 naming only the request id; log_event stamps ts_ms per line.
+  - Root cause: The API logged with one context built at import (fixed request_id and ts_ms) and set no security headers.
+  - Files: `app/api_server.py`, `observability/logging.py`
+  - Commit: `4f72e15d`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_api_responses_carry_a_request_id_and_hide_internal_errors; tests/test_uat_review_2026_09_24.py::test_each_log_line_carries_its_own_time
+- Retest 1 (2026-09-24T21:51:20+00:00): **PASS** — GET /api/health carries X-Request-ID, nosniff, DENY, no-referrer, no-store; two approvals log different request_ids and ts_ms; the internal-error and per-line time tests pass. · evidence: [XR-12-retest.txt](evidence/2026-09-24-01/XR-12-retest.txt)
+
+#### XR-13 — Odd numeric inputs are refused  [FAIL · low · **VERIFIED**]
+
+- Section: `backend`
+- Observed: Two deposits of 1.7e308 make equity inf and the loss metrics NaN, after which BUY 1e15 EURUSD executes; True is accepted as amount 1; sentiment_score NaN is read as +1.0.
+- Evidence: [XR-13.txt](evidence/2026-09-24-01/XR-13.txt)
+- Fix: Deposits capped at 1e12 USD (cash at 1e15); tool numbers typed Number (booleans refused before conversion); non-finite sentiment_score refused.
+  - Root cause: Deposits had no upper bound (inf equity); MCP argument validation turned true into 1.0; a NaN sentiment read as +1.0.
+  - Files: `core/fx_account.py`, `app/tools/trading.py`, `app/tools/execution.py`
+  - Commit: `4f72e15d bcf733b8`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_odd_numbers_are_refused; tests/test_uat_review_2026_09_24.py::test_an_mcp_client_cannot_send_true_as_a_number
+- Retest 1 (2026-09-24T21:51:20+00:00): **PASS** — Deposits of 1.7e308 are refused (cap 1e12), metrics stay finite, BUY 1e15 is refused (empty account); true for any amount/price/value is refused by MCP argument validation on every tool and mode; sentiment_score NaN -> invalid_request. · evidence: [XR-13-retest-2.txt](evidence/2026-09-24-01/XR-13-retest-2.txt)
+
+#### XR-14 — The Smithery listing offers only settings that work there  [FAIL · low · **VERIFIED**]
+
+- Section: `config`
+- Observed: smithery.yaml offers EXECUTION_APPROVAL_MODE=approve_each, but a Smithery-launched server has no API process to approve proposals, so every order becomes a proposal that can only expire.
+- Evidence: [XR-14.txt](evidence/2026-09-24-01/XR-14.txt)
+- Fix: EXECUTION_APPROVAL_MODE is no longer offered; commandFunction passes only the listed settings and sets 'auto'.
+  - Root cause: The listing offered approve_each, but a Smithery launch has no approval API, so every order became a proposal that could only expire.
+  - Files: `smithery.yaml`
+  - Commit: `4f72e15d`
+  - Regression test: tests/test_uat_review_2026_09_24.py::test_the_smithery_listing_offers_only_settings_that_work_there
+- Retest 1 (2026-09-24T21:51:20+00:00): **PASS** — smithery.yaml no longer offers EXECUTION_APPROVAL_MODE; its commandFunction (evaluated with node) passes only the listed keys and 'auto' even when approve_each or an unknown key is entered; the server it starts executes a paper order instead of making a proposal. · evidence: [XR-14-retest.txt](evidence/2026-09-24-01/XR-14-retest.txt)
 
 #### IN-05 — A real order round trip on an OANDA practice account  [BLOCKED · **BLOCKED**]
 
@@ -764,7 +1066,7 @@
 - Blocked on: An OANDA practice (demo) account token: OANDA_API_KEY + OANDA_ACCOUNT_ID for a practice account, with PAPER_MODE=false, LIVE_TRADING_ENABLED=true, OANDA_ENVIRONMENT=practice.
 - Evidence: [IN-04-retest.txt](evidence/2026-09-24-01/IN-04-retest.txt)
 
-### Passed checks (6)
+### Passed checks (11)
 
 | ID | Section | Check | Observed |
 |---|---|---|---|
@@ -772,8 +1074,13 @@
 | DA-01 | data | Paper account, trades and insights survive a restart; free text round-trips unchanged | After restart: cash 50,000, EURUSD +2,000 @ 1.13740, margin 75.83; the insight and the stored trade rationale are identical, including curly quotes, em dash, <b>/<img onerror> (stored as text) and CJK |
 | FE-01 | frontend | Dashboard installs, lints and builds (npm ci, lint, build) | npm ci, lint and build succeed |
 | FE-04 | frontend | With the API stopped the dashboard says so instead of spinning | The Paper Account card shows 'The API is not reachable at http://localhost:8000. Start it with: python app/api_server.py'; no 'Loading' remains (the failed requests are to the stopped API) |
+| DOC-03 | docs | docker build and docker run from the README produce a working MCP server | Unblocked (a Docker daemon now runs in the sandbox). docker build -t readytrader-forex . succeeds (sandbox proxy CA added by a shim only); the image runs as readytrader (uid 10001) and holds no .env/key/db/log/frontend/.venv/.git. docker run --rm -i -v readytrader-forex-data:/app/data readytrader-forex answers an MCP client with 29 tools; a deposit made in one container is there in the next (cash 2,000 after two probe runs); the API sidecar from the Dockerfile comment answers /api/health and /api/portfolio from the same volume. |
 | REG-01 | regression | Regression sweep: every verified check re-run after all fixes | All 28 exit 0. 20 identical after masking; the rest differ only by later, intended changes (get_multiple_prices 'errors' field, env.example rewrite, 29 tools instead of 27, new tests in the CI run), by state left in a shared probe database (BE-01), or by live headlines/rates; DOC-04's calendar call, rate-limited in its retest, answered with this week's events |
 | REG-02 | regression | Every CI step passes on the final tree | ruff clean, 429 tests pass, bandit clean, the dashboard installs, lints and builds |
+| REG-04 | regression | Regression sweep after the cross-repo fixes: every verified check re-run | All 25 exit 0 (code at 6de3f123). 12 identical after masking; the rest differ only by intended changes: new response fields (exposure_added_units, reference_price, inactive_rules for live orders, the pending list's order details from BE-28), smithery's config keys without EXECUTION_APPROVAL_MODE (XR-14), the build context without frontend/ (XR-11) and a Docker daemon now present, the env scan (ALLOW_BROKERAGE_MARKET_TYPES now listed), and ForexFactory answering 429 this time (CL-01/IN-01/IN-02: reported as source_unavailable, as designed). BE-05 and IN-04 showed the switch-order and swallowed-reason problem fixed in REG-03 (f875f5ab), which touched only the live refusal order and its message. |
+| REG-05 | regression | Every CI step passes on the final tree | HEAD f875f5ab: ruff clean, 453 tests pass, bandit clean, the dashboard installs, lints and builds. |
+| REG-06 | regression | Regression sweep after the AR fixes: the API, order path, dashboard and docs walk re-run | 12 re-run (code at fc571242), all exit 0; 8 identical after masking. BE-01 differs only where its 420-character truncation falls (number widths); BE-05 shows the REG-03 switch order (live_trading_disabled / trading_halted); BE-09 only a request id's width; DOC-04 the calendar's current week. The dashboard sweeps (FE-02, FE-05) and the API edge cases (BE-23) are unchanged with the token check moved into the routes. |
+| REG-07 | regression | Every CI step passes on the final tree | HEAD fc571242: ruff clean, 461 tests pass, bandit clean, the dashboard installs, lints and builds. |
 
 ### Run notes
 
