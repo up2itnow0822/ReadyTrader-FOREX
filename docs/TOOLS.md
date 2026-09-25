@@ -41,8 +41,9 @@ every trade against the volatility halt - see validate_trade_risk.
 Place a limit order for a currency pair (`amount` units of the base currency, `price` in the quote currency).
 
 Paper mode fills a limit only when it is marketable (a BUY at or above the market, a SELL at or
-below), at the market rate; resting orders are not simulated. Live orders go to OANDA. The same
-risk checks as place_market_order apply.
+below), at the market rate; resting orders are not simulated. Live orders go to OANDA as
+fill-or-kill: filled now at `price` or better, or cancelled (nothing rests at the broker). The
+same risk checks as place_market_order apply.
 ```
 
 ---
