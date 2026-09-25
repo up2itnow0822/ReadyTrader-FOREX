@@ -106,9 +106,11 @@ def test_risk_metrics_are_net_of_deposits(acct):
         m = acct.get_risk_metrics(U)
         assert m["equity"] == pytest.approx(94_500.0)
         assert m["daily_pnl_pct"] == pytest.approx(-0.055, abs=1e-3)
-        assert m["drawdown_pct"] == pytest.approx(5_500 / 94_500, abs=1e-3)
-        acct.deposit(U, "USD", 50_000)  # new money is not a gain
-        assert acct.get_risk_metrics(U)["daily_pnl_pct"] == pytest.approx(-0.055, abs=1e-3)
+        assert m["drawdown_pct"] == pytest.approx(0.055, abs=1e-3)  # 5,500 below the 100k peak
+        acct.deposit(U, "USD", 50_000)  # new money is neither a gain nor the end of the drawdown
+        after = acct.get_risk_metrics(U)
+        assert after["daily_pnl_pct"] == pytest.approx(-0.055, abs=1e-3)
+        assert after["drawdown_pct"] == pytest.approx(0.055, abs=1e-3)
     finally:
         RATES["EURUSD"] = 1.10
 

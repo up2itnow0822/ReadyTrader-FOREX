@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { ShieldCheck, Zap } from 'lucide-react';
 import { useMarketData } from '@/hooks/useMarketData';
 import { usePendingApprovals, type PendingOrder } from '@/hooks/usePendingApprovals';
-import { API_URL } from '@/lib/api';
+import { API_URL, apiFetch } from '@/lib/api';
 
 type Position = { symbol: string; qty: number; avg_price: number; mark: number; unrealized_usd: number };
 
@@ -20,6 +20,7 @@ type Portfolio = {
     leverage?: number;
     daily_pnl_pct?: number;
     drawdown_pct?: number;
+    unpriced_positions?: string[];
   };
   error?: string;
 };
@@ -37,7 +38,11 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchPortfolio = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/portfolio`);
+        const res = await apiFetch('/api/portfolio');
+        if (res.status === 401) {
+          setPortfolioError('The API requires its operator token (API_OPERATOR_TOKEN): reload the page to enter it.');
+          return;
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         setPortfolio(await res.json());
         setPortfolioError(null);
@@ -128,6 +133,12 @@ export default function Dashboard() {
                 <span className="muted">Drawdown from peak</span>
                 <span>{(metrics.drawdown_pct * 100).toFixed(2)}%</span>
               </div>
+            )}
+            {metrics?.unpriced_positions && metrics.unpriced_positions.length > 0 && (
+              <p className="danger">
+                No rate for {metrics.unpriced_positions.join(', ')}: shown at the entry price, so equity and P&amp;L leave out
+                its move; orders that add exposure are refused until it can be priced.
+              </p>
             )}
           </div>
         )}

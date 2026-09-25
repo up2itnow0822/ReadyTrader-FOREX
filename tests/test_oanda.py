@@ -43,9 +43,15 @@ def test_a_market_order_oanda_cancels_is_a_failure_not_a_submission(oanda):
             oanda.place_order("EURUSD", "buy", 1000)
 
 
-def test_a_resting_limit_order_is_submitted(oanda):
-    with patch("execution.oanda_service.requests.post", return_value=reply(201, {"orderCreateTransaction": {"id": "10"}})):
-        assert oanda.place_order("EURUSD", "buy", 1000, order_type="limit", price=1.05)["status"] == "submitted"
+def test_a_limit_order_fills_now_at_its_price_or_better_or_not_at_all(oanda):
+    with patch("execution.oanda_service.requests.post", return_value=reply(201, {"orderFillTransaction": {"id": "10"}})) as post:
+        assert oanda.place_order("EURUSD", "buy", 1000, order_type="limit", price=1.05)["status"] == "filled"
+    sent = post.call_args.kwargs["json"]["order"]
+    assert sent == {"units": "1000", "instrument": "EUR_USD", "type": "MARKET", "timeInForce": "FOK", "positionFill": "REDUCE_FIRST", "priceBound": "1.05"}
+    body = {"orderCreateTransaction": {"id": "11"}, "orderCancelTransaction": {"id": "12", "reason": "BOUNDS_VIOLATION"}}
+    with patch("execution.oanda_service.requests.post", return_value=reply(201, body)):
+        with pytest.raises(RuntimeError, match="BOUNDS_VIOLATION"):
+            oanda.place_order("EURUSD", "buy", 1000, order_type="limit", price=1.05)
 
 
 def test_oandas_own_reason_reaches_the_operator(oanda):
