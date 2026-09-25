@@ -1,0 +1,43 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p7_docs.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/(2) smithery/,$p'; cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX; grep -n -A3 'EXECUTION_APPROVAL_MODE' smithery.yaml | head -8
+# at 2026-09-24T21:17:31+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== (2) smithery commandFunction: python app/main.py with each option as env
+
+
+
+
+  default                starts: 29 tools; get_paper_account -> {  "data": {    "cash_usd": 0.0,    "equity_usd": 0.0,    "free_margin_usd": 0.0,    "leve
+
+
+
+
+  live, no keys          starts: 29 tools; get_paper_account -> {  "error": {    "code": "invalid_mode",    "data": {},    "message": "The paper account e
+
+
+
+
+  halted + approve_each  starts: 29 tools; get_paper_account -> {  "data": {    "cash_usd": 0.0,    "equity_usd": 0.0,    "free_margin_usd": 0.0,    "leve
+
+
+
+
+  bad limit              starts: 29 tools; get_paper_account -> {  "data": {    "cash_usd": 0.0,    "equity_usd": 0.0,    "free_margin_usd": 0.0,    "leve
+
+
+
+
+  bad limit              starts: 29 tools; get_paper_account -> {  "data": {    "cash_usd": 0.0,    "equity_usd": 0.0,    "free_margin_usd": 0.0,    "leve
+
+
+
+
+  tools that approve a proposal from inside the MCP server: none (approval is only POST /api/approve-trade on a separate process)
+23:      EXECUTION_APPROVAL_MODE:​
+24-        type: string
+25-        description: "'auto' executes orders; 'approve_each' (or any other value) makes each order a proposal to approve."
+26-        default: "auto"
+--
+64:h
+
+
+exit=0

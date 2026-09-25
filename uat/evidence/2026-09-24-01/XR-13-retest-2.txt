@@ -1,0 +1,19 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p4b_overflow.py 2>&1 | grep -v 'Warning\|warn\|authlib\|httpx2'; /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p4_nan.py 2>&1 | grep -E "True |== " | cut -c1-260; /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python -c "import harness, json; import app.tools.execution as e; print('sentiment_score=NaN ->', json.loads(e.place_market_order('EURUSD', 'buy', 100, sentiment_score=float('nan')))['error']['code'])" 2>&1 | tail -1
+# at 2026-09-24T21:50:51+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+It will be compatible before version 2.0.0.
+deposit 1.7e308: {"ok": false, "code": "invalid_request", "message": "a deposit must be a positive number of USD no larger than 1e+12"}
+deposit 1.7e308 again: {"ok": false, "code": "invalid_request", "message": "a deposit must be a positive number of USD no larger than 1e+12"}
+  risk metrics: {'equity': 0.0, 'daily_pnl_pct': 0.0, 'drawdown_pct': 0.0, 'max_drawdown_pct': 0.0}
+  pre_trade_check BUY 1e15 EURUSD: False Could not read the account's equity (paper) for the position-size check (the paper account is empty: deposit_paper_funds first).
+place_market_order BUY 1e15 EURUSD: {"ok": false, "code": "risk_blocked", "message": "Could not read the account's equity (paper) for the position-size check (the paper account is empty: deposit_paper_funds first).", "notional_usd": 1080000000000000.1, "exposure_added_units": 1000000000000000.0, "position_units": 0.0}
+== paper, auto
+  True     {'market.amount': '1 validation error for call[place_market_order]\namount\n  Value error, ', 'limit.amount': '1 validation error for call[place_limit_order]\namount\n  Value error, a', 'limit.price': '1 validation error for call[place_limit_order]\
+== paper, approve_each
+  True     {'market.amount': '1 validation error for call[place_market_order]\namount\n  Value error, ', 'limit.amount': '1 validation error for call[place_limit_order]\namount\n  Value error, a', 'limit.price': '1 validation error for call[place_limit_order]\
+== live (recorder), approve_each
+  True     {'market.amount': '1 validation error for call[place_market_order]\namount\n  Value error, ', 'limit.amount': '1 validation error for call[place_limit_order]\namount\n  Value error, a', 'limit.price': '1 validation error for call[place_limit_order]\
+sentiment_score=NaN -> invalid_request
+
+
+exit=0
