@@ -1,0 +1,17 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review3_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p06_halt_approval.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2'; cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX; sed -n 23,28p RUNBOOK.md
+# at 2026-09-25T11:27:49+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+proposal: pending_approval
+MCP order now      : trading_halted
+{"data": {"reason": "Could not read the account's equity (oanda) for the position-size check: OANDA balance fetch failed: HTTP 503.", "request_id": "eceb9d2546a03baaa273fd60"}, "event": "api_approval_risk_blocked", "level": "INFO", "request_id": "4327c1ab-2dea-473b-aaf9-cb8170f861f4", "service": "readytrader", "tool": "api_server", "ts_ms": 1790335671882}
+approval while halted: 409 risk_blocked | Could not read the account's equity (oanda) for the position-size check: OANDA balance fet
+brokerage called during the halted approval: ['get_account_balance'] | orders sent: 0
+#### Kill switch (live trading)
+- Set `TRADING_HALTED=true` (any value other than empty, `false`, `0`, `no` or `off` halts) and
+  restart both processes. Every live order, and every approval of one, is then refused with
+  `trading_halted`, closing orders included: the server cannot flatten a position while halted,
+  so close positions on the OANDA platform (web or app). Nothing the server sent keeps trading
+  behind the switch: every OANDA order is fill-or-kill, so no order of its rests at the broker.
+
+
+exit=0
