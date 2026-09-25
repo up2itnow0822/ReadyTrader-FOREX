@@ -1,0 +1,9 @@
+$ grep -n -A1 'Could not read the account.s equity (paper)' RUNBOOK.md; grep -n 'Could not read the account' app/tools/execution.py
+# at 2026-09-25T11:37:54+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+82:  - `Could not read the account's equity (paper) for the position-size check (a position cannot
+83-    be priced now)`: a paper position has no current rate, so its loss cannot be measured; orders
+217:            f"Could not read the account's equity ({'paper' if settings.PAPER_MODE else exchange}) for the position-size check"
+
+
+exit=0

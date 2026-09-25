@@ -14,9 +14,7 @@ CALL deposit_paper_funds {"asset": "USD", "amount": 1000} -> { "data": { "accoun
                     │   532 │   except ValueError as e:                        │
                     │   206 │   │   │   │   raise ValueError(f"the paper accou │
                     OperationalError: attempt to write a readonly database      
-                    │   206 │   │   │   │   raise ValueError(f"the paper accou │
-                    OperationalError: attempt to write a readonly database      
+CALL deposit_paper_funds {"asset": "USD", "amount": 1000} -> Error calling tool 'deposit_paper_funds': attempt to write a readonly database
 
-CALT deposit_paper_fundss, so my content string above has an error where I duplicated lines. Let me redo this carefully by re-reading the raw file with sed to get exact bytes, and re-check for box-drawing characters.
 
-Actually wait, I need to stop and re-verify this content directly rather than transcribe manually with box characters, which are error prone. Let me redo AR-08.txt with a precise read.
+exit=0
