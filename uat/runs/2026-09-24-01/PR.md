@@ -187,13 +187,18 @@ jobs:
 - The Live Markets dot means "WebSocket connected"; no tool starts a market-data stream in this release.
 
 ### Evidence
-Full log: [`uat/UAT-LOG.md`](uat/UAT-LOG.md) · ledger `uat/runs/2026-09-24-01/findings.json` · captures under `uat/evidence/2026-09-24-01/` (the dashboard screenshots and DOM dumps, and `findings.json` (217 KB), stay with the local run because the connector used to push takes text files under ~100 KB; each screenshot's `.json`/`.txt` capture carries its assertions, and `UAT-LOG.md` is rendered from the full ledger).
+Full log: [`uat/UAT-LOG.md`](uat/UAT-LOG.md) · ledger `uat/runs/2026-09-24-01/findings.json` · captures under `uat/evidence/2026-09-24-01/` (the dashboard screenshots (PNG) stay with the local run because the connector used to push writes text only; each screenshot's `.json`/`.txt` capture carries its assertions, and `UAT-LOG.md` is rendered from the ledger).
 
 ### DOX pass
 - Root `AGENTS.md` now also records: symbol normalisation, fill-or-kill OANDA orders, the paper loss-metric contract, the operator-token router, `app/tools/params.py`, switches-first and audit order, the Docker user.
 - Root `AGENTS.md` created (the repo had none): purpose, ownership, the fail-closed, exposure, mode and response contracts, data paths, the docs-must-match rule, verification commands; indexes `uat/AGENTS.md`.
 - `uat/AGENTS.md`: created by the UAT tooling; owns the log, ledger and evidence.
 - `_deprecated/README.md`: why the in-memory FX simulator and the crypto signer compose file left the shipped tree.
+
+### Branch parity
+`git push` was not available to the session that ran this UAT, so this branch was written through the GitHub
+connector. Every file on it is byte-identical to the tested local branch (checked with `git hash-object`
+against the fetched branch), the run ledger `uat/runs/2026-09-24-01/findings.json` included, except the PNG screenshots and `.github/workflows/ci.yml` (above), which the connector cannot write; the owner has those in the run's local archive.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
