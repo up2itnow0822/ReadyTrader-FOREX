@@ -1,0 +1,13 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review3_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p11_host_header.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|"event"'; /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p02b_rootpath_live_approval.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|"event"'
+# at 2026-09-25T11:37:27+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+Host: '127.0.0.1:8000'       -> 401 '{"detail":{"code":"operator_token_required","message":"Send Authorizat'
+Host: '127.0.0.1:8000#'      -> 401 '{"detail":{"code":"operator_token_required","message":"Send Authorizat'
+Host: '127.0.0.1:8000?'      -> 401 '{"detail":{"code":"operator_token_required","message":"Send Authorizat'
+Host: '127.0.0.1:8000/x'     -> 401 '{"detail":{"code":"operator_token_required","message":"Send Authorizat'
+no prefix, no Authorization : (401, b'{"detail":{"code":"operator_token_required","message":"Send Authorization: Bearer <API_OPERATOR_TOKEN>."}}')
+root_path /rt, no Authorization: (401, b'{"detail":{"code":"operator_token_required","message":"Send Authorization: Bearer <API_OPERATOR_TOKEN>."}}')
+live orders sent to the brokerage: []
+
+
+exit=0

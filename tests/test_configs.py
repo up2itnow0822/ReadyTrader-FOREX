@@ -32,4 +32,5 @@ def test_the_readme_examples_match_the_config_files():
 
 def test_the_image_never_bakes_in_local_state():
     ignored = {line.strip().rstrip("/") for line in (ROOT / ".dockerignore").read_text().splitlines() if line.strip() and not line.startswith("#")}
-    assert {"data", ".venv", ".git", "uat", "frontend/node_modules", ".env"} <= ignored
+    # frontend/ as a whole (node_modules included); .env files and databases in any folder.
+    assert {"data", ".venv", ".git", "uat", "frontend", "**/.env*", "**/*.db"} <= ignored

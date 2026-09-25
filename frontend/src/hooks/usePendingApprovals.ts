@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { API_URL } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 
 export type PendingOrder = {
     symbol?: string;
@@ -28,7 +28,7 @@ export function usePendingApprovals() {
 
     const fetchApprovals = useCallback(async () => {
         try {
-            const res = await fetch(`${API_URL}/api/pending-approvals`);
+            const res = await apiFetch('/api/pending-approvals');
             const data = await res.json();
             setApprovals(data.pending || []);
         } catch (err) {
@@ -39,7 +39,7 @@ export function usePendingApprovals() {
     }, []);
 
     const handleApproval = async (requestId: string, token: string, approve: boolean) => {
-        const res = await fetch(`${API_URL}/api/approve-trade`, {
+        const res = await apiFetch('/api/approve-trade', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

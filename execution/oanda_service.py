@@ -70,25 +70,35 @@ class OandaBrokerage(IBrokerage):
 
         url = f"{self.base_url}/accounts/{self.account_id}/orders"
 
+        # Every order fills now or not at all (fill-or-kill). A limit is a market order with a
+        # priceBound: the worst price it may fill at. Nothing rests at OANDA, because the Risk
+        # Guardian judges an order against the positions at the time it is checked: a resting order
+        # (the GTC limit this used to send) could fill later, past the kill switch and every check,
+        # and five of them could turn a long into a large short. REDUCE_FIRST nets the order against
+        # the open position as the Guardian sizes it; an account that cannot do that rejects the
+        # order (nothing trades) rather than opening a hedge the Guardian never saw.
+        limit = order_type.lower() == "limit"
+        if limit and not (price and price > 0):
+            raise RuntimeError("A limit order needs a price > 0.")
         order_data = {
             "order": {
                 "units": units,
                 "instrument": oanda_symbol,
-                "type": "MARKET" if order_type.lower() == "market" else "LIMIT",
-                "timeInForce": "FOK" if order_type.lower() == "market" else "GTC",
-                "positionFill": "DEFAULT",
+                "type": "MARKET",
+                "timeInForce": "FOK",
+                "positionFill": "REDUCE_FIRST",
             }
         }
-
-        if order_type.lower() == "limit" and price:
-            order_data["order"]["price"] = str(price)
+        if limit:
+            order_data["order"]["priceBound"] = str(price)
 
         try:
             response = requests.post(url, headers=self._headers(), json=order_data, timeout=10)
             response.raise_for_status()
             data = response.json()
-            # A FOK market order OANDA could not fill comes back 201 with a cancel transaction:
-            # nothing traded, so it must not be reported as submitted.
+            # A FOK order OANDA could not fill (no liquidity, or the market beyond a limit's
+            # priceBound) comes back 201 with a cancel transaction: nothing traded, so it must not
+            # be reported as submitted.
             cancel = data.get("orderCancelTransaction")
             if cancel and "orderFillTransaction" not in data:
                 raise RuntimeError(f"OANDA cancelled the order: {cancel.get('reason', 'no reason given')}")

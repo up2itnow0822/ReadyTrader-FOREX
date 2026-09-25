@@ -1,0 +1,15 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review3_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p01_cors_401.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2'
+# at 2026-09-25T11:27:34+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+CORS_ORIGINS: ['http://localhost:3000', 'http://127.0.0.1:3000']
+middleware order (outermost first): ['BaseHTTPMiddleware', 'CORSMiddleware']
+{"data": {"path": "/api/portfolio"}, "event": "api_operator_token_rejected", "level": "INFO", "request_id": "a106a2bb-ce6a-4610-bc1f-bb4cc98f9696", "service": "readytrader", "tool": "api_server", "ts_ms": 1790335656711}
+no token     : 401 ACAO = None
+with token   : 200 ACAO = http://localhost:3000
+{"data": {"path": "/api/pending-approvals"}, "event": "api_operator_token_rejected", "level": "INFO", "request_id": "7d1f42c0-49e0-44ef-b7f9-a802894ee2eb", "service": "readytrader", "tool": "api_server", "ts_ms": 1790335656721}
+pending, none: 401 ACAO = None
+{"data": {"error": "RuntimeError", "path": "/api/portfolio"}, "event": "api_unhandled_error", "level": "INFO", "request_id": "f28c0a83-74f8-4600-9c36-b34827764255", "service": "readytrader", "tool": "api_server", "ts_ms": 1790335656725}
+500 path     : 500 ACAO = None {'detail': {'code': 'internal_error', 'message': 'Internal error; see the API log for request f28c0a83-74f8-4600-9c36-b34827764255.'}}
+
+
+exit=0
