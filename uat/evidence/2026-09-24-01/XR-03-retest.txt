@@ -1,0 +1,28 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p1_sizing_retest.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio'
+# at 2026-09-24T21:46:36+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== paper, FX, market 1.08, equity 100k, cap 5% = $5,000
+paper MARKET BUY 100k EURUSD price=0.0001: {"ok": false, "code": "risk_blocked", "message": "Position size too large (108.0%). Max allowed is 5%.", "notional_usd": 108000.0, "exposure_added_units": 100000.0, "position_units": 0.0}
+  pre_trade_check notional_usd = 108000.0 reference_price = 1.08 allowed = False
+== live OANDA (recorder), FX
+live MARKET BUY 100k EURUSD price=0.0001: {"ok": false, "code": "risk_blocked", "message": "Position size too large (108.0%). Max allowed is 5%.", "notional_usd": 108000.0, "exposure_added_units": 100000.0, "position_units": 0.0}
+live LIMIT BUY 100k EURUSD @0.0001: {"ok": false, "code": "risk_blocked", "message": "Position size too large (108.0%). Max allowed is 5%.", "notional_usd": 108000.0, "exposure_added_units": 100000.0, "position_units": 0.0}
+live LIMIT SELL 100k EURUSD @50.0: {"ok": false, "code": "risk_blocked", "message": "Position size too large (108.0%). Max allowed is 5%.", "notional_usd": 108000.0, "exposure_added_units": 100000.0, "position_units": 0.0}
+  orders sent to OANDA recorder: []
+== live, non-FX brokerage registered in the container (alpaca), AAPL market 190
+live MARKET BUY 10,000 AAPL price=0.0001 (real value $1.9M): {"ok": false, "code": "risk_blocked", "message": "Position size too large (1900.0%). Max allowed is 5%.", "notional_usd": 1900000.0, "exposure_added_units": 10000.0, "position_units": null}
+live MARKET BUY 10,000 AAPL no price: {"ok": false, "code": "risk_blocked", "message": "Position size too large (1900.0%). Max allowed is 5%.", "notional_usd": 1900000.0, "exposure_added_units": 10000.0, "position_units": null}
+  orders sent to alpaca recorder: []
+== no market price at all
+live MARKET BUY 10,000 AAPL price=0.0001, no quote: {"ok": false, "code": "risk_blocked", "message": "Falling Knife check could not run for AAPL (AppError: ('data_not_found', 'No OHLCV history found for AAPL via yfinance.', {'symbol': 'AAPL'})); BUYs are blocked", "notional_usd": null, "exposure_added_units": 10000.0, "position_units": null}
+live MARKET SELL 10,000 AAPL price=0.0001, no quote (opens a short): {"ok": false, "code": "risk_blocked", "message": "Could not value 10000.0 AAPL in USD for the position-size check (no rate); retry when prices are available.", "notional_usd": null, "exposure_added_units": 10000.0, "position_units": null}
+live MARKET SELL 10,000 AAPL price=0.0001, quote 190 (opens a short): {"ok": false, "code": "risk_blocked", "message": "Position size too large (1900.0%). Max allowed is 5%.", "notional_usd": 1900000.0, "exposure_added_units": 10000.0, "position_units": null}
+live MARKET BUY 100k EURUSD price=1.08, no quote: {"ok": false, "code": "risk_blocked", "message": "Falling Knife check could not run for EURUSD (AppError: ('data_not_found', 'No OHLCV history found for EURUSD=X via yfinance.', {'symbol': 'EURUSD=X'})); BUYs a", "notional_usd": null, "exposure_added_units": 100000.0, "position_units": 0.0}
+live MARKET SELL 100k EURUSD price=1.08, no quote: {"ok": false, "code": "risk_blocked", "message": "Could not value 100000.0 EURUSD in USD for the position-size check (no rate); retry when prices are available.", "notional_usd": null, "exposure_added_units": 100000.0, "position_units": 0.0}
+  orders sent to alpaca recorder: []
+== approval API re-execution (live, approve_each)
+  proposal refused before anything is proposed: risk_blocked Position size too large (1900.0%). Max allowed is 5%.
+  orders sent to alpaca recorder: []
+
+
+exit=0
