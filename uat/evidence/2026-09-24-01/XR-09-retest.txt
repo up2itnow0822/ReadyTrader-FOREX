@@ -1,0 +1,20 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p5_api.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/price=NaN/,$p'; /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p4_nan.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | grep -E "== |'NaN'|'inf'" | cut -c1-240
+# at 2026-09-24T21:48:01+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== a proposal with price=NaN (market order; price is not validated) then the pending list
+  proposal: pending_approval price = 0.0
+  GET /api/pending-approvals -> 200 '{"pending":[{"request_id":"be1a783b34eb2219905cd779","kind":' {'content-length': '283', 'content-type': 'application/json', 'access-control-expose-headers': 'x-request-id', 'access-control-allow-origin': 'http://localhost:3000', 'vary': 'Origin', 'x-content-type-options': 'nosniff', 'x-frame-options': 'DENY', 'referrer-policy': 'no-referrer', 'cache-control': 'no-store', 'x-request-id': '101c9ff9-1b37-4ed9-a08f-30f9b1321338'}
+  approving it -> 200 {'ok': True, 'venue': 'paper', 'result': 'Paper Trade Executed: BUY 1000 EURUSD @ 1.08000. Realized P&L: 0.00 USD. Posit
+  pending list after that -> 200
+== paper, auto
+  'NaN'    {'market.amount': 'invalid_request', 'limit.amount': 'invalid_request', 'limit.price': 'invalid_request', 'forex.mkt.price': 'OK', 'stock.amount': 'invalid_request', 'deposit': 'invalid_request', 'validate.amount_usd': 'invalid_r
+  'inf'    {'market.amount': 'invalid_request', 'limit.amount': 'invalid_request', 'limit.price': 'invalid_request', 'forex.mkt.price': 'OK', 'stock.amount': 'invalid_request', 'deposit': 'invalid_request', 'validate.amount_usd': 'invalid_r
+== paper, approve_each
+  'NaN'    {'market.amount': 'invalid_request', 'limit.amount': 'invalid_request', 'limit.price': 'invalid_request', 'forex.mkt.price': 'PROPOSAL CREATED', 'stock.amount': 'invalid_request', 'deposit': 'invalid_request', 'validate.amount_us
+  'inf'    {'market.amount': 'invalid_request', 'limit.amount': 'invalid_request', 'limit.price': 'invalid_request', 'forex.mkt.price': 'PROPOSAL CREATED', 'stock.amount': 'invalid_request', 'deposit': 'invalid_request', 'validate.amount_us
+== live (recorder), approve_each
+  'NaN'    {'market.amount': 'invalid_request', 'limit.amount': 'invalid_request', 'limit.price': 'invalid_request', 'forex.mkt.price': 'PROPOSAL CREATED', 'stock.amount': 'invalid_request', 'deposit': 'invalid_mode', 'validate.amount_usd':
+  'inf'    {'market.amount': 'invalid_request', 'limit.amount': 'invalid_request', 'limit.price': 'invalid_request', 'forex.mkt.price': 'PROPOSAL CREATED', 'stock.amount': 'invalid_request', 'deposit': 'invalid_mode', 'validate.amount_usd':
+
+
+exit=0

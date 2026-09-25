@@ -1,0 +1,21 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p2_killswitch.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/TRADING_HALTED on/,/orders reaching OANDA/p'; /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p8b_oanda_fok.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | grep -E 'order types sent|resting'; cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX; grep -n -A5 '^#### Kill switch' RUNBOOK.md; grep -n 'Kill switch' docs/THREAT_MODEL.md
+# at 2026-09-24T21:48:10+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== TRADING_HALTED on, OANDA holds long 50,000 EUR_USD
+SELL 50,000 EURUSD (closes the long): {"ok": false, "code": "trading_halted", "message": "TRADING_HALTED is set: live trading is halted, no order was sent."}
+SELL 10,000 EURUSD (partial close): {"ok": false, "code": "trading_halted", "message": "TRADING_HALTED is set: live trading is halted, no order was sent."}
+BUY 1,000 EURUSD (adds): {"ok": false, "code": "trading_halted", "message": "TRADING_HALTED is set: live trading is halted, no order was sent."}
+get_paper_account (only account read): {"ok": false, "code": "invalid_mode", "message": "The paper account exists only in paper mode."}
+orders reaching OANDA: []
+  order types sent: [('MARKET', 'FOK')]
+  orders left resting at OANDA: 0
+23:#### Kill switch (live trading)
+24-- Set `TRADING_HALTED=true` (any value other than empty, `false`, `0`, `no` or `off` halts) and
+25-  restart both processes. Every live order, and every approval of one, is then refused with
+26-  `trading_halted`, closing orders included: the server cannot flatten a position while halted,
+27-  so close positions on the OANDA platform (web or app). Nothing the server sent keeps trading
+28-  behind the switch: every OANDA order is fill-or-kill, so no order of its rests at the broker.
+44:    - **Kill switch**: `TRADING_HALTED` refuses every live order and approval, closing orders
+
+
+exit=0

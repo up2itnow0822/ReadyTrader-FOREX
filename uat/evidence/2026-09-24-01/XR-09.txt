@@ -1,0 +1,16 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p5_api.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/price=NaN/,$p'; /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p4_nan.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | grep -E 'pending proposals|== '
+# at 2026-09-24T21:17:02+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== a proposal with price=NaN (market order; price is not validated) then the pending list
+  proposal: pending_approval price = nan
+  GET /api/pending-approvals -> 500 'Internal Server Error' {'content-length': '21', 'content-type': 'text/plain; charset=utf-8'}
+  server-side exception: ValueError Out of range float values are not JSON compliant: nan
+  approving it -> 200 {'ok': True, 'venue': 'paper', 'result': 'Paper Trade Executed: BUY 1000 EURUSD @ 1.08000. Realized P&L: 0.00 USD. Posit
+  pending list after that -> 200
+== paper, auto
+== paper, approve_each
+  pending proposals: [{'symbol': 'EURUSD', 'side': 'buy', 'amount': 100.0, 'order_type': 'market', 'price': nan, 'exchange': 'oanda', 'rationale': '', 'paper_mode': True}, {'symbol': 'EURUSD', 'side': 'buy', 'amount': 100.0, 'order_type': 'market', 'price': 0.0, 'exchange': 'oanda', 'rationale': '', 'paper_mode': True}, {'symbol': 'EURUSD', 'side': 'buy', 'amount': 100.0, 'order_type': 'market', 'price': nan, 'exchange': 'oanda', 'rationale': '', 'paper_mode': True}, {'symbol': 'EURUSD', 'side': 'buy', 'amount': 100.0, 'order_type': 'market', 'price': 0.0, 'exchange': 'oanda', 'rationale': '', 'paper_mode': True}, {'symbol': 'EURUSD', 'side': 'buy', 'amount': 100.0, 'order_type': 'market', 'price': inf, 'exchange': 'oanda', 'rationale': '', 'paper_mode': True}, {'symbol': 'EURUSD', 'side': 'buy', 'amount': 100.0, 'order_type': 'market', 'price': 0.0, 'exchange': 'oanda', 'rationale': '', 'paper_mode': True}, {'symbol': 'EURUSD', 'side': 'buy', 'amount': 100.0, 'order_type': 'market', 'price': -inf, 'exchange': 'oanda', 'rationale': '', 'paper_mode': True}, {'symbol': 'EURUSD', 'side': 'buy', 'amount': 100.0, 'order_type': 'market', 'price': -1.0, 'exchange': 'oanda', 'rationale': '', 'paper_mode': True}, {'symbol': 'EURUSD', 'side': 'buy', 'amount': 100.0, 'order_type': 'market', 'price': 0.0, 'exchange': 'oanda', 'rationale': '', 'paper_mode': True}, {'symbol': 'EURUSD', 'side': 'buy', 'amount': 100.0, 'order_type': 'market', 'price': 0.0, 'exchange': 'oanda', 'rationale': '', 'paper_mode': True}, {'symbol': 'EURUSD', 'side': 'buy', 'amount': 100.0, 'order_type': 'market', 'price': inf, 'exchange': 'oanda', 'rationale': '', 'paper_mode': True}, {'symbol': 'EURUSD', 'side': 'buy', 'amount': 100.0, 'order_type': 'market', 'price': 0.0, 'exchange': 'oanda', 'rationale': '', 'paper_mode': True}]
+== live (recorder), approve_each
+
+
+exit=0
