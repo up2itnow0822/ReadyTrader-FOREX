@@ -21,3 +21,6 @@ routes: ['/api/approve-trade', '/api/health', '/api/pending-approvals', '/api/po
 == 'export TRADING_HALTED=true' into a running process
 SELL 1,000 EURUSD after setting the env var at runtime: {"ok": true, "mode": "live", "result": "{'id': 'rec-1', 'order_type': 'market', 'price': None, 'qty': 1000.0, 'side': 'sell', 'symbol': 'EURUSD'}", "venue": "oanda"}
 orders reaching OANDA: [{'symbol': 'EURUSD', 'side': 'sell', 'qty': 1000.0, 'order_type': 'market', 'price': None}]
+
+
+exit=0
