@@ -18,3 +18,6 @@ docs/THREAT_MODEL.md:67:  (`API_CORS_ORIGINS`). Set `API_OPERATOR_TOKEN` on the 
 README.md:54:-   **Guard Rail**: pending `approve_each` proposals with the order each would place (pair, side, amount, type, venue, paper or live); **Approve** and **Reject** ask for the proposal's `c
 README.md:128:| `API_OPERATOR_TOKEN` | unset | Operator secret for the API server only: when set, every `/api/` call but `/api/health` needs `Authorization: Bearer <it>`; live proposals can be approve
 README.md:185:* The agent receives each proposal's `confirm_token`, so that token alone never proves a person approved. Set `API_OPERATOR_TOKEN` on the API server (not on the MCP server): every `/api/
+
+
+exit=0
