@@ -1,0 +1,18 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_be2.sh 2>&1 | cut -c1-260; echo '--- IN-04 (full messages):'; bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_oanda_badkey_full.sh
+# at 2026-09-25T11:02:33+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== sizing: a 4,000-unit USDJPY BUY (notional $4,000 = 4% of a $100k account)
+CALL deposit_paper_funds {"asset": "USD", "amount": 100000} -> { "data": { "account": { "cash_usd": 100000.0, "equity_usd": 100000.0, "free_margin_usd": 100000.0, "leverage": 30.0, "margin_used_usd": 0.0, "net_deposits_usd": 100000.0, "positions": [], "unprice
+CALL place_forex_order {"symbol": "USDJPY", "side": "buy", "amount": 4000, "order_type": "limit", "price": 159} -> { "data": { "account": { "cash_usd": 100000.0, "equity_usd": 100000.0, "free_margin_usd": 99866.67, "leverage": 30.0, "margin_used_usd": 133.33, 
+=== live mode, LIVE_TRADING_ENABLED=false (no keys)
+CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": 1000} -> { "error": { "code": "live_trading_disabled", "data": {}, "message": "PAPER_MODE is false but LIVE_TRADING_ENABLED is not true: no live order was sent." }, "ok": false }
+=== live mode, LIVE_TRADING_ENABLED=true, TRADING_HALTED=true (no keys)
+CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": 1000} -> { "error": { "code": "trading_halted", "data": {}, "message": "TRADING_HALTED is set: live trading is halted, no order was sent." }, "ok": false }
+CALL start_brokerage_private_ws {"exchange": "oanda", "market_type": "spot"} -> { "error": { "code": "not_implemented", "data": {}, "message": "Private oanda streams are not implemented; poll the brokerage instead." }, "ok": false }
+--- IN-04 (full messages):
+practice API reachable: 401
+CALL place_forex_order {"symbol": "EURUSD", "side": "buy", "amount": 1000} -> risk_blocked | Could not read the account's equity (oanda) for the position-size check: OANDA balance fetch failed: HTTP 400: Invalid value specified for 'accountID'.
+CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": 1000} -> risk_blocked | Could not read the account's equity (oanda) for the position-size check: OANDA balance fetch failed: HTTP 400: Invalid value specified for 'accountID'.
+
+
+exit=0
