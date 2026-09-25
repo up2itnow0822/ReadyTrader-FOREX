@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 from fastmcp import FastMCP
 
 from app.core.container import global_container
+from app.tools.params import Integer
 
 
 def _json_ok(data: Dict[str, Any] | None = None) -> str:
@@ -77,7 +78,7 @@ def register_market_tools(mcp: FastMCP):
         return _answer("news", fetch_financial_news(symbol))
 
     @mcp.tool()
-    def get_forex_news(limit: int = 10) -> str:
+    def get_forex_news(limit: Integer = 10) -> str:
         """Latest FX headlines from free RSS feeds (Investing.com, FXStreet, DailyFX, ForexLive, Reuters).
 
         Feeds that refuse are listed; ok:false only if none answers. No key needed.
@@ -136,7 +137,7 @@ def register_market_tools(mcp: FastMCP):
         return _json_ok({"prices": prices, "errors": errors})
 
     @mcp.tool()
-    async def fetch_ohlcv(symbol: str, timeframe: str = "1h", limit: int = 24) -> str:
+    async def fetch_ohlcv(symbol: str, timeframe: str = "1h", limit: Integer = 24) -> str:
         """
         Historical candles for a pair: timestamp, open, high, low, close, volume (FX volume is often 0).
         `timeframe` such as 1h or 1d; `limit` candles, most recent last.

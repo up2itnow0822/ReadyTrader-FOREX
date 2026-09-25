@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 from fastmcp import FastMCP
 
 from app.core.container import global_container
+from app.tools.params import Integer, Number
 from core.stress_test import run_synthetic_stress_test as _run_stress
 from intelligence import analyze_social_sentiment, fetch_financial_news, fetch_rss_news
 
@@ -67,7 +68,7 @@ def register_research_tools(mcp: FastMCP):
             return _json_err("import_error", "fetch_rss_news not available")
 
     @mcp.tool()
-    def post_market_insight(symbol: str, agent_id: str, signal: str, confidence: float, reasoning: str, ttl_seconds: int = 3600) -> str:
+    def post_market_insight(symbol: str, agent_id: str, signal: str, confidence: Number, reasoning: str, ttl_seconds: Integer = 3600) -> str:
         """Share a market insight with other agents: `signal` is bullish, bearish or neutral, `confidence` 0.0-1.0."""
         if str(signal).strip().lower() not in SIGNALS:
             return _json_err("invalid_request", f"signal must be one of {', '.join(SIGNALS)}, got {signal!r}")
