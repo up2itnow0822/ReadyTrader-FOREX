@@ -1,0 +1,12 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex &&  /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p5_api.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/security headers/,/price=NaN/p'
+# at 2026-09-24T21:17:15+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== security headers / request id on a normal 200
+  GET /api/health 200 {'content-length': '30', 'content-type': 'application/json', 'access-control-allow-origin': 'http://localhost:3000', 'vary': 'Origin'}
+== two requests: request_id / ts_ms in the API's log lines
+  log: {'event': 'api_approval_risk_blocked', 'request_id': '4d5f14b7-1b09-41ea-b70d-bfe929d91ac4', 'ts_ms': 1790284638235}
+  log: {'event': 'api_approval_risk_blocked', 'request_id': '4d5f14b7-1b09-41ea-b70d-bfe929d91ac4', 'ts_ms': 1790284638235}
+== a proposal with price=NaN (market order; price is not validated) then the pending list
+
+
+exit=0
