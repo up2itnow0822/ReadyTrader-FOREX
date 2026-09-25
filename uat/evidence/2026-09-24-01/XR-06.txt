@@ -1,0 +1,12 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p1_sizing.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/approval API re-execution/,$p'; cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX; sed -n 24p docs/THREAT_MODEL.md; sed -n 53p docs/THREAT_MODEL.md
+# at 2026-09-24T21:16:51+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== approval API re-execution (live, approve_each)
+  proposal: pending_approval 0.0001
+  approve -> 200 {'ok': True, 'venue': 'alpaca', 'mode': 'live', 'result': {'id': 'rec-1', 'symbol': 'AAPL', 'side': 'buy', 'qty': 10000.0, 'order_type': 'market', 'price': 0.0001}}
+  orders sent to alpaca recorder: [{'symbol': 'AAPL', 'side': 'buy', 'qty': 10000.0, 'order_type': 'market', 'price': 0.0001}]
+    - **Approval**: `EXECUTION_APPROVAL_MODE=approve_each` requires a human for every order.
+  proposal's `confirm_token`; only the dashboard's origins may call it from a browser
+
+
+exit=0

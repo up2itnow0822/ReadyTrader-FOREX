@@ -1,0 +1,18 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p3_loss_limits_retest.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/^== (c)/,$p'
+# at 2026-09-24T21:46:47+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== (c) small deposit, small dip, large top-up, then a 0.1% loss (all today)
+  [small dip] equity=999.54 daily_pnl_pct=-0.0005 drawdown_pct=0.0005
+  [after top-up] equity=1000999.54 daily_pnl_pct=-0.0005 drawdown_pct=0.0005
+  loss vs deposits = 990.45 USD = 0.0990% of equity
+  [0.1% loss] equity=1000009.55 daily_pnl_pct=-0.0014 drawdown_pct=0.0014
+  [0.1% loss] pre_trade_check BUY 1,000 GBPUSD -> allowed=True reason='Trade looks safe.'
+== (d) last snapshot a week old, -6% drift over that week, nothing traded today
+  [today] equity=93520.00 daily_pnl_pct=0.0000 drawdown_pct=0.0648
+  [today, first order] pre_trade_check BUY 1,000 GBPUSD -> allowed=True reason='Trade looks safe.'
+  place_market_order SELL 4,000 EURUSD (reduces; records a snapshot today): {"ok": true, "result": "Paper Trade Executed: SELL 4000 EURUSD @ 1.01520. Realized P&L: -259.20 USD. Position: +96000 EURUSD @ 1.08000. Rationale: paper_order", "venue": "paper"}
+  [after a trade today] equity=93520.00 daily_pnl_pct=0.0000 drawdown_pct=0.0648
+  [today, after a trade] pre_trade_check BUY 1,000 GBPUSD -> allowed=True reason='Trade looks safe.'
+
+
+exit=0

@@ -1,0 +1,12 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p3_loss_limits_retest.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/(b2)/,/^== (c)/p'
+# at 2026-09-24T21:46:51+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+   (b2) same, but the position's own quote is unavailable (feed outage for EURUSD)
+  account(): raises?
+  account() ValueError: no USD rate for EUR (EURUSD: ('data_not_found', 'No price data found for EURUSD=
+  [EURUSD unpriced] equity=None (a position cannot be priced) daily_pnl_pct=-0.1296 drawdown_pct=0.1296
+  [EURUSD unpriced] pre_trade_check BUY 1,000 GBPUSD -> allowed=False reason='Max Drawdown Limit Hit (13.0%). Orders that add exposure are halted; orders that reduce or'
+== (c) small deposit, small dip, large top-up, then a 0.1% loss (all today)
+
+
+exit=0
