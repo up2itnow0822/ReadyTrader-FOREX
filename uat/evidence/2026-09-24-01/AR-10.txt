@@ -19,6 +19,7 @@ refused  place_forex_order.sentiment_score=true -> 1 validation error for call[p
 refused  place_stock_order.amount=true -> 1 validation error for call[place_stock_order] amount Value error, a number is required, not true/false [type=
 refused  place_stock_order.price=true -> 1 validation error for call[place_stock_order] price Value error, a number is required, not true/false [type=v
 refused  place_stock_order.sentiment_score=true -> 1 validation error for call[place_stock_order] sentiment_score Value error, a number is required, not true/fal
+refused  place_stock_order.sentiment_score=true -> 1 validation error for call[place_stock_order] sentiment_score Value error, a number is required, not true/fal
 refused  deposit_paper_funds.amount=true -> 1 validation error for call[deposit_paper_funds] amount Value error, a number is required, not true/false [typ
 numeric parameters: 19; true refused: 15; true accepted: 4
 
