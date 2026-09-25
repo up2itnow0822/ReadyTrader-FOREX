@@ -22,22 +22,13 @@ $ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/
 
 
   bad limit              starts: 29 tools; get_paper_account -> {  "data": {    "cash_usd": 0.0,    "equity_usd": 0.0,    "free_margin_usd": 0.0,    "leve
-
-
-
-
-  bad limit              starts: 29 tools; get_paper_account -> {  "data": {    "cash_usd": 0.0,    "equity_usd": 0.0,    "free_margin_usd": 0.0,    "leve
-
-
-
-
   tools that approve a proposal from inside the MCP server: none (approval is only POST /api/approve-trade on a separate process)
-23:      EXECUTION_APPROVAL_MODE:​
+23:      EXECUTION_APPROVAL_MODE:
 24-        type: string
 25-        description: "'auto' executes orders; 'approve_each' (or any other value) makes each order a proposal to approve."
 26-        default: "auto"
 --
-64:h
+64:    EXECUTION_APPROVAL_MODE: "auto"
 
 
 exit=0
