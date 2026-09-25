@@ -20,8 +20,10 @@ EXPOSE 8000
 # Copy application code
 COPY . .
 
-# Ensure data directory exists
-RUN mkdir -p data
+# Run as an unprivileged user that owns only the data directory
+RUN useradd --create-home --uid 10001 readytrader \
+    && mkdir -p data && chown -R readytrader:readytrader /app/data
+USER readytrader
 
 # Entry point: the MCP server on stdio.
 # Optional API sidecar (approvals + dashboard), from the same image:

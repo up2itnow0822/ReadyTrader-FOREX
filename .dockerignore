@@ -1,17 +1,31 @@
-# Python cache / build artifacts
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
+# Patterns without **/ match only at the root of the build context, so every cache, secret and
+# local database pattern below is written for any folder.
 
-# Local secrets / env
-.env
+# Python cache / build artifacts
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+bandit_report.json
+
+# Local secrets / env: every .env* file and key file, in any folder (env.example is a template
+# and stays), and any secrets folder
+**/.env*
+**/*.env
+**/*.pem
+**/*.key
+**/keystore*
+**/secrets*
+**/secrets*.json
 
 # Local runtime artifacts: never bake a local paper ledger, audit log or UAT evidence into an image
-paper.db
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.log
 data/
 artifacts/
 uat/
@@ -22,9 +36,9 @@ uat/
 venv/
 env/
 
-# The dashboard is built and run separately (frontend/README or the main README)
-frontend/node_modules/
-frontend/.next/
+# The dashboard is built and run separately (frontend/README or the main README); the image runs
+# the Python servers only
+frontend/
 
 # Dev-only
 tests/

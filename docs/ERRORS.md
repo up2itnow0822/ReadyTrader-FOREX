@@ -5,7 +5,11 @@ The `code` is stable; the `message` says what happened in words; `data` carries 
 (limits, rates, the market guard's `market` reading). The approval API (`/api/approve-trade`)
 answers a refusal with HTTP `409` and the same `code` in `detail`; an unknown proposal answers
 `404`, a wrong `confirm_token` `403`, and an expired, cancelled or already-approved proposal `409`
-with the reason as text.
+with the reason as text. With `API_OPERATOR_TOKEN` set, a call without `Authorization: Bearer
+<it>` answers `401` `operator_token_required`; approving a live proposal while it is not set answers
+`403` `operator_token_required`. An error inside the API answers `500` `internal_error` naming only
+the request's `X-Request-ID` (the details are in the API log); a brokerage that refuses an approved
+live order answers `502` `execution_error` with the brokerage's reason.
 
 | Issue | Potential Fix |
 | :--- | :--- |
@@ -20,21 +24,28 @@ with the reason as text.
 
 ### Risk
 - `risk_blocked`: the Risk Guardian refused the trade. The message is the reason: new exposure
-  worth over 5% of equity, the 5% daily-loss or 10% drawdown limit (orders that add exposure), the
+  worth over 5% of equity (valued at the market, never at a price the order carries alone), the 5%
+  daily-loss or 10% drawdown limit (orders that add exposure; paper account only), the
   Falling Knife rule (BUYs that add exposure), the volatility halt (every side), your own
-  `sentiment_score` below -0.5, or an account or rate the check could not read (an order that adds
-  exposure then fails closed). Orders that only reduce or close a position pass every rule but the
-  volatility halt. `data` of a refused order includes `position_units` and `exposure_added_units`. `data.market` has the market
-  guard's reading and `data.inactive_rules` lists the rules that are not implemented yet (the news
-  blackout).
+  `sentiment_score` below -0.5, or an account, rate or market price the check could not read,
+  including a paper position that cannot be priced now (an order that adds exposure then fails
+  closed). Orders that only reduce or close a position pass every rule but the
+  volatility halt. `data` of a refused order includes `position_units`, `exposure_added_units` and
+  `reference_price`. `data.market` has the market guard's reading and `data.inactive_rules` lists
+  the rules that did not run (the news blackout; on live orders, the daily-loss and drawdown
+  limits). An executed order lists them too.
 - `risk_validation_error`: the risk check itself raised; the message has the exception.
 
 ### Requests
-- `invalid_request`: a malformed request, e.g. a side other than buy/sell, a non-positive or
-  non-numeric amount, an order type other than market/limit, a limit with no positive price, a
+- `invalid_request`: a malformed request, e.g. a side other than buy/sell, a non-positive,
+  non-finite or non-numeric amount, a non-finite `sentiment_score`, a deposit over
+  1e12 USD (or cash over 1e15), an order type other than market/limit, a limit with no positive price, a
   paper order for something that is not a currency pair, a deposit that is not positive USD, an
   empty `get_multiple_prices` list, a `validate_trade_risk` call without a buy/sell side or with a
   non-positive amount or portfolio value, or an insight outside the documented fields.
+- Arguments of the wrong type (text that is not a number, or `true`/`false` for an amount, price,
+  value or score) are refused by the MCP argument validation before the tool runs: the client gets
+  a tool error naming the argument, not this envelope.
 - `invalid_mode`: `get_paper_account`, `deposit_paper_funds` or `reset_paper_account` called in
   live mode.
 
@@ -48,6 +59,10 @@ with the reason as text.
   refused until it is fixed or unset.
 
 These are checked when a live order is placed or proposed, and again when a proposal is approved.
+The switches (`live_trading_disabled`, `trading_halted`) answer before anything else, even an
+unconfigured brokerage. When the brokerage account cannot be read, `risk_blocked` for an order that
+adds exposure carries the brokerage's own reason (e.g. OANDA's `HTTP 401: Insufficient
+authorization`).
 
 ### Execution
 - `brokerage_not_supported`: an `exchange` that is not registered (oanda, ibkr, alpaca, tradier,
