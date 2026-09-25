@@ -16,7 +16,7 @@ import math
 import os
 import re
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from common.paths import data_path, ensure_parent
@@ -24,6 +24,10 @@ from common.paths import data_path, ensure_parent
 Quote = Callable[[str], float]
 
 _PAIR = re.compile(r"^[A-Z]{3}[A-Z]{3}$")
+# Largest single deposit, and largest cash balance, the paper account takes: far beyond any real
+# account, and small enough that every sum stays finite (two 1.7e308 deposits made equity inf).
+MAX_DEPOSIT_USD = 1e12
+MAX_CASH_USD = 1e15
 
 
 def parse_pair(symbol: str) -> Tuple[str, str]:
@@ -64,9 +68,13 @@ def _default_quote(symbol: str) -> float:
 
     ticker = global_container.exchange_provider.fetch_ticker(symbol)
     price = ticker.get("last") or ticker.get("close")
-    if not price:
-        raise ValueError(f"no price for {symbol}")
-    return float(price)
+    try:
+        price = float(price)
+    except (TypeError, ValueError):
+        raise ValueError(f"no price for {symbol}") from None
+    if not (math.isfinite(price) and price > 0):
+        raise ValueError(f"no usable price for {symbol} ({price!r})")
+    return price
 
 
 class FxPaperAccount:
@@ -180,9 +188,12 @@ class FxPaperAccount:
     def _snapshot(self, c: sqlite3.Connection, user_id: str) -> None:
         cash, deposits = self._cash(c, user_id)
         try:
-            equity = self._value(cash, self._positions(c, user_id))["equity_usd"]
+            value = self._value(cash, self._positions(c, user_id))
         except ValueError:
             return  # no rate to value a position: skip rather than record a wrong equity
+        if value["unpriced_positions"]:
+            return  # a position marked at its entry price would record a loss as never having happened
+        equity = value["equity_usd"]
         c.execute("INSERT INTO fx_equity (user_id, ts, equity_usd, deposits) VALUES (?, ?, ?, ?)", (user_id, self._now(), equity, deposits))
 
     # ------------------------------------------------------------------ cash
@@ -191,8 +202,21 @@ class FxPaperAccount:
         if str(asset).strip().upper() != "USD":
             raise ValueError("the paper FX account holds USD cash; deposit USD (positions come from trades)")
         amount = float(amount)
+        if not (math.isfinite(amount) and 0 < amount <= MAX_DEPOSIT_USD):
+            raise ValueError(f"a deposit must be a positive number of USD no larger than {MAX_DEPOSIT_USD:g}")
         with self._conn() as c:
             cash, deposits = self._cash(c, user_id)
+            if cash + amount > MAX_CASH_USD:
+                raise ValueError(f"the paper account holds at most {MAX_CASH_USD:g} USD of cash")
+            # A deposit is recorded with the account's value (the loss metrics net it out). While a
+            # position cannot be priced that value is unknown, and a deposit left unrecorded would
+            # be measured as a trading gain later (it ended a drawdown halt).
+            try:
+                unpriced = self._value(cash, self._positions(c, user_id))["unpriced_positions"]
+            except ValueError as e:
+                raise ValueError(f"deposit refused: the account cannot be valued now ({e}); retry when prices are available") from None
+            if unpriced:
+                raise ValueError(f"deposit refused: {', '.join(unpriced)} cannot be priced now; retry when prices are available")
             c.execute(
                 "INSERT OR REPLACE INTO fx_cash (user_id, usd, deposits) VALUES (?, ?, ?)",
                 (user_id, cash + amount, deposits + amount),
@@ -281,39 +305,59 @@ class FxPaperAccount:
 
     # ------------------------------------------------------------------ risk metrics
 
-    def get_risk_metrics(self, user_id: str) -> Dict[str, float]:
-        """Equity plus today's P&L and the drawdown, both net of deposits.
+    def mark_day_open(self, user_id: str) -> None:
+        """Record the account's value once per UTC day, at its first risk check: the daily-loss
+        baseline when the account made no snapshot the day before."""
+        today = self._now()[:10]
+        with self._conn() as c:
+            seen = c.execute("SELECT 1 FROM fx_equity WHERE user_id=? AND substr(ts, 1, 10)=? LIMIT 1", (user_id, today)).fetchone()
+            has_any = c.execute("SELECT 1 FROM fx_equity WHERE user_id=? LIMIT 1", (user_id,)).fetchone()
+            if has_any and not seen:
+                self._snapshot(c, user_id)
 
-        `drawdown_pct` is the current fall from the best result so far (what the Risk Guardian's
-        drawdown rule reads); `max_drawdown_pct` is the deepest on record.
+    def get_risk_metrics(self, user_id: str) -> Dict[str, Any]:
+        """Equity plus today's P&L and the drawdown, measured on trading results: deposits are
+        neither gains nor losses, and neither end a halt nor start one.
+
+        The results are chained into a performance index (time-weighted return): between two
+        snapshots, the return is the change in equity less the deposits made in between, over the
+        equity before. `drawdown_pct` is the index's current fall from its best level (what the
+        Risk Guardian's drawdown rule reads); `max_drawdown_pct` is the deepest on record;
+        `daily_pnl_pct` is the index's change since the previous UTC day's last snapshot, or since
+        the day's first snapshot when there was none the day before. The account's value now ends
+        the series. `equity` is None when a position cannot be priced now (its loss would be hidden),
+        and the order checks then refuse anything that adds exposure.
         """
         with self._conn() as c:
-            rows = c.execute("SELECT ts, equity_usd, deposits FROM fx_equity WHERE user_id=? ORDER BY ts ASC", (user_id,)).fetchall()
+            rows = c.execute("SELECT ts, equity_usd, deposits FROM fx_equity WHERE user_id=? ORDER BY ts ASC, rowid ASC", (user_id,)).fetchall()
+            _, deposits_now = self._cash(c, user_id)
+        equity: Optional[float]
         try:
-            equity = self.get_portfolio_value_usd(user_id)
+            state = self.account(user_id)
+            equity = None if state["unpriced_positions"] else float(state["equity_usd"])
         except ValueError:
-            equity = float(rows[-1][1]) if rows else 0.0
+            equity = None
         if not rows:
             return {"equity": equity, "daily_pnl_pct": 0.0, "drawdown_pct": 0.0, "max_drawdown_pct": 0.0}
-        with self._conn() as c:
-            _, deposits_now = self._cash(c, user_id)
-        series = [(str(ts), float(eq), float(dep)) for ts, eq, dep in rows] + [(self._now(), equity, deposits_now)]
+        series = [(str(ts), float(eq), float(dep)) for ts, eq, dep in rows]
+        if equity is not None:
+            series.append((self._now(), equity, deposits_now))
+
+        index = peak = 1.0
+        max_dd = current_dd = 0.0
+        levels = [(series[0][0], index)]
+        for (_, prev_eq, prev_dep), (ts, eq, dep) in zip(series, series[1:]):
+            if prev_eq > 0:
+                period_return = (eq - (dep - prev_dep)) / prev_eq - 1.0
+                index *= max(0.0, 1.0 + period_return)
+            peak = max(peak, index)
+            current_dd = 1.0 - index / peak if peak > 0 else 0.0
+            max_dd = max(max_dd, current_dd)
+            levels.append((ts, index))
 
         today = self._now()[:10]
-        start = next((r for r in series if r[0].startswith(today)), series[-1])
-        before_today = [r for r in series if r[0][:10] < today]
-        if before_today:
-            start = before_today[-1]
-        daily = 0.0
-        if start[1] > 0:
-            daily = ((equity - deposits_now) - (start[1] - start[2])) / start[1]
-
-        peak_perf = None
-        max_dd = current_dd = 0.0
-        for _, eq, dep in series:
-            perf = eq - dep
-            peak_perf = perf if peak_perf is None else max(peak_perf, perf)
-            dd = (peak_perf - perf) / eq if eq > 0 else 0.0
-            max_dd = max(max_dd, dd)
-            current_dd = dd
+        yesterday = (datetime.fromisoformat(today) - timedelta(days=1)).date().isoformat()
+        before = [level for ts, level in levels if ts[:10] == yesterday]
+        start = before[-1] if before else next((level for ts, level in levels if ts[:10] == today), levels[-1][1])
+        daily = index / start - 1.0 if start > 0 else 0.0
         return {"equity": equity, "daily_pnl_pct": float(daily), "drawdown_pct": float(current_dd), "max_drawdown_pct": float(max_dd)}
