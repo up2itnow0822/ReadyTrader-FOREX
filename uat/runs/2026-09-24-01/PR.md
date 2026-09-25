@@ -1,32 +1,39 @@
-## UAT run `2026-09-24-01` — ready for release review (2 items blocked on credentials / Docker)
+## UAT run `2026-09-24-01` — ready for release review (1 item blocked on a practice-account token)
 
 Acting as the user, exercised every surface of ReadyTrader-FOREX end to end (MCP server over stdio,
-approval API, dashboard, CLI scripts, config, docs, registry manifest), fixed every failure on this
-branch, and retested each fix with fresh evidence. Money paths ran in paper mode, against fake
-brokerages, or against OANDA's **practice** API with a bogus token (the failure path only); no order
-was placed on any account.
+approval API, dashboard, CLI scripts, config, docs, the Docker image, the registry manifest), fixed
+every failure on this branch, and retested each fix with fresh evidence. Money paths ran in paper
+mode, against fake brokerages, or against OANDA's **practice** API with a bogus token (the failure
+path only); no order was placed on any account.
 
 **Stacked on #4** (`feat/market-falling-knife`, the price-based Falling Knife and volatility halt).
 Review and merge #4 first; this PR's diff is the UAT work on top of it.
 
-**Totals:** 60 checks · 6 pass · 52 fail (52 fixed & verified) · 2 blocked · 429 tests pass, ruff and bandit clean, dashboard installs, lints and builds.
+**Totals:** 89 checks · 11 pass · 77 fail (77 fixed & verified) · 1 blocked · 461 tests pass, ruff and bandit clean, dashboard installs, lints and builds; the README's Docker path builds and runs.
 
 | Section | Pass | Fail | Verified fixed | Blocked |
 |---|---|---|---|---|
 | preflight | 1 | 5 | 5 | 0 |
-| backend | 0 | 24 | 24 | 0 |
-| data | 1 | 0 | 0 | 0 |
+| backend | 0 | 36 | 36 | 0 |
+| data | 1 | 4 | 4 | 0 |
 | memory | 0 | 2 | 2 | 0 |
-| frontend | 2 | 5 | 5 | 0 |
+| frontend | 2 | 6 | 6 | 0 |
 | integrations | 0 | 4 | 4 | 1 |
 | cli | 0 | 2 | 2 | 0 |
-| config | 0 | 7 | 7 | 0 |
-| docs | 0 | 3 | 3 | 1 |
-| regression | 2 | 0 | 0 | 0 |
+| config | 0 | 10 | 10 | 0 |
+| docs | 1 | 7 | 7 | 0 |
+| regression | 6 | 1 | 1 | 0 |
+
+### Breaking changes (read before merging)
+- **Approving a live proposal needs `API_OPERATOR_TOKEN`** on the API server (XR-06). The agent receives each proposal's `confirm_token`, so it could approve its own live order. With the token set, every `/api/` call but `/api/health` needs `Authorization: Bearer <token>`; the dashboard asks for it once per tab. Paper approvals work without it.
+- **Live OANDA limit orders are fill-or-kill** (XR-02): a limit is a MARKET order with `priceBound`, `timeInForce: FOK`, `positionFill: REDUCE_FIRST`. Nothing rests at OANDA (a resting order could fill past the Risk Guardian and the kill switch). A hedging account that cannot net rejects the order.
+- **The Docker image runs as `readytrader` (uid 10001)** (XR-11): a volume written by an earlier root image must be handed over once (RUNBOOK, "Upgrading a Docker data volume"; AR-08, verified with Docker).
+- **Loss limits measure trading results** (XR-04/07): deposits no longer end a drawdown halt; the daily baseline is the previous UTC day's last recorded value; limits run on the paper account only and live verdicts say so (`inactive_rules`).
 
 ### What was broken and is now fixed
 - **critical** PRE-01 — README local install (pip install -r requirements-dev.txt) then python app/main.py → requirements.txt pins mcp>=1.24.0,<2 (`a12f405`)
 - **critical** PRE-03 — MCP server registers its tools (python -m app.main, mcp 1.x) → execution tools registered with mcp.tool(fn) (`a12f405`)
+- **high** AR-01 — The operator token cannot be steered past (Host header, root path) → require_operator is a dependency of the operator_api router that holds every protected route; the middleware no longer checks paths. (`fc571242`)
 - **high** BE-01 — Paper market order executes (README: place_market_order('EUR/USD','buy',1000)) → orders fill in core/fx_account.FxPaperAccount at the latest rate (execute_order) (`9976ddc`)
 - **high** BE-02 — A paper limit order fills only when the market reaches it → paper_fill_price: limits fill only when marketable, at the market (`9976ddc`)
 - **high** BE-05 — The 5%-of-account size rule values an FX order at its USD notional against the real account → size rule values base-currency notional in USD (core/fx_account.notional_usd) against the account's equity (paper) or the brokerage's (live); a BUY it cannot size fails closed (`9976ddc`)
@@ -47,6 +54,14 @@ Review and merge #4 first; this PR's diff is the UAT work on top of it.
 - **high** IN-02 — get_economic_calendar reports the week's high-impact events, or says it could not → calendar reads cached 15 min (CALENDAR_CACHE_TTL_SEC); a refused refresh uses a read up to 6 h old, dated in the answer (`6ccc5ff`)
 - **high** PRE-02 — Documented start command python app/main.py resolves the app package → app/main.py inserts the repo root on sys.path when run as a file (`a12f405`)
 - **high** PRE-05 — CI runs the project's tests → ci.yml: python job (pip install -r requirements-dev.txt; ruff; pytest; bandit) and frontend job (npm ci, lint, build) (`9551325`)
+- **high** XR-01 — Every spelling of a pair gets the same market checks → canonical_symbol() maps every pair spelling to EURUSD before validate_trade_risk, pre_trade_check and place_stock_order run any check. (`4f72e15d`)
+- **high** XR-02 — Resting limit orders cannot build exposure the Guardian never sees → Every OANDA order is fill-or-kill: a limit is a MARKET order with priceBound=limit, timeInForce FOK; positionFill REDUCE_FIRST nets as the Guardian sizes (an account that cannot net rejects the order). Nothing rests at the broker. (`4f72e15d`)
+- **high** XR-03 — Orders at every brokerage are valued at the market, not the caller's price → The reference price is the market price (a limit at max(limit, market)); a market order's price is dropped; without a market price an order that adds exposure is refused. The approval API re-runs the check with the order type. (`4f72e15d`)
+- **high** XR-04 — A paper deposit does not end a drawdown halt → get_risk_metrics chains results into a time-weighted index (per period: equity change less deposits, over the prior equity): a deposit is neither a gain nor a loss and cannot end a halt. (`4f72e15d`)
+- **high** XR-05 — Docs say which loss limits apply to live orders → Live verdicts (and executed orders) list daily_loss_limit and max_drawdown under inactive_rules; README, THREAT_MODEL, RUNBOOK and ERRORS say the limits run on the paper account only and how to watch a live account. (`4f72e15d`)
+- **high** XR-06 — A live approve_each order needs an approval the agent cannot give itself → API_OPERATOR_TOKEN: when set, every /api/ route but /api/health needs Authorization: Bearer; a live proposal is approved only when it is set (403 operator_token_required, checked before the proposal is consumed). The dashboard sends it (asked once per tab). (`4f72e15d`)
+- **medium** AR-02 — The dashboard can read a 401 and ask for the operator token → CORS is added after request_context and wraps every answer. (`fc571242`)
+- **medium** AR-03 — A NaN quote is no price → Quotes must be finite and positive, else they are no price (the fail-closed paths then refuse). (`fc571242`)
 - **medium** BE-03 — Malformed trade requests are refused (unknown side, non-positive amount) → side buy/sell, positive finite amount, market/limit with a positive limit price (`9976ddc`)
 - **medium** BE-07 — start_brokerage_private_ws tells the truth → start_brokerage_private_ws returns not_implemented in live mode (`9976ddc`)
 - **medium** BE-09 — API server starts as documented (python app/api_server.py) → api_server.py puts the repo root on sys.path when run as a file (`9976ddc`)
@@ -63,6 +78,18 @@ Review and merge #4 first; this PR's diff is the UAT work on top of it.
 - **medium** IN-04 — OANDA (practice API, bogus token): failures reach the operator with OANDA's reason → _oanda_reason() surfaces errorMessage; orderCancelTransaction without a fill raises; <1 unit refused; parse_pair for instruments (`3250d6f`)
 - **medium** ME-02 — Shared insights are recalled under any spelling of the pair and expire everywhere → insight_key() normalises the pair on write and read (SQL-side for older rows); policy compares by the same key (`28346fc`)
 - **medium** PRE-06 — README states the Python version the project needs → README prerequisites and local install state Python 3.12+ with venv steps (`9551325`)
+- **medium** XR-07 — Paper loss limits measure losses against the capital now in the account and today's start → Daily P&L is the index change since the previous UTC day's last snapshot, else the day's first; mark_day_open records one snapshot at the first check of a day. (`4f72e15d`)
+- **medium** XR-08 — An unpriceable position does not hide a loss → Equity is None when a position cannot be priced (account() raises or reports unpriced positions); snapshots skip that state; the order checks refuse new exposure; /api/portfolio and the dashboard show the unpriced positions. (`4f72e15d`)
+- **medium** XR-09 — A market order's price is validated or ignored → A market order's price is dropped (0.0) before sizing, proposals and the brokerage; the pending list and approval responses are JSON-safe. (`4f72e15d`)
+- **medium** XR-10 — The kill switch and its way out are documented as they work → Docs: the kill switch refuses closing orders too; flatten on the OANDA platform. With fill-or-kill orders (XR-02) nothing the server sent rests at the broker behind the switch. (`4f72e15d`)
+- **medium** XR-11 — The Docker build context keeps secrets and local state out → **/ patterns for secrets, keys, databases, caches and logs; frontend/ left out; USER readytrader (uid 10001) owning only /app/data. (`4f72e15d bcf733b8`)
+- **low** AR-04 — A deposit cannot end a drawdown halt while a position is unpriced → deposit() refuses while the account cannot be valued (an unpriced position or no USD rate). (`fc571242`)
+- **low** AR-05 — The docs say how the daily-loss baseline is taken → RUNBOOK and THREAT_MODEL describe the baseline (previous UTC day's last recorded value, else today's first) and that it errs toward halting. (`fc571242`)
+- **low** AR-06 — Orders the switches refuse are audited → trade_start is recorded right after input validation, before any refusal. (`fc571242`)
+- **low** AR-07 — An approval while halted answers trading_halted → In live mode the switches and the live policy are checked first; pre_trade_check runs only if they pass (execute_order checks them again). (`fc571242`)
+- **low** AR-08 — An existing Docker data volume keeps working after the upgrade → RUNBOOK 'Upgrading a Docker data volume' and a CHANGELOG breaking note give the one-time chown to uid 10001. (`fc571242`)
+- **low** AR-09 — The RUNBOOK quotes refusal text as the code writes it → RUNBOOK quotes the message the code writes, and the empty-account variant. (`fc571242`)
+- **low** AR-10 — Every numeric tool parameter refuses true → app/tools/params.py defines Number and Integer; every numeric tool parameter uses one. (`fc571242`)
 - **low** BE-04 — deposit_paper_funds accepts only a positive amount → deposits must be positive USD (`9976ddc`)
 - **low** BE-08 — get_stock_price returns the price as a number → get_stock_price returns price, bid, ask, source (`80e028d`)
 - **low** BE-23 — Approval API error paths: bad bodies 422, unknown ids 404, no internals → approve_trade maps the store's refusal to 404 (unknown id), 403 (wrong token) or 409 (no longer approvable) (`37e3973`)
@@ -77,23 +104,21 @@ Review and merge #4 first; this PR's diff is the UAT work on top of it.
 - **low** FE-03 — Navigation links lead to pages → nav links without pages removed (`a065ac4`)
 - **low** FE-06 — P&L figures never show a negative zero → usd() rounds sub-cent values to 0 before formatting (`37901e9`)
 - **low** ME-01 — Insight fields are validated (signal bullish/bearish/neutral, confidence 0..1) → post_market_insight validates signal, confidence and ttl (`33bf5e1`)
+- **low** REG-03 — The operator switches answer first; a refusal for an unreadable live account says why → place_stock_order checks live_execution_refusal() first in live mode; _live_equity returns (equity, why) and the equity refusal carries why. (`f875f5ab`)
+- **low** XR-12 — API responses and logs identify each request → request_context middleware: per-request X-Request-ID (in the log lines), security headers, JSON 500 naming only the request id; log_event stamps ts_ms per line. (`4f72e15d`)
+- **low** XR-13 — Odd numeric inputs are refused → Deposits capped at 1e12 USD (cash at 1e15); tool numbers typed Number (booleans refused before conversion); non-finite sentiment_score refused. (`4f72e15d bcf733b8`)
+- **low** XR-14 — The Smithery listing offers only settings that work there → EXECUTION_APPROVAL_MODE is no longer offered; commandFunction passes only the listed settings and sets 'auto'. (`4f72e15d`)
 
 Commit ids above are from the local UAT history recorded in the ledger; the pushed branch carries
 the same changes in fewer commits (the GitHub connector used here writes whole trees).
 
-### An independent review, and what it changed
-After the run, a separate agent given only the repo, this branch and `uat/UAT-LOG.md` re-opened every
-retest capture, walked the surface for gaps and read the diff for fixes that broke something. It
-found real defects the run had missed, all now fixed and retested: exits sized as new exposure and
-shorts trapped by BUY-only limits (BE-26), live SELLs unsized without equity (BE-27), paper
-proposals executable by a live API (BE-28), `validate_trade_risk` accepting malformed input
-(BE-29), a misleading large-trade verdict (BE-30), the allowlist spelling (CF-07), the WebSocket
-origin (BE-31) and blind approvals on the dashboard (FE-07). Weak retest evidence it flagged was
-re-captured.
+### Three review rounds, and what they changed
+1. **Independent review of the run** (BE-26..BE-31, CF-07, FE-07): exits sized as new exposure, live SELLs unsized without equity, paper proposals executable live, malformed `validate_trade_risk` input, the allowlist spelling, the WebSocket origin and blind dashboard approvals.
+2. **Cross-repository review** (XR-01..XR-14): every defect class found in ReadyTrader-Crypto, checked here: pair spellings that skipped the market checks, resting OANDA limits, caller-price sizing, deposits ending halts, the live loss-limit scope, agent self-approval, the daily baseline, unpriced positions hiding losses, NaN prices, the kill switch docs, the Docker build context, request ids, odd numbers, and the Smithery listing. The regression sweep then found the operator switches answering after the brokerage check (REG-03).
+3. **Adversarial review of those fixes** (AR-01..AR-10): the operator-token check could be steered past with a `Host: …#` header or a root path (the agent could approve its own live order); 401s carried no CORS headers; a NaN quote passed the size rule; a deposit while a position was unpriced ended a halt; halted orders went unaudited; an approval while halted read the brokerage; existing Docker volumes broke; four tool parameters took `true` as 1. All fixed and retested.
 
 ### Still blocked (needs the owner)
 - **IN-05** a real order round trip needs an OANDA **practice** (demo) token: `OANDA_API_KEY`, `OANDA_ACCOUNT_ID`, with `PAPER_MODE=false`, `LIVE_TRADING_ENABLED=true`, `OANDA_ENVIRONMENT=practice` (the default). No real money is involved. The failure path against the same API is verified (IN-04).
-- **DOC-03** `docker build` / `docker run`: needs a machine with a Docker daemon. The build context (0.7 MB, no local state) and the configs were checked without one (DOC-02).
 - **CI workflow**: `.github/workflows/ci.yml` (ruff, pytest, bandit on Python 3.12; dashboard npm ci/lint/build) is on the local branch but the connector used to push cannot write workflow files. Please add it (Actions → new workflow, or commit it):
 
 ```yaml
@@ -145,6 +170,9 @@ jobs:
 - **Repo setting**: SECURITY.md now points reporters at GitHub private vulnerability reporting; switch it on under Settings → Code security if it is off.
 
 ### Review these with extra care
+- **Operator token** (`app/api_server.py`, XR-06, AR-01): the check is a dependency of the `operator_api` router (never a path check in a middleware); CORS is outermost; live approvals refuse with `403 operator_token_required` while the token is unset, before the proposal is consumed.
+- **Paper loss metrics** (`core/fx_account.py`, XR-04/07/08, AR-04): a time-weighted index over `fx_equity`; `mark_day_open`; equity `None` while a position cannot be priced; deposits refused in that state.
+- **OANDA orders** (`execution/oanda_service.py`, XR-02): fill-or-kill only; `REDUCE_FIRST` is untested against a hedging account (a practice token would settle it: IN-05).
 - **Risk semantics** (`app/tools/execution.py`, `core/risk.py`; BE-05, BE-26, BE-27): orders are sized by the USD notional of the exposure they **add**, read from the paper account or the brokerage's positions; reducing or closing a position is never sized as new exposure and passes the daily-loss and drawdown limits; any order that adds exposure (a SELL opening a short included) fails closed without equity or a rate. The volatility halt still blocks every side, exits included (as in #4).
 - **Paper account** (`core/fx_account.py`, BE-01..05): one netted position per pair, margin at `LEVERAGE` (30), P&L converted to USD; persistent in `data/paper.db` and shared with the API. `deposit_paper_funds` takes USD only.
 - **Trading gates** (`app/tools/execution.py`, `app/api_server.py`, `core/policy.py`, `common/switches.py`): `live_order_refusal` at proposal and execution; switches fail closed; proposals carry their mode (`mode_mismatch`); approvals answer 404/403/409.
@@ -159,9 +187,10 @@ jobs:
 - The Live Markets dot means "WebSocket connected"; no tool starts a market-data stream in this release.
 
 ### Evidence
-Full log: [`uat/UAT-LOG.md`](uat/UAT-LOG.md) · ledger `uat/runs/2026-09-24-01/findings.json` · captures under `uat/evidence/2026-09-24-01/` (the dashboard screenshots and DOM dumps, and `findings.json` (149 KB), stay with the local run because the connector used to push takes text files under ~100 KB; each screenshot's `.json`/`.txt` capture carries its assertions, and `UAT-LOG.md` is rendered from the full ledger).
+Full log: [`uat/UAT-LOG.md`](uat/UAT-LOG.md) · ledger `uat/runs/2026-09-24-01/findings.json` · captures under `uat/evidence/2026-09-24-01/` (the dashboard screenshots and DOM dumps, and `findings.json` (217 KB), stay with the local run because the connector used to push takes text files under ~100 KB; each screenshot's `.json`/`.txt` capture carries its assertions, and `UAT-LOG.md` is rendered from the full ledger).
 
 ### DOX pass
+- Root `AGENTS.md` now also records: symbol normalisation, fill-or-kill OANDA orders, the paper loss-metric contract, the operator-token router, `app/tools/params.py`, switches-first and audit order, the Docker user.
 - Root `AGENTS.md` created (the repo had none): purpose, ownership, the fail-closed, exposure, mode and response contracts, data paths, the docs-must-match rule, verification commands; indexes `uat/AGENTS.md`.
 - `uat/AGENTS.md`: created by the UAT tooling; owns the log, ledger and evidence.
 - `_deprecated/README.md`: why the in-memory FX simulator and the crypto signer compose file left the shipped tree.

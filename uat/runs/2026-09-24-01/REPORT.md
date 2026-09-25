@@ -1,6 +1,6 @@
 # UAT run 2026-09-24-01 — ReadyTrader-FOREX: CLEAN with BLOCKED items
 
-60 checks · 6 pass · 52 fail (52 fixed & verified, 0 open, 0 fixed-unverified, 0 regressed) · 2 blocked
+89 checks · 11 pass · 77 fail (77 fixed & verified, 0 open, 0 fixed-unverified, 0 regressed) · 1 blocked
 
 Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tools, paper trading, risk guardian + FX Falling Knife/halt, api_server approvals, dashboard, CLI scripts, config, docs, registry manifest, Docker configs (static). Out: live brokerage orders (no credentials; live trading is a hard gate), Docker build (no daemon in sandbox)
 
@@ -8,6 +8,7 @@ Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tool
 
 - **critical** PRE-01 — README local install (pip install -r requirements-dev.txt) then python app/main.py → requirements.txt pins mcp>=1.24.0,<2 (`a12f405`) · **VERIFIED**
 - **critical** PRE-03 — MCP server registers its tools (python -m app.main, mcp 1.x) → execution tools registered with mcp.tool(fn) (`a12f405`) · **VERIFIED**
+- **high** AR-01 — The operator token cannot be steered past (Host header, root path) → require_operator is a dependency of the operator_api router that holds every protected route; the middleware no longer checks paths. (`fc571242`) · **VERIFIED**
 - **high** BE-01 — Paper market order executes (README: place_market_order('EUR/USD','buy',1000)) → orders fill in core/fx_account.FxPaperAccount at the latest rate (execute_order) (`9976ddc`) · **VERIFIED**
 - **high** BE-02 — A paper limit order fills only when the market reaches it → paper_fill_price: limits fill only when marketable, at the market (`9976ddc`) · **VERIFIED**
 - **high** BE-05 — The 5%-of-account size rule values an FX order at its USD notional against the real account → size rule values base-currency notional in USD (core/fx_account.notional_usd) against the account's equity (paper) or the brokerage's (live); a BUY it cannot size fails closed (`9976ddc`) · **VERIFIED**
@@ -28,6 +29,14 @@ Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tool
 - **high** IN-02 — get_economic_calendar reports the week's high-impact events, or says it could not → calendar reads cached 15 min (CALENDAR_CACHE_TTL_SEC); a refused refresh uses a read up to 6 h old, dated in the answer (`6ccc5ff`) · **VERIFIED**
 - **high** PRE-02 — Documented start command python app/main.py resolves the app package → app/main.py inserts the repo root on sys.path when run as a file (`a12f405`) · **VERIFIED**
 - **high** PRE-05 — CI runs the project's tests → ci.yml: python job (pip install -r requirements-dev.txt; ruff; pytest; bandit) and frontend job (npm ci, lint, build) (`9551325`) · **VERIFIED**
+- **high** XR-01 — Every spelling of a pair gets the same market checks → canonical_symbol() maps every pair spelling to EURUSD before validate_trade_risk, pre_trade_check and place_stock_order run any check. (`4f72e15d`) · **VERIFIED**
+- **high** XR-02 — Resting limit orders cannot build exposure the Guardian never sees → Every OANDA order is fill-or-kill: a limit is a MARKET order with priceBound=limit, timeInForce FOK; positionFill REDUCE_FIRST nets as the Guardian sizes (an account that cannot net rejects the order). Nothing rests at the broker. (`4f72e15d`) · **VERIFIED**
+- **high** XR-03 — Orders at every brokerage are valued at the market, not the caller's price → The reference price is the market price (a limit at max(limit, market)); a market order's price is dropped; without a market price an order that adds exposure is refused. The approval API re-runs the check with the order type. (`4f72e15d`) · **VERIFIED**
+- **high** XR-04 — A paper deposit does not end a drawdown halt → get_risk_metrics chains results into a time-weighted index (per period: equity change less deposits, over the prior equity): a deposit is neither a gain nor a loss and cannot end a halt. (`4f72e15d`) · **VERIFIED**
+- **high** XR-05 — Docs say which loss limits apply to live orders → Live verdicts (and executed orders) list daily_loss_limit and max_drawdown under inactive_rules; README, THREAT_MODEL, RUNBOOK and ERRORS say the limits run on the paper account only and how to watch a live account. (`4f72e15d`) · **VERIFIED**
+- **high** XR-06 — A live approve_each order needs an approval the agent cannot give itself → API_OPERATOR_TOKEN: when set, every /api/ route but /api/health needs Authorization: Bearer; a live proposal is approved only when it is set (403 operator_token_required, checked before the proposal is consumed). The dashboard sends it (asked once per tab). (`4f72e15d`) · **VERIFIED**
+- **medium** AR-02 — The dashboard can read a 401 and ask for the operator token → CORS is added after request_context and wraps every answer. (`fc571242`) · **VERIFIED**
+- **medium** AR-03 — A NaN quote is no price → Quotes must be finite and positive, else they are no price (the fail-closed paths then refuse). (`fc571242`) · **VERIFIED**
 - **medium** BE-03 — Malformed trade requests are refused (unknown side, non-positive amount) → side buy/sell, positive finite amount, market/limit with a positive limit price (`9976ddc`) · **VERIFIED**
 - **medium** BE-07 — start_brokerage_private_ws tells the truth → start_brokerage_private_ws returns not_implemented in live mode (`9976ddc`) · **VERIFIED**
 - **medium** BE-09 — API server starts as documented (python app/api_server.py) → api_server.py puts the repo root on sys.path when run as a file (`9976ddc`) · **VERIFIED**
@@ -44,6 +53,18 @@ Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tool
 - **medium** IN-04 — OANDA (practice API, bogus token): failures reach the operator with OANDA's reason → _oanda_reason() surfaces errorMessage; orderCancelTransaction without a fill raises; <1 unit refused; parse_pair for instruments (`3250d6f`) · **VERIFIED**
 - **medium** ME-02 — Shared insights are recalled under any spelling of the pair and expire everywhere → insight_key() normalises the pair on write and read (SQL-side for older rows); policy compares by the same key (`28346fc`) · **VERIFIED**
 - **medium** PRE-06 — README states the Python version the project needs → README prerequisites and local install state Python 3.12+ with venv steps (`9551325`) · **VERIFIED**
+- **medium** XR-07 — Paper loss limits measure losses against the capital now in the account and today's start → Daily P&L is the index change since the previous UTC day's last snapshot, else the day's first; mark_day_open records one snapshot at the first check of a day. (`4f72e15d`) · **VERIFIED**
+- **medium** XR-08 — An unpriceable position does not hide a loss → Equity is None when a position cannot be priced (account() raises or reports unpriced positions); snapshots skip that state; the order checks refuse new exposure; /api/portfolio and the dashboard show the unpriced positions. (`4f72e15d`) · **VERIFIED**
+- **medium** XR-09 — A market order's price is validated or ignored → A market order's price is dropped (0.0) before sizing, proposals and the brokerage; the pending list and approval responses are JSON-safe. (`4f72e15d`) · **VERIFIED**
+- **medium** XR-10 — The kill switch and its way out are documented as they work → Docs: the kill switch refuses closing orders too; flatten on the OANDA platform. With fill-or-kill orders (XR-02) nothing the server sent rests at the broker behind the switch. (`4f72e15d`) · **VERIFIED**
+- **medium** XR-11 — The Docker build context keeps secrets and local state out → **/ patterns for secrets, keys, databases, caches and logs; frontend/ left out; USER readytrader (uid 10001) owning only /app/data. (`4f72e15d bcf733b8`) · **VERIFIED**
+- **low** AR-04 — A deposit cannot end a drawdown halt while a position is unpriced → deposit() refuses while the account cannot be valued (an unpriced position or no USD rate). (`fc571242`) · **VERIFIED**
+- **low** AR-05 — The docs say how the daily-loss baseline is taken → RUNBOOK and THREAT_MODEL describe the baseline (previous UTC day's last recorded value, else today's first) and that it errs toward halting. (`fc571242`) · **VERIFIED**
+- **low** AR-06 — Orders the switches refuse are audited → trade_start is recorded right after input validation, before any refusal. (`fc571242`) · **VERIFIED**
+- **low** AR-07 — An approval while halted answers trading_halted → In live mode the switches and the live policy are checked first; pre_trade_check runs only if they pass (execute_order checks them again). (`fc571242`) · **VERIFIED**
+- **low** AR-08 — An existing Docker data volume keeps working after the upgrade → RUNBOOK 'Upgrading a Docker data volume' and a CHANGELOG breaking note give the one-time chown to uid 10001. (`fc571242`) · **VERIFIED**
+- **low** AR-09 — The RUNBOOK quotes refusal text as the code writes it → RUNBOOK quotes the message the code writes, and the empty-account variant. (`fc571242`) · **VERIFIED**
+- **low** AR-10 — Every numeric tool parameter refuses true → app/tools/params.py defines Number and Integer; every numeric tool parameter uses one. (`fc571242`) · **VERIFIED**
 - **low** BE-04 — deposit_paper_funds accepts only a positive amount → deposits must be positive USD (`9976ddc`) · **VERIFIED**
 - **low** BE-08 — get_stock_price returns the price as a number → get_stock_price returns price, bid, ask, source (`80e028d`) · **VERIFIED**
 - **low** BE-23 — Approval API error paths: bad bodies 422, unknown ids 404, no internals → approve_trade maps the store's refusal to 404 (unknown id), 403 (wrong token) or 409 (no longer approvable) (`37e3973`) · **VERIFIED**
@@ -58,10 +79,13 @@ Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tool
 - **low** FE-03 — Navigation links lead to pages → nav links without pages removed (`a065ac4`) · **VERIFIED**
 - **low** FE-06 — P&L figures never show a negative zero → usd() rounds sub-cent values to 0 before formatting (`37901e9`) · **VERIFIED**
 - **low** ME-01 — Insight fields are validated (signal bullish/bearish/neutral, confidence 0..1) → post_market_insight validates signal, confidence and ttl (`33bf5e1`) · **VERIFIED**
+- **low** REG-03 — The operator switches answer first; a refusal for an unreadable live account says why → place_stock_order checks live_execution_refusal() first in live mode; _live_equity returns (equity, why) and the equity refusal carries why. (`f875f5ab`) · **VERIFIED**
+- **low** XR-12 — API responses and logs identify each request → request_context middleware: per-request X-Request-ID (in the log lines), security headers, JSON 500 naming only the request id; log_event stamps ts_ms per line. (`4f72e15d`) · **VERIFIED**
+- **low** XR-13 — Odd numeric inputs are refused → Deposits capped at 1e12 USD (cash at 1e15); tool numbers typed Number (booleans refused before conversion); non-finite sentiment_score refused. (`4f72e15d bcf733b8`) · **VERIFIED**
+- **low** XR-14 — The Smithery listing offers only settings that work there → EXECUTION_APPROVAL_MODE is no longer offered; commandFunction passes only the listed settings and sets 'auto'. (`4f72e15d`) · **VERIFIED**
 
 ## Still blocked (needs the user)
 
-- DOC-03 — docker build and docker run from the README produce a working MCP server: blocked on A host with a running Docker daemon (this sandbox has the client only): run docker build -t readytrader-forex . and the README's docker run line, then list tools.
 - IN-05 — A real order round trip on an OANDA practice account: blocked on An OANDA practice (demo) account token: OANDA_API_KEY + OANDA_ACCOUNT_ID for a practice account, with PAPER_MODE=false, LIVE_TRADING_ENABLED=true, OANDA_ENVIRONMENT=practice.
 
 ## Coverage
@@ -69,14 +93,14 @@ Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tool
 | Section | Checks | Status |
 |---|---|---|
 | preflight | 6 | covered |
-| backend | 24 | covered |
-| data | 1 | covered |
+| backend | 36 | covered |
+| data | 5 | covered |
 | memory | 2 | covered |
-| frontend | 7 | covered |
+| frontend | 8 | covered |
 | integrations | 5 | covered |
 | cli | 2 | covered |
-| config | 7 | covered |
-| docs | 4 | covered |
+| config | 10 | covered |
+| docs | 8 | covered |
 | journeys | 6 | recorded |
 
 ## Delivery
@@ -84,4 +108,4 @@ Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tool
 - Branch `uat/2026-09-24-forex` has a remote (`origin`) but no upstream — it has not been pushed.
 - Base: `main@417a104`
 - DOX: root AGENTS.md indexes `uat/AGENTS.md`
-- Log: `uat/UAT-LOG.md` · evidence: `uat/evidence/2026-09-24-01/` (1.11 MB)
+- Log: `uat/UAT-LOG.md` · evidence: `uat/evidence/2026-09-24-01/` (1.21 MB)
