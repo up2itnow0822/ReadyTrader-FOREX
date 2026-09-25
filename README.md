@@ -34,7 +34,7 @@ Your agent provides the **Intelligence** (reading rates, the economic calendar, 
 
 1.  **Research:** you ask, "Find a good entry for EUR/USD." The agent calls `get_forex_market_brief("EURUSD")`, `fetch_ohlcv`, `get_market_regime` and `get_economic_calendar`.
 2.  **Proposal:** it decides to buy 4,000 EURUSD and calls `place_market_order("EUR/USD", "buy", 4000)`. Amounts are units of the base currency: 4,000 EUR, about 4,500 USD.
-3.  **Governance:** the Risk Guardian judges the part of the order that opens or adds to a position (an order that reduces or closes one is an exit), at its USD notional against your account: no more than 5% of the account per trade, nothing that adds exposure after a 5% daily loss or a 10% drawdown, no BUY into a collapsing pair, and no trade at all on a pair in a volatility halt (`docs/FALLING_KNIFE.md`). Live orders also pass your `MAX_BROKERAGE_ORDER_AMOUNT` / `ALLOW_BROKERAGE_SYMBOLS` policy and need `LIVE_TRADING_ENABLED=true`.
+3.  **Governance:** the Risk Guardian judges the part of the order that opens or adds to a position (an order that reduces or closes one is an exit), at its USD notional (from the market rate, never a price the order carries) against your account: no more than 5% of the account per trade, nothing that adds exposure after a 5% daily loss or a 10% drawdown (on the paper account only: a live account has no loss history here, and live orders list both rules under `inactive_rules`), no BUY into a collapsing pair, and no trade at all on a pair in a volatility halt (`docs/FALLING_KNIFE.md`). Live orders also pass your `MAX_BROKERAGE_ORDER_AMOUNT` / `ALLOW_BROKERAGE_SYMBOLS` policy and need `LIVE_TRADING_ENABLED=true`.
 4.  **Consent:** with `EXECUTION_APPROVAL_MODE=approve_each` the order comes back as a pending proposal. You approve it through the [API or the dashboard](#-approving-trades-approve_each); the Risk Guardian checks it again with fresh data, and only then does it execute.
 
 ---
@@ -51,7 +51,7 @@ A small dashboard backed by the API server (`app/api_server.py`).
 **What it shows:**
 -   **Paper Account**: equity, cash, open positions with unrealized P&L, margin used/free, today's P&L and drawdown, from `/api/portfolio` (the live-account view is not implemented yet).
 -   **Mode**: Paper Mode or LIVE TRADING, read from `/api/health`.
--   **Guard Rail**: pending `approve_each` proposals with the order each would place (pair, side, amount, type, venue, paper or live); **Approve** and **Reject** ask for the proposal's `confirm_token` and call `/api/approve-trade`.
+-   **Guard Rail**: pending `approve_each` proposals with the order each would place (pair, side, amount, type, venue, paper or live); **Approve** and **Reject** ask for the proposal's `confirm_token` and call `/api/approve-trade`. When the API runs with `API_OPERATOR_TOKEN`, the dashboard asks for that token once per browser tab (kept in the tab's session storage).
 -   **Live Markets**: tickers pushed over the API's WebSocket (`/ws`). No tool starts a market-data stream in this release, so this panel stays empty.
 
 ---
@@ -125,6 +125,7 @@ Paper mode needs no configuration. To change anything, copy `env.example` to `.e
 | `MARKET_GUARD_ON_DATA_ERROR` | unset | What a BUY does when the daily bars cannot be read: `block` or `allow`. Unset blocks in live mode and allows (flagged) in paper mode. |
 | `API_PORT`, `API_HOST` | `8000`, `127.0.0.1` | The API server's address. The approval API has no login: keep it on 127.0.0.1 unless something in front of it authenticates. |
 | `API_CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Browser origins allowed to call the API. |
+| `API_OPERATOR_TOKEN` | unset | Operator secret for the API server only: when set, every `/api/` call but `/api/health` needs `Authorization: Bearer <it>`; live proposals can be approved only when it is set. |
 | `EXECUTION_DB_PATH`, `EXECUTION_SESSION_ID` | unset | Give both processes the same values so the API can approve the MCP server's proposals. |
 | `DISCORD_WEBHOOK_URL`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | unset | Optional notifications when a proposal needs approval. |
 </details>
@@ -168,7 +169,7 @@ A tool whose key is missing answers `not_configured`; a source that fails answer
 ---
 
 #### Live trading
-Live orders go out only with `PAPER_MODE=false` **and** `LIVE_TRADING_ENABLED=true`; `TRADING_HALTED=true` refuses them all. Each is sized against the brokerage account's equity, and a BUY whose account cannot be read is refused. OANDA orders go to OANDA's **practice** API until you set `OANDA_ENVIRONMENT=live`, so you can test the whole live path without real money. Capabilities per brokerage: `docs/EXCHANGES.md`.
+Live orders go out only with `PAPER_MODE=false` **and** `LIVE_TRADING_ENABLED=true`; `TRADING_HALTED=true` refuses them all, closing orders included (close positions on the OANDA platform while halted). Each is sized against the brokerage account's equity, and an order that adds exposure whose account cannot be read is refused. The daily-loss and drawdown limits run on the paper account only (live orders list them under `inactive_rules`): watch a live account's losses at the broker. Every OANDA order is fill-or-kill: a limit order is sent as a market order with a `priceBound` (the worst price it may fill at), so it fills now at that price or better, or not at all, and nothing rests at OANDA where later fills would escape the Risk Guardian and the kill switch. OANDA orders go to OANDA's **practice** API until you set `OANDA_ENVIRONMENT=live`, so you can test the whole live path without real money. Capabilities per brokerage: `docs/EXCHANGES.md`.
 
 Order tools:
 * `place_market_order(symbol, side, amount)` and `place_limit_order(symbol, side, amount, price)`: OANDA in live mode.
@@ -181,6 +182,7 @@ With `EXECUTION_APPROVAL_MODE=approve_each`, every order that passes the Risk Gu
 
 * `GET /api/pending-approvals` lists the proposals with their orders, never their tokens (they expire after 120 s).
 * `POST /api/approve-trade {"request_id", "confirm_token", "approve": true}` re-runs the Risk Guardian with fresh data and executes; `"approve": false` cancels (the token is needed for both). A refusal answers `409` with the reason; an unknown proposal `404`; a wrong token `403`. A proposal executes only in the mode it was made in: a paper proposal approved by an API running live is refused (`mode_mismatch`).
+* The agent receives each proposal's `confirm_token`, so that token alone never proves a person approved. Set `API_OPERATOR_TOKEN` on the API server (not on the MCP server): every `/api/` call but `/api/health` then needs `Authorization: Bearer <token>` (`401` without it), and a **live** proposal is approved only when it is set (`403 operator_token_required` otherwise). Every response carries an `X-Request-ID` that matches the API's log lines.
 
 ---
 
@@ -254,7 +256,7 @@ Add this to the client's MCP configuration (for Claude Desktop, `claude_desktop_
 *   **Fund the account**: `deposit_paper_funds("USD", 100000)`
 *   **Research**: `get_stock_price("EURUSD")` (the latest rate; the name is kept for compatibility), `get_multiple_prices("EURUSD,GBPUSD,USDJPY")`, `fetch_ohlcv`, `get_market_regime`
 *   **Read the calendar and news**: `get_economic_calendar()`, `get_forex_news()`, `get_forex_market_brief("EURUSD")`
-*   **Trade**: `place_market_order("EUR/USD", "buy", 4000)` fills at the latest rate (4,000 EUR is about 4.5% of a 100,000 USD account; more than 5% is refused); `place_limit_order` fills only if marketable (resting orders are not simulated). Selling more than you hold opens a short.
+*   **Trade**: `place_market_order("EUR/USD", "buy", 4000)` fills at the latest rate (4,000 EUR is about 4.5% of a 100,000 USD account; more than 5% is refused); `place_limit_order` fills only if marketable (resting orders are not simulated; live OANDA limits are fill-or-kill too). Selling more than you hold opens a short.
 *   **Check the account**: `get_paper_account()` (cash, equity, positions, unrealized P&L, margin)
 *   **Start over**: `reset_paper_account()`
 
