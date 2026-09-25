@@ -1,4 +1,4 @@
-$ /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/bool_all_params.py /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX app.main 2>&1 | grep -v 'Warning\\|warnings.warn\\|authlib\\|compatible before\\|httpx2'
+$ /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/bool_all_params.py /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX app.main 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2'
 # at 2026-09-25T11:27:55+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
 
 ACCEPTED get_forex_news.limit=true -> { "data": { "news": "\\ud83d\\udcf0 Forex News (Free Feeds):\\nSources: \\u2713 Investing.com Forex, \\u2717 FXStre
