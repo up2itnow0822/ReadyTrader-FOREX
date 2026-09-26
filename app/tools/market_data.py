@@ -1,10 +1,20 @@
 import json
+import math
 from typing import Any, Dict, Optional
 
 from fastmcp import FastMCP
 
 from app.core.container import global_container
 from app.tools.params import Integer
+
+
+def _real_price(value: Any) -> Optional[float]:
+    """`value` as a finite, positive price, else None (NaN is truthy, so `if not price` let it through)."""
+    try:
+        price = float(value)
+    except (TypeError, ValueError):
+        return None
+    return price if math.isfinite(price) and price > 0 else None
 
 
 def _json_ok(data: Dict[str, Any] | None = None) -> str:
@@ -104,11 +114,12 @@ def register_market_tools(mcp: FastMCP):
         try:
             res = await global_container.marketdata_bus.fetch_ticker(symbol)
             ticker = res.data
-            price = ticker.get("last") or ticker.get("close")
-            if not price:
+            price = _real_price(ticker.get("last")) or _real_price(ticker.get("close"))
+            if price is None:
                 return _json_err("fetch_price_error", f"No price for {symbol}.", {"symbol": symbol})
             # It used to answer with a sentence ("The current price of EURUSD is ...").
-            return _json_ok({"symbol": symbol, "price": float(price), "bid": ticker.get("bid"), "ask": ticker.get("ask"), "source": res.source})
+            bid, ask = _real_price(ticker.get("bid")), _real_price(ticker.get("ask"))
+            return _json_ok({"symbol": symbol, "price": price, "bid": bid, "ask": ask, "source": res.source})
         except Exception as e:
             return _json_err("fetch_price_error", str(e), {"symbol": symbol})
 
@@ -128,9 +139,9 @@ def register_market_tools(mcp: FastMCP):
         for sym in sym_list:
             try:
                 res = await global_container.marketdata_bus.fetch_ticker(sym)
-                last = res.data.get("last") or res.data.get("close")
-                prices[sym] = float(last) if last else None
-                if not last:
+                last = _real_price(res.data.get("last")) or _real_price(res.data.get("close"))
+                prices[sym] = last
+                if last is None:
                     errors[sym] = "no price in the quote"
             except Exception as e:
                 prices[sym], errors[sym] = None, str(e)
