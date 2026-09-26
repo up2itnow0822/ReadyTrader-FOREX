@@ -4,11 +4,23 @@ import os
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
+import numpy as np
 import pandas as pd
 import yfinance as yf
 
 from common.cache import TTLCache
 from common.errors import AppError
+
+
+def _priced_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """Only the rows with a real price: finite, positive Open, High, Low and Close. Yahoo lists a session
+    whose data is not final with NaN prices; read as the last rate, NaN was answered as a quote (and
+    compares false against every limit)."""
+    columns = [c for c in ("Open", "High", "Low", "Close") if c in df.columns]
+    if df.empty or not columns:
+        return df
+    prices = df[columns].apply(pd.to_numeric, errors="coerce").astype(float)
+    return df[(np.isfinite(prices) & (prices > 0)).all(axis=1)]
 
 
 def _parse_timeframe_seconds(timeframe: str) -> Optional[int]:
@@ -111,7 +123,7 @@ class ExchangeProvider:
                 period = "1y"
 
             ticker = yf.Ticker(sym)
-            df = ticker.history(period=period, interval=yf_interval)
+            df = _priced_rows(ticker.history(period=period, interval=yf_interval))
 
             if df.empty:
                 raise AppError("data_not_found", f"No OHLCV history found for {sym} via yfinance.", {"symbol": sym})
@@ -142,7 +154,7 @@ class ExchangeProvider:
 
         try:
             ticker = yf.Ticker(sym)
-            hist = ticker.history(period="5d")
+            hist = _priced_rows(ticker.history(period="5d"))
 
             if hist.empty:
                 raise AppError("data_not_found", f"No price data found for {sym} via yfinance.", {"symbol": sym})
