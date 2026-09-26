@@ -1,6 +1,6 @@
 # UAT run 2026-09-24-01 — ReadyTrader-FOREX: CLEAN with BLOCKED items
 
-90 checks · 11 pass · 78 fail (78 fixed & verified, 0 open, 0 fixed-unverified, 0 regressed) · 1 blocked
+91 checks · 11 pass · 79 fail (79 fixed & verified, 0 open, 0 fixed-unverified, 0 regressed) · 1 blocked
 
 Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tools, paper trading, risk guardian + FX Falling Knife/halt, api_server approvals, dashboard, CLI scripts, config, docs, registry manifest, Docker configs (static). Out: live brokerage orders (no credentials; live trading is a hard gate), Docker build (no daemon in sandbox)
 
@@ -47,6 +47,7 @@ Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tool
 - **medium** CF-01 — env.example lists the variables the code reads, with safe values → Rewrote env.example: every variable a FOREX path reads, grouped, with safe defaults; API_HOST commented at 127.0.0.1; unread names removed (`240727d`) · **VERIFIED**
 - **medium** CL-01 — The setup wizard checks this project's setup and never crashes → ask() treats EOF as no answer; FX sources probed with a User-Agent; keys judged by PAPER_MODE; FX dependencies; documented start command (`7cf76f1`) · **VERIFIED**
 - **medium** CL-02 — The shipped example scripts run and demonstrate this server's paper account → paper_quick_demo.py rewritten on FxPaperAccount with self-checks; verify_live_strategy.py checks OANDA wiring and runs SMA on EURUSD; moving_average registers pandas_ta (`6886e25`) · **VERIFIED**
+- **medium** DOC-05 — The README's Agent Zero integration works in current Agent Zero → README Option A points to the Agent Zero plugin first; the hand-made entry is the {"mcpServers": ...} JSON for Settings -> MCP/A2A -> External MCP Servers (configs/agent_zero.mcp.json, data volume included); the YAML moved to _deprecated/configs/ (`190fb3a6`) · **VERIFIED**
 - **medium** FE-05 — The dashboard is readable at phone width (390x844) → Media query below 900 px: static top sidebar, single-column grid, tighter padding (`c24e42b`) · **VERIFIED**
 - **medium** FE-07 — The operator can see what a proposal is before approving it, and can reject it → Card wording: a paper proposal reads 'paper account', a live one 'LIVE via <venue>'; actions wrap under the details (`61a7cdd`) · **VERIFIED**
 - **medium** IN-01 — A news or sentiment source that cannot answer is reported as an error, not as news → feeds fetched with requests (10 s timeout) then parsed; refused feeds are failed sources (`6ccc5ff`) · **VERIFIED**
@@ -101,7 +102,7 @@ Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tool
 | integrations | 5 | covered |
 | cli | 2 | covered |
 | config | 10 | covered |
-| docs | 8 | covered |
+| docs | 9 | covered |
 | journeys | 6 | recorded |
 
 ## Delivery
