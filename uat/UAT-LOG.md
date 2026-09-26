@@ -6,10 +6,10 @@
 ## Run 2026-09-24-01 — ReadyTrader-FOREX
 
 - Branch: `uat/2026-09-24-forex`  |  Base: `main@417a104`
-- Started: 2026-09-24T10:51:11+00:00  |  Updated: 2026-09-25T11:58:10+00:00
+- Started: 2026-09-24T10:51:11+00:00  |  Updated: 2026-09-26T00:22:56+00:00
 - Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tools, paper trading, risk guardian + FX Falling Knife/halt, api_server approvals, dashboard, CLI scripts, config, docs, registry manifest, Docker configs (static). Out: live brokerage orders (no credentials; live trading is a hard gate), Docker build (no daemon in sandbox)
 - Verdict: **CLEAN with BLOCKED items**
-- Totals: 89 checks · 11 pass · 77 fail (77 verified fixed, 0 open, 0 fixed-unverified, 0 regressed, 0 wontfix) · 1 blocked
+- Totals: 90 checks · 11 pass · 78 fail (78 verified fixed, 0 open, 0 fixed-unverified, 0 regressed, 0 wontfix) · 1 blocked
 
 ### User journeys exercised
 
@@ -25,7 +25,7 @@
 | Section | Pass | Fail | Verified fixed | Blocked |
 |---|---|---|---|---|
 | preflight | 1 | 5 | 5 | 0 |
-| backend | 0 | 36 | 36 | 0 |
+| backend | 0 | 37 | 37 | 0 |
 | data | 1 | 4 | 4 | 0 |
 | memory | 0 | 2 | 2 | 0 |
 | frontend | 2 | 6 | 6 | 0 |
@@ -35,7 +35,7 @@
 | docs | 1 | 7 | 7 | 0 |
 | regression | 6 | 1 | 1 | 0 |
 
-### Findings (78)
+### Findings (79)
 
 #### PRE-01 — README local install (pip install -r requirements-dev.txt) then python app/main.py  [FAIL · critical · **VERIFIED**]
 
@@ -538,6 +538,20 @@
   - Commit: `eed8f6f`
   - Regression test: tests/test_research_tools.py::test_validate_trade_risk_refuses_a_malformed_request
 - Retest 1 (2026-09-24T13:03:57+00:00): **PASS** — hold/-5/NOTAPAIR/portfolio 0 -> invalid_request 'side must be buy or sell'; the 1e9 buy against a zero portfolio -> invalid_request 'portfolio_value must be a positive number' · evidence: [BE-29-retest-2.txt](evidence/2026-09-24-01/BE-29-retest-2.txt)
+
+#### BE-32 — A quote without a price (Yahoo's unfinished session row) is never answered as a price  [FAIL · medium · **VERIFIED**]
+
+- Section: `backend`  |  Journey: paper-trade a pair
+- Steps: yfinance history mocked with the row shape Yahoo returned for AAPL on Saturday 2026-09-26 00:14 UTC (Stocks BE-34): a last row with NaN prices; provider fetch_ticker / fetch_ohlcv and the get_stock_price tool
+- Expected: the last real rate (or fetch_price_error); bars without the NaN row
+- Observed: fetch_ticker last NaN; fetch_ohlcv keeps the NaN bar; get_stock_price answers ok with price/bid/ask NaN (not valid JSON for strict parsers). Orders are safe: the paper account refuses a non-finite rate
+- Evidence: [BE-32.txt](evidence/2026-09-24-01/BE-32.txt)
+- Fix: provider rows without a finite positive OHLC are dropped; quote tools answer only finite positive prices
+  - Root cause: NaN is truthy: 'if not price' let Yahoo's unfinished-session row through as a quote
+  - Files: `marketdata/exchange_provider.py`, `app/tools/market_data.py`, `AGENTS.md`, `CHANGELOG.md`
+  - Commit: `79192fb8`
+  - Regression test: tests/test_exchange_provider.py (2), tests/test_research_tools.py::test_a_quote_without_a_real_price_is_no_price; fail on the old code
+- Retest 1 (2026-09-26T00:22:56+00:00): **PASS** — same NaN row: fetch_ticker last 1.1392 (the last real close), bars skip the NaN row, get_stock_price answers ok with real price/bid/ask · evidence: [BE-32-retest.txt](evidence/2026-09-24-01/BE-32-retest.txt)
 
 #### CF-01 — env.example lists the variables the code reads, with safe values  [FAIL · medium · **VERIFIED**]
 
