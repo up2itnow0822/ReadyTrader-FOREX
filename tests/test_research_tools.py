@@ -154,3 +154,19 @@ def test_the_free_news_tools_report_a_dead_feed_as_an_error(monkeypatch):
         for tool in ("get_free_news", "fetch_rss_news"):
             body = call(tool, {})
             assert body["ok"] is False and body["error"]["code"] == "source_unavailable", tool
+
+
+def test_a_quote_without_a_real_price_is_no_price(monkeypatch):
+    """UAT BE-32: NaN is truthy, so `if not price` let a NaN quote through as ok with price NaN."""
+    class Res:
+        def __init__(self, last):
+            self.data, self.source = {"last": last, "close": last, "bid": last, "ask": last}, "test"
+
+    async def fetch_ticker(symbol):
+        return Res(float("nan") if symbol == "EURUSD" else 1.25)
+
+    monkeypatch.setattr(global_container.marketdata_bus, "fetch_ticker", fetch_ticker)
+    body = call("get_stock_price", {"symbol": "EURUSD"})
+    assert body["ok"] is False and body["error"]["code"] == "fetch_price_error"
+    body = call("get_multiple_prices", {"symbols": "EURUSD,GBPUSD"})
+    assert body["data"]["prices"] == {"EURUSD": None, "GBPUSD": 1.25} and "EURUSD" in body["data"]["errors"]
