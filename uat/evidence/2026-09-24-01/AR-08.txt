@@ -1,0 +1,20 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_volume_upgrade.sh
+# at 2026-09-25T11:28:50+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+sha256:289c890b4c74791cd4f0c4364ddb36b2f15f4e1753e8549d6a856697985991e8
+sha256:18a7dccd36c7f09976866e9aa03fa20f8a5a872c62c3695a83607aea77000392
+--- 1. the old image (root) on volume rt-forex-upgrade-probe:
+CALL deposit_paper_funds {"asset": "USD", "amount": 1000} -> { "data": { "account": { "cash_usd": 1000.0, "equity_usd": 1000.0, "free_margin_usd": 1000.0, "leverage": 30.0, "margin_used_usd": 0.0, "net_deposits_usd": 1000.0, "positions": []
+    owner of the files it wrote:
+-rw-r--r-- 1 0 0 20480 Sep 25 11:29 insights.db
+-rw-r--r-- 1 0 0 32768 Sep 25 11:29 paper.db
+-rw-r--r-- 1 0 0 16384 Sep 25 11:29 strategies.db
+--- 2. the new image (uid 10001) on the same volume:
+[09/25/26 11:29:18] Error calling tool 'deposit_paper_funds'                    
+                    │   532 │   except ValueError as e:                        │
+                    │   206 │   │   │   │   raise ValueError(f"the paper accou │
+                    OperationalError: attempt to write a readonly database      
+CALL deposit_paper_funds {"asset": "USD", "amount": 1000} -> Error calling tool 'deposit_paper_funds': attempt to write a readonly database
+
+
+exit=0

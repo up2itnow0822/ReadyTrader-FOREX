@@ -1,0 +1,19 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_badnum.sh
+# at 2026-09-24T11:47:07+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+LEVERAGE=abc => ValueError: invalid literal for int() with base 10: 'abc'
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+LEVERAGE=0 =>     raise ValueError(f"LEVERAGE must be a positive number, got {self.leverage!r}")
+ValueError: LEVERAGE must be a positive number, got 0.0
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+CIRCUIT_BREAKER_PCT=7% => ValueError: could not convert string to float: '7%'
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+RATE_LIMIT_DEFAULT_PER_MIN=lots => ValueError: invalid literal for int() with base 10: 'lots'
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+MARKETDATA_MAX_AGE_MS=30s => CALL get_paper_account {} -> { "data": { "cash_usd": 0.0, "equity_usd": 0.0, "free_margin_usd": 0.0, "leverage": 30.0, "margin_used_usd": 0.0, "net_deposits_usd": 0.0, "positions": [], "unp
+
+
+exit=0

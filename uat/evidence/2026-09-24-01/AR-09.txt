@@ -1,0 +1,8 @@
+$ grep -n 'Could not read the account' RUNBOOK.md app/tools/execution.py
+# at 2026-09-25T11:27:54+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+RUNBOOK.md:79:  - `Could not read the account's equity (paper) (a position cannot be priced now)`: a paper
+app/tools/execution.py:211:            f"Could not read the account's equity ({'paper' if settings.PAPER_MODE else exchange}) for the position-size check"
+
+
+exit=0

@@ -1,0 +1,49 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && PYTHONPATH=pylib /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p6_dockerignore.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | head -40; cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX; grep -n 'USER\|^CMD\|^FROM' Dockerfile; grep -n 'TRADING_HALTED' Dockerfile || echo '(no TRADING_HALTED in the image)'
+# at 2026-09-24T21:17:15+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+patterns: ['__pycache__/', '*.pyc', '*.pyo', '*.pyd', '.pytest_cache/', '.ruff_cache/', '.mypy_cache/', '.env', 'paper.db', 'data/', 'artifacts/', 'uat/', '.git/', '.venv/', 'venv/', 'env/', 'frontend/node_modules/', 'frontend/.next/', 'tests/', '.github/', 'requirements.lock.txt', 'requirements-dev.txt', 'docs/', 'tools/', '_deprecated/']
+
+SYNTHETIC TREE - sent to the Docker daemon:
+  excluded  .env
+  SENT      .env.live
+  SENT      .env.local
+  SENT      .env.production
+  SENT      prod.env
+  SENT      frontend/.env
+  SENT      frontend/.env.local
+  SENT      app/.env
+  SENT      configs/.env
+  SENT      configs/.env.live
+  SENT      oanda.pem
+  SENT      server.key
+  SENT      configs/oanda.pem
+  SENT      configs/client.key
+  SENT      secrets/oanda_token.txt
+  excluded  paper.db
+  SENT      app/paper.db
+  excluded  data/paper.db
+  SENT      configs/paper.db
+  SENT      app/__pycache__/x.pyc
+  SENT      execution.db
+  SENT      compliance_audit.log
+  SENT      configs/execution.db
+  SENT      app/main.py
+  SENT      Dockerfile
+
+REAL TREE: 238 paths in the context
+  top-level: .dockerignore
+  top-level: .gitignore
+  top-level: AGENTS.md
+  top-level: CHANGELOG.md
+  top-level: CONTRIBUTING.md
+  top-level: DISCLAIMER.md
+  top-level: Dockerfile
+  top-level: LICENSE
+  top-level: README.md
+  top-level: RUNBOOK.md
+1:FROM python:3.12-slim
+30:CMD ["python", "app/main.py"]
+(no TRADING_HALTED in the image)
+
+
+exit=0

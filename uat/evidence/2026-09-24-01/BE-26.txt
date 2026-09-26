@@ -1,0 +1,20 @@
+$ .venv/bin/python -W ignore /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_qa_exposure.py 2>&1 | grep -v Warning
+# at 2026-09-24T12:52:44+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+It will be compatible before version 2.0.0.
+  from authlib.jose import JsonWebKey, JsonWebToken
+  from ._compat import httpx2
+  warnings.warn(  # deprecated in 14.0 - 2024-11-09
+== A. build a 12,000 EUR long in three 4,000 buys, then close it in one SELL
+Paper Trade Executed: BUY 4000 EURUSD @ 1.10440. Realized P&
+Paper Trade Executed: BUY 4000 EURUSD @ 1.10440. Realized P&
+Paper Trade Executed: BUY 4000 EURUSD @ 1.10440. Realized P&
+close all: risk_blocked: Position size too large (13.3%). Max allowed is 5%.
+== B. EURUSD short built in 4,000 sells; EURUSD rises; cover with a BUY vs add with a SELL
+position: -40000.0
+metrics: {'equity': 88956.0, 'daily_pnl_pct': -0.11, 'drawdown_pct': 0.124, 'max_drawdown_pct': 0.124}
+BUY 3000 to reduce the short: risk_blocked: Max Drawdown Limit Hit (12.4%). Trading HALTED for Buys.
+SELL 3000 to add to it:      Paper Trade Executed: SELL 3000 EURUSD @ 1.38050. Realized P
+
+
+exit=0

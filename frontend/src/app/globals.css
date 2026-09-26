@@ -161,6 +161,14 @@ a {
   border: 1px solid var(--warning);
 }
 
+.status-pill.live,
+.status-pill.offline {
+  background: rgba(255, 59, 48, 0.1);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -307,6 +315,30 @@ a {
   font-size: 12px;
 }
 
+.approval-item {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.approval-info {
+  flex: 1 1 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.approval-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.approval-actions .btn:not(.btn-primary) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--foreground);
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -323,4 +355,62 @@ a {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--muted);
+}
+/* Phones and narrow windows: the sidebar becomes a bar above the content and the grid one column. */
+@media (max-width: 900px) {
+  .layout-root {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    padding: 12px 16px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    border-right: none;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  .logo-container {
+    padding: 0;
+  }
+
+  .main-nav {
+    flex-direction: row;
+    padding: 0;
+  }
+
+  .nav-item.active {
+    border-right: none;
+  }
+
+  .content {
+    margin-left: 0;
+    min-width: 0;
+  }
+
+  .top-bar {
+    padding: 0 16px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .col-span-2 {
+    grid-column: auto;
+  }
+
+  .value-pnl h2 {
+    font-size: 24px;
+  }
+
+  .strategy-item {
+    gap: 12px;
+  }
 }

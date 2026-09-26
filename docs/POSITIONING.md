@@ -1,145 +1,90 @@
-## ReadyTrader-Crypto Positioning (Aggressive Marketing, Credibility-Safe)
+## ReadyTrader-FOREX Positioning (Aggressive Marketing, Credibility-Safe)
 
-### What ReadyTrader-Crypto is (credible one-liner)
+### What ReadyTrader-FOREX is (credible one-liner)
 
-**ReadyTrader-Crypto is a safety-governed crypto trading MCP server** that lets LLM agents (Agent Zero, Claude, etc.) research, paper trade, and (optionally) execute live trades via CEX/DEX connectors with built-in risk disclosures, policy limits, and operator controls.
+**ReadyTrader-FOREX is a safety-governed forex trading MCP server** that lets AI agents (Claude, Agent Zero, any MCP client) research currency pairs, trade a realistic paper FX account, and optionally trade live through OANDA, with every order passing a Risk Guardian that reads real market data.
 
-### What ReadyTrader-Crypto is not (set expectations up front)
+### What ReadyTrader-FOREX is not (set expectations up front)
 
-- **Not a “guaranteed profitable bot”**. ReadyTrader-Crypto is tooling; outcomes depend on strategy, supervision, market conditions, and execution.
-- **Not financial advice**. (See `DISCLAIMER.md`.)
-- **Not a full exchange UI**. It’s an MCP server intended to be used by agents and developers.
+- **Not a "guaranteed profitable bot"**. It is tooling; outcomes depend on strategy, supervision, market conditions and execution.
+- **Not financial advice** (see `DISCLAIMER.md`).
+- **Not a trading platform UI**. It is an MCP server for agents and developers, with a small approval dashboard.
 
-______________________________________________________________________
+---
 
-## Messaging pillars (use these everywhere)
+## Messaging pillars
 
-### 1) Safety-first automation (the “trust” hook)
+### 1) Safety-first automation (the "trust" hook)
 
-ReadyTrader-Crypto is safe-by-default:
+- **Paper mode by default** (`PAPER_MODE=true`), and OANDA's practice API by default when live.
+- **Live trading is opt-in twice**: `PAPER_MODE=false` and `LIVE_TRADING_ENABLED=true`.
+- **Kill switch** (`TRADING_HALTED`) and **approve-each mode** with a per-proposal token and a re-check at approval time.
+- **Risk Guardian**: 5% of equity per trade by USD notional, daily-loss and drawdown limits.
+- **Market guard with evidence**: the Falling Knife rule and the volatility halt were chosen on 2003-2016 data and tested once on 24 pairs the choice never saw (`docs/FALLING_KNIFE.md`).
+- **Fails closed**: a check it cannot run refuses a BUY instead of guessing.
 
-- **Paper mode default** (`PAPER_MODE=true`)
-- **Live trading opt-in** (`LIVE_TRADING_ENABLED=true` + one-time disclosure consent per run)
-- **Kill switch** (`TRADING_HALTED=true`)
-- **Optional approval mode** (`EXECUTION_APPROVAL_MODE=approve_each`) with replay protection + TTL
-- **Central policy engine** (allowlists/limits)
-- **Signer abstraction** (env key / encrypted keystore / remote signer)
+### 2) Agent-first UX (the "why MCP" hook)
 
-### 2) Agent-first UX (the “why MCP” hook)
+Every tool answers structured JSON with a stable error code (`docs/ERRORS.md`), so agents can plan, recover from failures and respect operator limits. A source that cannot answer says so; it is never reported as "no events".
 
-Tools return **structured JSON** with stable error codes, making it easier for agents to:
+### 3) FX-native paper account (the "realism" hook)
 
-- plan multi-step workflows
-- recover from failures
-- respect operator limits and consent gates
+USD cash, one netted position per pair (long or short), margin at configurable leverage, P&L in the quote currency converted to USD, persisted between runs.
 
-### 3) Research & robustness (the “seriousness” hook)
+### 4) Research & robustness (the "seriousness" hook)
 
-Built-in workflows help agents behave more like disciplined operators:
+Backtesting of agent-written strategies, synthetic black-swan stress tests with deterministic replay, market-regime detection, the week's economic calendar and FX news, with no key needed.
 
-- backtesting
-- synthetic stress testing with deterministic replay + artifacts
-- market regime signals and risk gating
+---
 
-### 4) Composable market data (the “extensibility” hook)
+## Differentiation
 
-ReadyTrader-Crypto supports a MarketDataBus that can prefer:
+### vs "place order" MCP wrappers
+ReadyTrader-FOREX adds live-trading governance (opt-in switches, kill switch, approval mode), a policy engine, a data-driven market guard, a margin-aware paper account and a stress lab.
 
-- user-ingested snapshots (other MCPs / external feeds)
-- websocket-first public streams (opt-in)
-- REST fallback (CCXT)
+### vs purpose-built AI trading bots
+ReadyTrader-FOREX is **infrastructure**, not an opinionated strategy: it works with any MCP agent and lets you keep your own logic on a safer execution layer.
 
-______________________________________________________________________
-
-## Differentiation (vs alternatives)
-
-### vs “CCXT-only MCP servers”
-
-**ReadyTrader-Crypto** is not just “place order” tools. It adds:
-
-- live trading governance (consent + kill switch + approval mode)
-- policy allowlists/limits
-- synthetic stress lab + deterministic replay
-- signer abstraction and safety controls
-
-### vs “purpose-built AI trading agents”
-
-ReadyTrader-Crypto is **infrastructure**, not an opinionated agent:
-
-- works with many agents (Agent Zero, Claude Desktop, custom MCP clients)
-- lets teams keep their own strategy logic while using a safer execution substrate
-
-______________________________________________________________________
+---
 
 ## Safe claims (copy/paste)
 
-Use language like:
+- "**Safety-governed** forex trading tools for AI agents"
+- "Safe by default: **paper mode**, then OANDA **practice**, then live only by explicit opt-in"
+- "A Falling Knife rule and volatility halt **tested on 24 pairs they had never seen**"
+- "Designed for **agent workflows**: structured outputs and consistent error codes"
 
-- “**Safety-governed** crypto trading tools for AI agents”
-- “Safe-by-default: **paper mode** + explicit opt-in for live execution”
-- “Designed for **agent workflows**: structured outputs and consistent error codes”
-- “Includes **backtesting** and **stress testing** utilities to evaluate strategy behavior”
+Avoid:
 
-Avoid language like:
+- "Guaranteed profit" or any performance claim
+- "Institutional-grade execution" (no production references)
+- "Supports every broker" (OANDA is the only FX connector; see `docs/EXCHANGES.md`)
+- "News-aware trading halts" (the news blackout is not implemented; verdicts list it under `inactive_rules`)
 
-- “Guaranteed profit”
-- “Institutional-grade execution” (unless you can demonstrate production references)
-- “Hedge fund in a box”
+---
 
-______________________________________________________________________
+## Recommended copy
 
-## Recommended positioning copy
+### Short
+ReadyTrader-FOREX turns your MCP-capable AI agent into a **risk-aware FX operator**: research pairs, trade a margin-aware paper account, and go live through OANDA only when you opt in, with every order checked against your account and the market.
 
-### Homepage-style blurb (short)
+### Longer (GitHub / Discord)
+ReadyTrader-FOREX is a forex MCP server for Claude, Agent Zero or any MCP client. It ships a persistent paper FX account (netted positions, margin, USD P&L), the week's economic calendar and FX news without keys, backtesting and synthetic stress tests, and a live-trading safety layer: opt-in switches, a kill switch, approve-each mode, a policy engine and a market guard whose thresholds were tested on pairs they never saw.
 
-ReadyTrader-Crypto turns your MCP-capable AI agent into a **risk-aware trading operator**: research + paper trade + optional live execution through CEX/DEX connectors with explicit consent gates, policy limits, and operator controls.
+---
 
-### Slightly longer (for GitHub / Discord)
+## Audiences
 
-ReadyTrader-Crypto is a crypto trading MCP server for Agent Zero / Claude / any MCP client. It ships with paper trading, backtesting, synthetic stress testing, and a live trading safety moat (risk disclosure consent, kill switch, optional approve-each mode, policy allowlists/limits, signer abstraction). Use it to connect your agent to real execution **without** building a trading stack from scratch.
+- **Agent Zero / Claude Desktop users**: Docker-first, paper by default, one config file (`configs/`).
+- **Developers building agent workflows**: structured JSON, consistent error codes, a generated tool catalog (`docs/TOOLS.md`).
+- **Risk-conscious operators**: opt-in live trading, kill switch, approval with re-check, policy limits, fail-closed checks.
 
-______________________________________________________________________
+## Demo ideas
 
-## Target audiences (and how to talk to them)
+- **5-minute paper demo**: `examples/paper_quick_demo.py`, then in an agent: brief → calendar → order → `get_paper_account()`.
+- **Stress test demo**: `examples/stress_test_demo.py` and its report artifacts.
+- **Safety demo**: a live order refused until both switches are on; `TRADING_HALTED` stopping it; an oversized order refused by the Risk Guardian.
 
-### Agent Zero users (fast adoption)
+## Assets to keep aligned before marketing pushes
 
-Lead with:
-
-- “Docker-first MCP server”
-- “paper mode by default”
-- “opt-in live trading with explicit consent”
-
-### Developers building agent workflows
-
-Lead with:
-
-- “structured JSON outputs”
-- “consistent error taxonomy”
-- “execution routing: dex/cex/hybrid”
-
-### Operators / risk-conscious users
-
-Lead with:
-
-- “policy engine allowlists/limits”
-- “kill switch”
-- “approval mode with replay protection”
-
-______________________________________________________________________
-
-## Demo ideas (high conversion, low risk)
-
-- **5-minute paper mode demo**: fetch price → backtest → paper trade → show risk metrics
-- **Stress test demo**: run synthetic stress test on a simple strategy and show the report artifacts
-- **Safety demo**: show that live execution is blocked until consent + opt-in, and can be halted instantly
-
-______________________________________________________________________
-
-## Assets to keep updated before marketing pushes
-
-- `README.md` (high level + install)
-- `docs/TOOLS.md` (complete tool catalog)
-- `env.example` (safe config template)
-- `RUNBOOK.md` (ops trust)
-- `RELEASE_READINESS_CHECKLIST.md` (internal discipline)
+- `README.md`, `docs/TOOLS.md` (regenerate with `python tools/generate_tool_docs.py`), `env.example`, `RUNBOOK.md`, `docs/FALLING_KNIFE.md`

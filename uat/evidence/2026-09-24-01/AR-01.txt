@@ -1,0 +1,15 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review3_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p11_host_header.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2'; /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p02b_rootpath_live_approval.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2'
+# at 2026-09-25T11:27:28+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+{"data": {"path": "/api/portfolio"}, "event": "api_operator_token_rejected", "level": "INFO", "request_id": "d047e506-a6b2-497d-b75f-65091a59db38", "service": "readytrader", "tool": "api_server", "ts_ms": 1790335650582}
+Host: '127.0.0.1:8000'       -> 401 '{"detail":{"code":"operator_token_required","message":"Send Authorizat'
+Host: '127.0.0.1:8000#'      -> 200 '{"balances":{"USD":0.0},"positions":[],"metrics":{"equity":0.0,"cash":'
+Host: '127.0.0.1:8000?'      -> 200 '{"balances":{"USD":0.0},"positions":[],"metrics":{"equity":0.0,"cash":'
+Host: '127.0.0.1:8000/x'     -> 200 '{"balances":{"USD":0.0},"positions":[],"metrics":{"equity":0.0,"cash":'
+{"data": {"path": "/api/approve-trade"}, "event": "api_operator_token_rejected", "level": "INFO", "request_id": "52e069b3-3d80-4c5e-9168-43d1aa0ee995", "service": "readytrader", "tool": "api_server", "ts_ms": 1790335653616}
+no prefix, no Authorization : (401, b'{"detail":{"code":"operator_token_required","message":"Send Authorization: Bearer <API_OPERATOR_TOKEN>."}}')
+root_path /rt, no Authorization: (200, b'{"ok":true,"venue":"oanda","mode":"live","result":{"id":"fake","symbol":"EURUSD","side":"buy","qty":1000.0,"order_type":')
+live orders sent to the brokerage: [{'symbol': 'EURUSD', 'side': 'buy', 'qty': 1000.0, 'order_type': 'market', 'price': None}]
+
+
+exit=0

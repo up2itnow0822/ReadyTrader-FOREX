@@ -6,6 +6,18 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from common.paths import data_path, ensure_parent
+
+
+def insight_key(symbol: str) -> str:
+    """'EUR/USD', 'eurusd', 'eur_usd', 'EUR-USD' and 'EURUSD=X' are one pair: 'EURUSD'. The order and
+    data tools accept every spelling, so insights are stored and looked up under one key."""
+    return (symbol or "").strip().upper().replace("/", "").replace("_", "").replace("-", "").replace("=X", "")
+
+
+# The same normalisation in SQL, so rows written before it (e.g. 'EUR/USD') are still found.
+_SQL_KEY = "REPLACE(REPLACE(REPLACE(REPLACE(UPPER(symbol), '/', ''), '_', ''), '-', ''), '=X', '')"
+
 
 @dataclass
 class MarketInsight:
@@ -26,8 +38,8 @@ class InsightStore:
     """
 
     def __init__(self, db_path: Optional[str] = None):
-        self.db_path = db_path or os.getenv("READYTRADER_INSIGHT_DB_PATH", os.getenv("INSIGHT_DB_PATH", "data/insights.db"))
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        self.db_path = db_path or os.getenv("READYTRADER_INSIGHT_DB_PATH", os.getenv("INSIGHT_DB_PATH", data_path("insights.db")))
+        ensure_parent(self.db_path)
         self._init_db()
 
     def _init_db(self):
@@ -57,7 +69,7 @@ class InsightStore:
 
         insight = MarketInsight(
             insight_id=insight_id,
-            symbol=symbol.upper(),
+            symbol=insight_key(symbol),
             agent_id=agent_id,
             signal=signal.lower(),
             confidence=float(confidence),
@@ -93,8 +105,8 @@ class InsightStore:
         params = [now_ms]
 
         if symbol:
-            query += " AND symbol = ?"
-            params.append(symbol.upper())
+            query += f" AND {_SQL_KEY} = ?"  # nosec B608 - a constant expression; the value is a parameter
+            params.append(insight_key(symbol))
 
         query += " ORDER BY timestamp_ms DESC LIMIT ?"
         params.append(limit)

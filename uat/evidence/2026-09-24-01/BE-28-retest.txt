@@ -1,0 +1,9 @@
+$ .venv/bin/python -W ignore /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_qa_orders.py 2>&1 | grep -A2 '== 7'
+# at 2026-09-24T13:03:28+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== 7. paper proposal approved by a live-mode API
+proposed in paper: pending_approval
+409 {'detail': {'code': 'mode_mismatch', 'message': 'This proposal was made in paper mode and this API runs in live mode; nothing was executed.'}} broker orders: []
+
+
+exit=0

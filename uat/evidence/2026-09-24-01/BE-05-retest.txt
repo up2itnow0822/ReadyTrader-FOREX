@@ -1,0 +1,14 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_be2.sh
+# at 2026-09-24T11:21:48+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== sizing: a 4,000-unit USDJPY BUY (notional $4,000 = 4% of a $100k account)
+CALL deposit_paper_funds {"asset": "USD", "amount": 100000} -> { "data": { "account": { "cash_usd": 100000.0, "equity_usd": 100000.0, "free_margin_usd": 100000.0, "leverage": 30.0, "margin_used_usd": 0.0, "net_deposits_usd": 100000.0, "positions": [], "unpriced_positions": [], "unrealized_usd": 0.0 }, "message": "Deposited 100000.00 USD. Cash: 100000.00 USD." }, "ok": true }
+CALL place_forex_order {"symbol": "USDJPY", "side": "buy", "amount": 4000, "order_type": "limit", "price": 159} -> { "data": { "account": { "cash_usd": 100000.0, "equity_usd": 100000.0, "free_margin_usd": 99866.67, "leverage": 30.0, "margin_used_usd": 133.33, "net_deposits_usd": 100000.0, "positions": [ { "avg_price": 158.75, "margin_usd": 133.33, "mark": 158.75, "qty": 4000.0, "symbol": "USDJPY", "unrealized_usd": 0.0 } ], "unpriced_positions": [], "unrealized_usd": 0.0 }, "result": "Paper Trade Executed: BUY 4000 USDJPY @ 158.75000. Realized P&L: 0.00 USD. Position: +4000 USDJPY @ 158.75000. Rationale: paper_order", "venue": "paper" }, "ok": true }
+=== live mode, LIVE_TRADING_ENABLED=false (no keys)
+CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": 1000} -> { "error": { "code": "live_trading_disabled", "data": {}, "message": "PAPER_MODE is false but LIVE_TRADING_ENABLED is not true: no live order was sent." }, "ok": false }
+=== live mode, LIVE_TRADING_ENABLED=true, TRADING_HALTED=true (no keys)
+CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": 1000} -> { "error": { "code": "trading_halted", "data": {}, "message": "TRADING_HALTED is set: live trading is halted, no order was sent." }, "ok": false }
+CALL start_brokerage_private_ws {"exchange": "oanda", "market_type": "spot"} -> { "error": { "code": "not_implemented", "data": {}, "message": "Private oanda streams are not implemented; poll the brokerage instead." }, "ok": false }
+
+
+exit=0

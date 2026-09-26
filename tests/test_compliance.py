@@ -43,9 +43,10 @@ def test_execution_compliance_flow():
         with patch.object(settings, "EXECUTION_APPROVAL_MODE", "auto"):
             with patch.object(global_container, "paper_engine") as mock_engine:
                 with patch.object(global_container, "risk_guardian") as mock_risk:
-                    mock_engine.execute_trade.return_value = "Exec OK"
+                    mock_engine.execute_trade.return_value = "Paper Trade Executed: Exec OK"
+                    mock_engine.account.return_value = {}
                     mock_risk.validate_trade.return_value = {"allowed": True, "needs_confirmation": False}
 
-                    res_str = place_stock_order("AAPL", "buy", 1.0, rationale="Compliance Test")
+                    res_str = place_stock_order("EURUSD", "buy", 1.0, rationale="Compliance Test")
                     res = json.loads(res_str)
                     assert res["ok"] is True

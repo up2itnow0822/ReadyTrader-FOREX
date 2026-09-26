@@ -1,0 +1,22 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_start.sh
+# at 2026-09-24T10:52:43+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+--- python app/main.py
+  File "/tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/app/main.py", line 3, in <module>
+    from app.tools.execution import register_execution_tools
+ModuleNotFoundError: No module named 'app'
+--- python -m app.main
+    existing = self._tools.get(tool.key)
+                               ^^^^^^^^
+AttributeError: 'function' object has no attribute 'key'
+--- MCP client: python -m app.main
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+      |     raise McpError(response_or_error.error)
+      | mcp.shared.exceptions.McpError: Connection closed
+--- MCP client: python app/main.py
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+      |     raise McpError(response_or_error.error)
+      | mcp.shared.exceptions.McpError: Connection closed
+
+
+exit=0

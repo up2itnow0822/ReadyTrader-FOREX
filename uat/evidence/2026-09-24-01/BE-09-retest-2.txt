@@ -1,0 +1,7 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_api_codes.sh 2>&1 | head -1
+# at 2026-09-24T13:07:05+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+started as a file (python app/api_server.py): GET /api/health -> {"status":"ok","mode":"paper"} HTTP 200
+
+
+exit=0

@@ -1,0 +1,9 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_live_fp.sh
+# at 2026-09-24T11:46:27+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+CALL place_forex_order {"symbol": "EURUSD", "side": "buy", "amount": 1000, "exchange": "forex_paper"} -> { "error": { "code": "brokerage_not_supported", "data": {}, "message": "Brokerage 'forex_paper' is not supported; choose one of alpaca, etrade, ibkr, oanda, robinhood, schwab, tradier. Paper trading is PAPER_MODE=true." }, "ok": false }
+CALL place_forex_order {"symbol": "EURUSD", "side": "buy", "amount": 1000, "exchange": "oanda"} -> { "error": { "code": "risk_blocked", "data": { "inactive_rules": { "news_guard": "get_news_status() is not implemented and always reports no news window, so trading is never suspended around high-impact releases." }, "market": { "as_of": "2026-09-23T23:00:00Z", "bars": 40, "detail": null, "drop_pct": 0.0091, "falling_knife": false, "last_close": 1.1375269889831543, "on_data_error": "block", "peak_
+CALL place_stock_order {"symbol": "EURUSD", "side": "buy", "amount": 1000, "exchange": "forex_paper"} -> { "error": { "code": "brokerage_not_supported", "data": {}, "message": "Brokerage 'forex_paper' is not supported; choose one of alpaca, etrade, ibkr, oanda, robinhood, schwab, tradier. Paper trading is PAPER_MODE=true." }, "ok": false }
+
+
+exit=0

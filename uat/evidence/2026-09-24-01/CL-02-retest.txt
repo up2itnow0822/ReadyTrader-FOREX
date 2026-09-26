@@ -1,0 +1,34 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_examples.sh
+# at 2026-09-24T11:57:46+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== python examples/paper_quick_demo.py
+  ok   no open positions, no margin in use
+  ok   realized P&L is in cash
+
+6) Risk metrics (what the Risk Guardian reads before every BUY)
+{
+  "equity": 10150.51,
+  "daily_pnl_pct": 0.015051000000000023,
+  "drawdown_pct": 0.0,
+  "max_drawdown_pct": 0.0
+}
+
+Done: every step checked out. Next: python examples/stress_test_demo.py for the synthetic stress lab.
+exit=0
+=== python examples/verify_live_strategy.py
+--- Verifying live-brokerage wiring and a strategy ---
+OANDA brokerage available: False (False unless OANDA_API_KEY/OANDA_ACCOUNT_ID are set)
+OANDA environment: practice -> https://api-fxpractice.oanda.com/v3
+SMA strategy on EURUSD: {'signal': 0, 'reason': 'no_crossover', 'short_val': np.float64(1.1447684526443482), 'long_val': np.float64(1.14998334646225), 'price': np.float64(1.1370097398757935)}
+SUCCESS
+exit=0
+=== what paper_quick_demo exercises vs what the server trades in:
+examples/paper_quick_demo.py:4:Exercises the paper FX account the server trades in (core/fx_account.FxPaperAccount) with fixed,
+examples/paper_quick_demo.py:23:from core.fx_account import FxPaperAccount  # noqa: E402
+examples/paper_quick_demo.py:34:def show(title: str, account: FxPaperAccount) -> dict:
+examples/paper_quick_demo.py:50:        account = FxPaperAccount(db_path=str(Path(td) / "paper_demo.db"), quote=quote, leverage=30)
+app/core/container.py:5:from core.fx_account import FxPaperAccount
+app/core/container.py:38:        self.paper_engine = FxPaperAccount() if settings.PAPER_MODE else None
+
+
+exit=0

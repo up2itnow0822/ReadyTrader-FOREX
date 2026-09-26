@@ -1,77 +1,36 @@
-## ReadyTrader-Crypto Market Data (Phase 3)
+# Market Data (ReadyTrader-FOREX)
 
-ReadyTrader-Crypto routes market data via `MarketDataBus` and exposes it through MCP tools like `get_ticker()` and `fetch_ohlcv()`.
+## Where rates come from
 
-### Goals
+Every rate and candle the server uses comes from **yfinance** (Yahoo), through
+`marketdata/exchange_provider.py`. A six-letter pair (`EURUSD`, `EUR/USD`) is read as Yahoo's
+`EURUSD=X`.
 
-- Prefer **fresh** realtime data (websocket-first) when available
-- Fall back safely to **ingested feeds** or **CCXT REST** when needed
-- Provide clear introspection: **what source was used and why**
-- Optional operator guardrails: **stale/outlier detection** and **fail-closed** mode
+- `get_stock_price(symbol)` and `get_multiple_prices(symbols)`: the latest quote (`price`, and
+  `bid`/`ask` where Yahoo gives them), cached for `TICKER_CACHE_TTL_SEC` (5 s).
+- `fetch_ohlcv(symbol, timeframe, limit)`: candles, cached for `OHLCV_CACHE_TTL_SEC` (60 s). FX
+  volume is usually 0.
+- The Risk Guardian values each order at its USD notional from the latest rates (the base currency's USD
+  rate: 10,000 EURGBP is 10,000 EUR at EURUSD); paper orders fill at the latest rate;
+  the market guard reads the last 40 daily bars (`docs/FALLING_KNIFE.md`).
 
-______________________________________________________________________
+No brokerage key is needed for market data. Yahoo's FX rates are indicative, not a dealer's
+quotes, and Yahoo rate-limits bursts; when a rate cannot be read the tools answer
+`fetch_price_error` / `fetch_ohlcv_error`, and a BUY is refused rather than priced on a guess.
 
-## Provider IDs (defaults)
+## The market-data bus
 
-ReadyTrader-Crypto typically wires providers in this order:
+`get_stock_price`, `get_multiple_prices` and `fetch_ohlcv` go through `MarketDataBus`, which picks
+the freshest acceptable source among: ingested websocket ticks (`exchange_ws`, empty unless a
+stream is started), plugins you register, and yfinance. Tuning:
 
-- `exchange_ws` (public websocket tickers; opt-in)
-- `ingest` (user-provided snapshots via `ingest_ticker` / `ingest_ohlcv`)
-- `ccxt_rest` (CCXT REST fallback)
-
-Plugins (Phase 3C) can add additional providers.
-
-______________________________________________________________________
-
-## Freshness + priority selection (Phase 3A)
-
-The router scores sources using:
-
-- **priority** (lower is better)
-- **freshness** (ticker age in ms)
-- **sanity checks** (non-negative, bid/ask ordering, etc.)
-
-`get_ticker()` returns:
-
-- `source`: chosen provider id
-- `ticker`: normalized ticker payload
-- `meta`: decision info (`age_ms`, `stale`, `candidates`, etc.)
-
-### Env tuning
-
-- `MARKETDATA_PROVIDER_PRIORITY_JSON`
-  - JSON map of provider priorities (lower = higher priority)
-  - Example:
-    - `{\"exchange_ws\":0,\"ingest\":1,\"ccxt_rest\":2}`
-- `MARKETDATA_MAX_AGE_MS`
-  - default staleness threshold in ms (default 30000)
-- `MARKETDATA_MAX_AGE_MS_<PROVIDERID>`
-  - per-provider override (example: `MARKETDATA_MAX_AGE_MS_EXCHANGE_WS=15000`)
-
-______________________________________________________________________
-
-## Outlier/stale guardrails (Phase 3D)
-
-Ticker outliers are detected using a cheap comparison vs the last good value:
-
-- `MARKETDATA_OUTLIER_MAX_PCT` (default 20.0)
-- `MARKETDATA_OUTLIER_WINDOW_MS` (default 10000)
-
-Optional fail-closed mode:
-
-- `MARKETDATA_FAIL_CLOSED=true`
-  - If enabled, `MarketDataBus.fetch_ticker()` raises when the best available data is stale or an outlier.
-  - This is intended for operator-controlled deployments.
-
-______________________________________________________________________
-
-## Bring your own feed (Phase 3C)
-
-You can add external providers at startup:
-
-- `MARKETDATA_PLUGINS_JSON`
-
-Example (offline JSON file feed):
+- `MARKETDATA_PROVIDER_PRIORITY_JSON`: provider priorities, lower first, e.g.
+  `{"exchange_ws": 0, "yfinance": 1}`.
+- `MARKETDATA_MAX_AGE_MS` (30000): a quote older than this is stale.
+- `MARKETDATA_OUTLIER_MAX_PCT` (20) and `MARKETDATA_OUTLIER_WINDOW_MS` (10000): a quote that jumps
+  more than this against the last good one is flagged.
+- `MARKETDATA_FAIL_CLOSED=true`: refuse a stale or outlier quote instead of returning it flagged.
+- `MARKETDATA_PLUGINS_JSON`: load your own provider at start-up, e.g.
 
 ```json
 [
@@ -82,3 +41,6 @@ Example (offline JSON file feed):
   }
 ]
 ```
+
+No tool starts a websocket stream in this release, so in practice the bus answers from yfinance.
+The API server's `/ws` endpoint forwards ingested ticks and stays silent until a stream exists.

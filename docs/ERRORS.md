@@ -1,93 +1,91 @@
-### 🚨 Quick Fix Troubleshooting
+# Error Catalog & Troubleshooting
 
-If you are just getting started and seeing errors, check these first:
+Every tool answers `{"ok": true, "data": ...}` or `{"ok": false, "error": {"code", "message", "data"}}`.
+The `code` is stable; the `message` says what happened in words; `data` carries the numbers
+(limits, rates, the market guard's `market` reading). The approval API (`/api/approve-trade`)
+answers a refusal with HTTP `409` and the same `code` in `detail`; an unknown proposal answers
+`404`, a wrong `confirm_token` `403`, and an expired, cancelled or already-approved proposal `409`
+with the reason as text. With `API_OPERATOR_TOKEN` set, a call without `Authorization: Bearer
+<it>` answers `401` `operator_token_required`; approving a live proposal while it is not set answers
+`403` `operator_token_required`. An error inside the API answers `500` `internal_error` naming only
+the request's `X-Request-ID` (the details are in the API log); a brokerage that refuses an approved
+live order answers `502` `execution_error` with the brokerage's reason.
 
-| Issue | Quick Fix | Reference |
-| :--- | :--- | :--- |
-| **Missing .env** | Run `python tools/setup_wizard.py` to generate one. | \[Setup Wizard\](file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/tools/setup_wizard.py) |
-| **Missing Keys** | Check `docs/SENTIMENT.md` for links to get free API keys. | \[Sentiment Guide\](file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/docs/SENTIMENT.md) |
-| **Blocked Trade** | Your trade might violate the `RISK_PROFILE`. Use `conservative` for safety. | \[README.md\](file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/README.md) |
-| **Python Errors** | Run `pip install -r requirements.txt` to ensure dependencies are met. | \[requirements.txt\](file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/requirements.txt) |
+| Issue | Potential Fix |
+| :--- | :--- |
+| **Missing .env** | Paper mode needs none. `python tools/setup_wizard.py` offers to copy `env.example` to `.env`. |
+| **Missing news/social keys** | See `docs/SENTIMENT.md` for which tool needs which key; the calendar and `get_forex_news` need none. |
+| **Blocked trade** | Read the error `code` below. `risk_blocked` gives the Risk Guardian's reason. |
+| **Dependency error** | Use Python 3.12+ and `pip install -r requirements.txt`. |
 
-______________________________________________________________________
+---
 
-### ReadyTrader-Crypto Error Codes (Operator Guide)
+## Error codes
 
-### Live trading governance
+### Risk
+- `risk_blocked`: the Risk Guardian refused the trade. The message is the reason: new exposure
+  worth over 5% of equity (valued at the market, never at a price the order carries alone), the 5%
+  daily-loss or 10% drawdown limit (orders that add exposure; paper account only), the
+  Falling Knife rule (BUYs that add exposure), the volatility halt (every side), your own
+  `sentiment_score` below -0.5, or an account, rate or market price the check could not read,
+  including a paper position that cannot be priced now (an order that adds exposure then fails
+  closed). Orders that only reduce or close a position pass every rule but the
+  volatility halt. `data` of a refused order includes `position_units`, `exposure_added_units` and
+  `reference_price`. `data.market` has the market guard's reading and `data.inactive_rules` lists
+  the rules that did not run (the news blackout; on live orders, the daily-loss and drawdown
+  limits). An executed order lists them too.
+- `risk_validation_error`: the risk check itself raised; the message has the exception.
 
-- **`live_trading_disabled`**
-  - Meaning: Live execution is blocked because `LIVE_TRADING_ENABLED` is not `true`.
-  - Fix: set `LIVE_TRADING_ENABLED=true` (and restart if running in Docker with env vars baked in).
-- **`trading_halted`**
-  - Meaning: Kill switch is on (`TRADING_HALTED=true`).
-  - Fix: set `TRADING_HALTED=false` to resume, or keep it enabled to stop all live execution.
-- **`consent_required`**
-  - Meaning: Per-process risk disclosure has not been accepted for this run.
-  - Fix: call `get_risk_disclosure()`, then `accept_risk_disclosure(true)`.
-- **`advanced_consent_required`**
-  - Meaning: Advanced Risk Mode overrides are blocked until urgent consent is accepted.
-  - Fix: call `get_advanced_risk_disclosure()`, then `accept_advanced_risk_disclosure(true)`.
+### Requests
+- `invalid_request`: a malformed request, e.g. a side other than buy/sell, a non-positive,
+  non-finite or non-numeric amount, a non-finite `sentiment_score`, a deposit over
+  1e12 USD (or cash over 1e15), an order type other than market/limit, a limit with no positive price, a
+  paper order for something that is not a currency pair, a deposit that is not positive USD, an
+  empty `get_multiple_prices` list, a `validate_trade_risk` call without a buy/sell side or with a
+  non-positive amount or portfolio value, or an insight outside the documented fields.
+- Arguments of the wrong type (text that is not a number, or `true`/`false` for an amount, price,
+  value or score) are refused by the MCP argument validation before the tool runs: the client gets
+  a tool error naming the argument, not this envelope.
+- `invalid_mode`: `get_paper_account`, `deposit_paper_funds` or `reset_paper_account` called in
+  live mode.
 
-### Execution routing
+### Live trading switches and policy
+- `live_trading_disabled`: `PAPER_MODE=false` but `LIVE_TRADING_ENABLED` is not `true`.
+- `trading_halted`: the kill switch `TRADING_HALTED` is set.
+- `exchange_not_allowed`, `symbol_not_allowed`: outside `ALLOW_EXCHANGES` /
+  `ALLOW_BROKERAGE_SYMBOLS` (`EUR/USD` and `EURUSD` match the same entry).
+- `order_amount_too_large`: more base-currency units than `MAX_BROKERAGE_ORDER_AMOUNT`.
+- `invalid_policy_config`: `MAX_BROKERAGE_ORDER_AMOUNT` is not a number; every live order is
+  refused until it is fixed or unset.
 
-- **`execution_mode_blocked`**
-  - Meaning: The requested tool is blocked by `EXECUTION_MODE` (dex/cex/hybrid).
-  - Fix: set `EXECUTION_MODE` to allow the venue you want, or use the corresponding venue tool.
+These are checked when a live order is placed or proposed, and again when a proposal is approved.
+The switches (`live_trading_disabled`, `trading_halted`) answer before anything else, even an
+unconfigured brokerage. When the brokerage account cannot be read, `risk_blocked` for an order that
+adds exposure carries the brokerage's own reason (e.g. OANDA's `HTTP 401: Insufficient
+authorization`).
 
-### Rate limiting
+### Execution
+- `brokerage_not_supported`: an `exchange` that is not registered (oanda, ibkr, alpaca, tradier,
+  schwab, etrade, robinhood). The message lists them.
+- `brokerage_not_configured`: that brokerage's keys are not set; no order was sent.
+- `execution_error`: the paper account or the brokerage raised; the message has its reason.
+- `limit_not_marketable`: (paper) a limit BUY below / SELL above the market; resting orders are
+  not simulated.
+- `insufficient_margin`: (paper) the order needs more margin than the account has free.
+- `mode_mismatch`: (approval API) the proposal was made in paper mode and the API runs live, or the
+  reverse; nothing was executed.
+- `market_data_error`: (paper) no rate to fill the order at, or to value the account; retry.
 
-- **`rate_limited`**
-  - Meaning: The per-tool (or default) rate limit was exceeded for the current 60s window.
-  - Fix:
-    - slow down or batch calls
-    - raise limits with `RATE_LIMIT_DEFAULT_PER_MIN`, `RATE_LIMIT_EXECUTION_PER_MIN`, or `RATE_LIMIT_<TOOL>_PER_MIN`
+### Market data, news and research
+- `fetch_price_error`: `get_stock_price` could not read a rate.
+- `fetch_ohlcv_error`: candles could not be read.
+- `not_configured`: a news or social tool whose key is missing (the message names it).
+- `source_unavailable`: a calendar, news or social source did not answer (never reported as "no
+  events" or "no news").
+- `backtest_error`: the strategy did not compile, had no `on_candle`, or raised.
+- `stress_test_error`, `market_regime_error`: those tools failed; the message says why.
 
-### Policy engine (allowlists / limits)
-
-Common examples (non-exhaustive):
-
-- **`chain_not_allowed`**, **`token_not_allowed`**, **`router_not_allowed`**
-  - Meaning: Allowlist is set and the requested chain/token/router is not allowed.
-  - Fix: update `ALLOW_CHAINS`, `ALLOW_TOKENS`, `ALLOW_ROUTERS` (or chain-specific `ALLOW_ROUTERS_<CHAIN>`).
-- **`trade_amount_too_large`**, **`transfer_amount_too_large`**, **`order_amount_too_large`**
-  - Meaning: A configured max limit was exceeded.
-  - Fix: lower sizing, or (if appropriate) enable Advanced Risk Mode and adjust overrides/limits.
-
-### Risk guardian (paper mode)
-
-- **`risk_blocked`**
-  - Meaning: Paper-mode risk checks blocked the trade (e.g., too large relative to portfolio).
-  - Fix: reduce size, deposit more paper funds, or adjust the strategy parameters.
-- **`risk_calc_error`**
-  - Meaning: Paper-mode risk calculations failed; ReadyTrader-Crypto fails closed (safer).
-  - Fix: check paper DB health, ensure prices/metrics can be computed, rerun.
-
-### Websocket streams (Phase 2.5)
-
-- **`ws_start_error`**, **`ws_stop_error`**
-  - Meaning: Public websocket stream failed to start/stop (invalid symbols, network, etc.).
-  - Fix: verify exchange name, symbol formats, and network access.
-- **`private_ws_start_error`**, **`private_ws_stop_error`**, **`private_ws_list_error`**
-  - Meaning: Private stream failed (credentials, exchange support, network).
-  - Fix: verify CEX credentials and that the exchange supports the requested market type.
-
-### CCXT / exchange connectivity
-
-Errors are normalized via `errors.py` where possible:
-
-- **`ccxt_auth_error`**, **`ccxt_permission_denied`**
-  - Fix: check API keys, permissions, and allowlists.
-- **`ccxt_rate_limited`**
-  - Fix: reduce request frequency and/or tune caching and provider settings.
-- **`ccxt_network_error`**, **`ccxt_exchange_unavailable`**
-  - Fix: temporary outage; retry with backoff; consider switching marketdata providers.
-
-### Market data guardrails (Phase 3)
-
-- **`marketdata_not_acceptable`**
-  - Meaning: Operator enabled fail-closed market data mode and the best available ticker was stale or flagged as an outlier.
-  - Fix:
-    - inspect `get_ticker(symbol)` → `meta.candidates` to see which sources are stale or failing
-    - start/verify websocket streams (`start_marketdata_ws`) or ingest a feed (`ingest_ticker`)
-    - tune thresholds: `MARKETDATA_MAX_AGE_MS*`, `MARKETDATA_OUTLIER_MAX_PCT`, `MARKETDATA_OUTLIER_WINDOW_MS`
-    - disable fail-closed: `MARKETDATA_FAIL_CLOSED=false`
+### Not available
+- `not_implemented`: `start_brokerage_private_ws` in live mode (private order streams are not
+  implemented; poll the brokerage instead).
+- `paper_mode_not_supported`: the same tool in paper mode.

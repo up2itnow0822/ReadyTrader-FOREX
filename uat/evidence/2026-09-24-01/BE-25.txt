@@ -1,0 +1,15 @@
+$ grep -n 'exchange: str = "alpaca"' app/tools/execution.py; grep -n 'place_stock_order' docs/TOOLS.md | head -3; grep -n 'def place_order' -A4 execution/alpaca_service.py | head -6
+# at 2026-09-24T12:11:46+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+335:    exchange: str = "alpaca",
+14:| [`place_stock_order`](#place_stock_order) | [RISK] Place an order through the Risk Guardian at any configured brokerage (`exchange`). |
+65:### place_stock_order
+67:**Signature:** `place_stock_order(symbol, side, amount, price=0.0, order_type="market", exchange="alpaca", rationale="", audit_context="", sentiment_score=null)`
+49:    def place_order(self, symbol: str, side: str, qty: float, order_type: str = "market", price: Optional[float] = None) -> Dict[str, Any]:
+50-        """
+51-        Place a real order on Alpaca.
+52-        """
+53-        if not self._available or not self.client:
+
+
+exit=0

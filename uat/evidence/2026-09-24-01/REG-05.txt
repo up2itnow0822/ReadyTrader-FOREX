@@ -1,0 +1,14 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_ci_full.sh
+# at 2026-09-25T11:03:05+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+HEAD f875f5ab on uat/2026-09-24-forex
+All checks passed!
+ruff ok
+453 passed in 44.49s
+bandit ok
+npm ci ok
+lint ok
+build ok
+
+
+exit=0

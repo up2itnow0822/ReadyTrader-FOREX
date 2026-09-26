@@ -1,0 +1,38 @@
+$ .venv/bin/python -W ignore /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_qa_orders.py 2>&1 | grep -v 'Warning\|compatible\|from \|warnings.warn'
+# at 2026-09-24T12:52:55+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== 1. paper cross pair EURGBP long 10000 @0.8835, mark 0.8935
+True
+[{'symbol': 'EURGBP', 'qty': 3000.0, 'avg_price': 0.8835, 'mark': 0.8935, 'unrealized_usd': 37.5, 'margin_usd': 110.44}] expected pnl = 37.5 margin 110.44
+== 2. flip long->short in one order at 0.8935: sell 5000
+{'error': {'code': 'risk_blocked', 'data': {'inactive_rules': {'news_guard': 'get_news_status() is not implemented and always reports no news window, so trading is never suspended around high-impact releases.'}, 'market': {'as_of': '2026-09-24T12:52:58Z', 'bars': 40, 'detail': None, 'drop_pct': 0.0, 'falling_knife': False, 'last_close': 1.1044, 'on_data_error': 'allow', 'peak_close': 1.1044, 'required': False, 'rule': {'min_drop': 0.05, 'volatility_halt_ratio': 4.5, 'window_bars': 4}, 'status': 'ok', 'still_falling': False, 'volatility_ratio': 1.0}, 'sentiment': {'hint': 'This server does not score sentiment. Call get_social_sentiment(symbol) to read the posts, and pass your own reading as sentiment_score on [-1, +1] if you want the sentiment side of the Falling Knife rule to act. Left unset it is neutral (0.0) and that side cannot fire; the price side reads daily closes on every BUY regardless.', 'posts_age_seconds': None, 'posts_available': 0, 'score': 0.0, 'source': 'unmeasured', 'status': 'not_measured'}}, 'message': 'Position size too large (5.5%). Max allowed is 5%.'}, 'ok': False}
+expected realized 37.5
+== 3. short USDJPY 3000 @150 then mark 151
+[{'symbol': 'USDJPY', 'qty': -3000.0, 'avg_price': 150.0, 'mark': 151.0, 'unrealized_usd': -19.87, 'margin_usd': 100.0}] expected -19.87
+== 4. validate_trade_risk with a malformed request
+{
+  "data": {
+    "amount_usd": -5.0,
+    "inactive_rules": {
+      "news_guard": "get_news_status() is not implemented and always reports no news window, so trading is never suspended around high-impact releases."
+    },
+    "market": {
+      "as_of": "2026-09-24T12:52:58Z",
+      "bars": 40,
+     
+== 5. needs_confirmation: 200k account, 8000 EURUSD (~$8,835, 4.4%)
+validate: {'allowed': True, 'needs_confirmation': True, 'reason': 'Trade looks safe but requires manual confirmation.'}
+order: Paper Trade Executed: BUY 8000 EURUSD @ 1.10440. Realized P&L: 0.00 USD. Positio | approval mode auto
+== 6. live SELL when the broker's equity cannot be read
+equity unreadable, sell 10,000,000: True [{'symbol': 'EURUSD', 'side': 'sell', 'qty': 10000000.0, 'order_type': 'market', 'price': None}]
+equity 100k, same sell: False Position size too large (11044.0%). Max allowed is 5%.
+equity unreadable, sell 1000 GBPXYZ-like unpriced pair TRYUSD: True
+== 7. paper proposal approved by a live-mode API
+proposed in paper: pending_approval
+200 {'ok': True, 'venue': 'oanda', 'mode': 'live', 'result': {'id': 'x', 'symbol': 'EURUSD', 'side': 'buy', 'qty': 1000.0, 'order_type': 'market', 'price': None}} broker orders: [{'symbol': 'EURUSD', 'side': 'buy', 'qty': 1000.0, 'order_type': 'market', 'price': None}]
+== 8. API: cancel unknown id; approve unknown id
+200 {'ok': False}
+pending list fields: {'pending': []}
+
+
+exit=0

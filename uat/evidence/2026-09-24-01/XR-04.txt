@@ -1,0 +1,14 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex &&  /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p3_loss_limits.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/^== (a)/,/^== (b)/p'
+# at 2026-09-24T21:16:35+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== (a) lose 12%+ (recorded yesterday), then deposit a large amount
+  [after the loss] equity=87041.00 daily_pnl_pct=0.0000 drawdown_pct=0.1489
+  [after the loss] pre_trade_check BUY 1,000 GBPUSD -> allowed=False reason='Max Drawdown Limit Hit (14.9%). Orders that add exposure are halted; orders that reduce or'
+  deposit_paper_funds(USD, 1,000,000): {"ok": true}
+  [after the deposit] equity=1087041.00 daily_pnl_pct=0.0000 drawdown_pct=0.0119
+  [after the deposit] pre_trade_check BUY 1,000 GBPUSD -> allowed=True reason='Trade looks safe.'
+  place_market_order BUY 40,000 GBPUSD: {"ok": true, "result": "Paper Trade Executed: BUY 40000 GBPUSD @ 1.25000. Realized P&L: 0.00 USD. Position: +40000 GBPUSD @ 1.25000. Rationale: paper_order", "venue": "paper"}
+== (b) price moves after the last trade; no trade since
+
+
+exit=0

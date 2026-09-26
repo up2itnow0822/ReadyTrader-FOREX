@@ -1,0 +1,15 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p8_normalisation.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/volatility halt/,/orders sent to OANDA: \[/p'; cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX; git log --oneline -1 -- app/tools/trading.py
+# at 2026-09-24T21:46:29+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== live: volatility halt on EURUSD (today's move 6% vs a quiet 20-day norm); SELL 4,000 opens a short
+  SELL 4,000 'EURUSD'   -> risk_blocked market.status=ok          volatility_ratio=7.2836
+  SELL 4,000 'EUR/USD'  -> risk_blocked market.status=ok          volatility_ratio=7.2836
+  SELL 4,000 'EUR_USD'  -> risk_blocked market.status=ok          volatility_ratio=7.2836
+  SELL 4,000 'eur-usd'  -> risk_blocked market.status=ok          volatility_ratio=7.2836
+  falling knife, MARKET_GUARD_ON_DATA_ERROR=allow: BUY 4,000 'EURUSD'  -> risk_blocked: Guardian blocked BUY: EURUSD is down 8.0% from its highest c
+  falling knife, MARKET_GUARD_ON_DATA_ERROR=allow: BUY 4,000 'EUR_USD' -> risk_blocked: Guardian blocked BUY: EURUSD is down 8.0% from its highest c
+  orders sent to OANDA: []
+bcf733b8 uat(review): XR-13 refuse true/false for numbers at the MCP layer; XR-11 keep logs out of the image
+
+
+exit=0

@@ -1,0 +1,38 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_sweep_report4.sh
+# at 2026-09-25T11:56:05+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+BE-01 exit=0 BE-05 exit=0 BE-09 exit=0 CF-02 exit=0 FE-02 exit=0 BE-22 exit=0 BE-23 exit=0 BE-24 exit=0 DOC-04 exit=0 ME-02 exit=0 FE-05 exit=0 IN-04 exit=0 
+BE-01: 10 lines differ
+BE-05: 4 lines differ
+BE-09: 2 lines differ
+BE-22: 0 lines differ
+BE-23: 0 lines differ
+BE-24: 0 lines differ
+CF-02: 0 lines differ
+DOC-04: 10 lines differ
+FE-02: 0 lines differ
+FE-05: 0 lines differ
+IN-04: 0 lines differ
+ME-02: 0 lines differ
+--- differences (before '<', after '>'):
+[BE-01]
+< CALL deposit_paper_funds {"asset": "USD", "amount": N} -> { "data": { "account": { "cash_usd": N, "equity_usd": N, "free_margin_usd": N, "leverage": N, "margin_used_usd": N, "net_deposits_usd": N, "
+< CALL validate_trade_risk {"side": "buy", "symbol": "EURUSD", "amount_usd": N, "portfolio_value": N} -> { "data": { "amount_usd": N, "inactive_rules": { "news_guard": "get_news_status() is not implem
+< CALL place_market_order {"symbol": "EURUSD", "side": "buy", "amount": N} -> { "data": { "account": { "cash_usd": N, "equity_usd": N, "free_margin_usd": N, "leverage": N, "margin_used_usd": N, "net_d
+< CALL place_forex_order {"symbol": "USDJPY", "side": "buy", "amount": N} -> { "data": { "account": { "cash_usd": N, "equity_usd": N, "free_margin_usd": N, "leverage": N, "margin_used_usd": N, "net_de
+[BE-05]
+< CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": N} -> { "error": { "code": "brokerage_not_configured", "data": {}, "message": "oanda keys are missing: no live order was sent." 
+> CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": N} -> { "error": { "code": "live_trading_disabled", "data": {}, "message": "PAPER_MODE is false but LIVE_TRADING_ENABLED is not 
+< CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": N} -> { "error": { "code": "brokerage_not_configured", "data": {}, "message": "oanda keys are missing: no live order was sent." 
+> CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": N} -> { "error": { "code": "trading_halted", "data": {}, "message": "TRADING_HALTED is set: live trading is halted, no order was
+[BE-09]
+< API portfolio (the MCP account holds N,N USD): {"balances":{"USD":N,"EURUSD":N},"positions":[{"symbol":"EURUSD","qty":N,"avg_price":N,"mark":N,"unrealized_usd":N,"margin_usd":N}],"metrics":{"equity"
+> API portfolio (the MCP account holds N,N USD): {"balances":{"USD":N,"EURUSD":N},"positions":[{"symbol":"EURUSD","qty":N,"avg_price":N,"mark":N,"unrealized_usd":N,"margin_usd":N}],"metrics":{"equity"
+[DOC-04]
+< CALL get_economic_calendar {} -> { "data": { "calendar": "High-impact economic events, rest of this week (ForexFactory, read Thu N:N UTC; times UTC; now Thu N:N):\n- Thu N Sep N:N (today) AUD: Emplo
+< CALL get_forex_market_brief {"symbol": "EURUSD"} -> { "data": { "brief": "\udNd\udcca EURUSD: N (Bid: N, Ask: N)\n\n\udNd\udcbN DXY Trend (Nd): Bullish (N%). Last: N\n\n\udNd\udccN High-impact econo
+> CALL get_economic_calendar {} -> { "data": { "calendar": "High-impact economic events, rest of this week (ForexFactory, read Fri N:N UTC; times UTC; now Fri N:N):\n- Fri N Sep N:N (today) GBP: BOE G
+> CALL get_forex_market_brief {"symbol": "EURUSD"} -> { "data": { "brief": "\udNd\udcca EURUSD: N (Bid: N, Ask: N)\n\n\udNd\udcbN DXY Trend (Nd): Bullish (N%). Last: N\n\n\udNd\udccN High-impact econo
+
+
+exit=0

@@ -1,0 +1,48 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_doc_walk.sh
+# at 2026-09-24T12:11:23+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== doccheck (tool names, paths, links, anchors) over every Markdown doc
+CHANGELOG.md: tool not registered -> get_news_status
+CHANGELOG.md: tool not registered -> get_volatility_status
+CONTRIBUTING.md: broken link -> ../../issues/new
+README.md: path not found -> /path/to/ReadyTrader-FOREX/app/main.py
+README.md: path not found -> agent.yaml
+README.md: path not found -> claude_desktop_config.json
+RUNBOOK.md: tool not registered -> fetch_ohlcv_error
+RUNBOOK.md: tool not registered -> fetch_price_error
+docs/ERRORS.md: tool not registered -> fetch_ohlcv_error
+docs/ERRORS.md: tool not registered -> fetch_price_error
+docs/FALLING_KNIFE.md: tool not registered -> get_volatility_status
+docs/MARKETDATA.md: tool not registered -> fetch_ohlcv_error
+docs/MARKETDATA.md: tool not registered -> fetch_price_error
+-- 13 problem(s) in 17 doc(s)
+=== tool-like names in docs that are not registered MCP tools (any verb)
+README.md:249:`on_candle(
+docs/TOOLS.md:356:`on_candle(
+-- 2 call(s) to unregistered names
+=== crypto / stock leftovers in user-facing docs (count per file)
+README.md: 4
+RUNBOOK.md: 1
+CHANGELOG.md: 9
+docs/ERRORS.md: 1
+docs/EXCHANGES.md: 2
+docs/FALLING_KNIFE.md: 6
+docs/MARKETDATA.md: 2
+docs/SENTIMENT.md: 5
+docs/TOOLS.md: 7
+prompts/READYTRADER_PROMPT_PACK.md: 1
+smithery.yaml: 1
+=== TOOLS.md is what the generator produces now
+Wrote docs/TOOLS.md (29 tools)
+TOOLS.md up to date
+=== tools registered but not in TOOLS.md:
+none
+=== smithery.yaml as the registry reads it
+parsed; duplicate keys: none
+type: stdio | config keys: PAPER_MODE, LIVE_TRADING_ENABLED, TRADING_HALTED, EXECUTION_APPROVAL_MODE, MAX_BROKERAGE_ORDER_AMOUNT, ALLOW_BROKERAGE_SYMBOLS, OANDA_API_KEY, OANDA_ACCOUNT_ID, OANDA_ENVIRONMENT, NEWSAPI_KEY, ALPHAVANTAGE_API_KEY
+config keys missing from env.example: none
+commandFunction(exampleConfig) -> {"command": "python", "args": ["app/main.py"], "env": {"PAPER_MODE": "true", "EXECUTION_APPROVAL_MODE": "auto"}}
+TOOLS 29: analyze_social_sentiment, deposit_paper_funds, fetch_custom_feed, fetch_financial_news, fetch_ohlcv, fetch_rss_news, get_economic_calendar, get_financial_news, get_forex_market_brief, get_forex_news, get_free_n
+
+
+exit=0

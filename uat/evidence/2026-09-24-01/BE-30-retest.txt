@@ -1,0 +1,10 @@
+$ .venv/bin/python -W ignore /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_qa_orders.py 2>&1 | grep -A3 '== 5'
+# at 2026-09-24T13:03:31+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== 5. needs_confirmation: 200k account, 8000 EURUSD (~$8,835, 4.4%)
+validate: {'allowed': True, 'needs_confirmation': True, 'reason': 'Trade looks safe. It is over $5,000: consider EXECUTION_APPROVAL_MODE=approve_each to approve such trades.'}
+order: Paper Trade Executed: BUY 8000 EURUSD @ 1.10440. Realized P&L: 0.00 USD. Positio | approval mode auto
+== 6. live SELL when the broker's equity cannot be read
+
+
+exit=0

@@ -1,0 +1,50 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && PYTHONPATH=pylib /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p6_dockerignore.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | head -40; cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX; grep -n 'USER\|^CMD\|^FROM\|useradd' Dockerfile
+# at 2026-09-24T21:48:17+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+patterns: ['**/__pycache__/', '**/*.pyc', '**/*.pyo', '**/*.pyd', '**/.pytest_cache/', '**/.ruff_cache/', '**/.mypy_cache/', 'bandit_report.json', '**/.env*', '**/*.env', '**/*.pem', '**/*.key', '**/keystore*', '**/secrets*', '**/secrets*.json', '**/*.db', '**/*.db-shm', '**/*.db-wal', '**/*.log', 'data/', 'artifacts/', 'uat/', '.git/', '.venv/', 'venv/', 'env/', 'frontend/', 'tests/', '.github/', 'requirements.lock.txt', 'requirements-dev.txt', 'docs/', 'tools/', '_deprecated/']
+
+SYNTHETIC TREE - sent to the Docker daemon:
+  excluded  .env
+  excluded  .env.live
+  excluded  .env.local
+  excluded  .env.production
+  excluded  prod.env
+  excluded  frontend/.env
+  excluded  frontend/.env.local
+  excluded  app/.env
+  excluded  configs/.env
+  excluded  configs/.env.live
+  excluded  oanda.pem
+  excluded  server.key
+  excluded  configs/oanda.pem
+  excluded  configs/client.key
+  excluded  secrets/oanda_token.txt
+  excluded  paper.db
+  excluded  app/paper.db
+  excluded  data/paper.db
+  excluded  configs/paper.db
+  excluded  app/__pycache__/x.pyc
+  excluded  execution.db
+  excluded  compliance_audit.log
+  excluded  configs/execution.db
+  SENT      app/main.py
+  SENT      Dockerfile
+
+REAL TREE: 128 paths in the context
+  top-level: .dockerignore
+  top-level: .gitignore
+  top-level: AGENTS.md
+  top-level: CHANGELOG.md
+  top-level: CONTRIBUTING.md
+  top-level: DISCLAIMER.md
+  top-level: Dockerfile
+  top-level: LICENSE
+  top-level: README.md
+  top-level: RUNBOOK.md
+1:FROM python:3.12-slim
+24:RUN useradd --create-home --uid 10001 readytrader \
+26:USER readytrader
+32:CMD ["python", "app/main.py"]
+
+
+exit=0

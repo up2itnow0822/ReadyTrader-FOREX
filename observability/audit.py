@@ -10,6 +10,8 @@ import threading
 import time
 from typing import Any, Dict, Optional
 
+from common.paths import data_path, ensure_parent
+
 
 class AuditLog:
     """
@@ -170,13 +172,12 @@ class AuditLog:
         return output.getvalue()
 
     def _db_path(self) -> str:
-        default = "data/audit.db"
+        default = data_path("audit.db")
         p = (os.getenv("READYTRADER_AUDIT_DB_PATH") or os.getenv("AUDIT_DB_PATH") or default).strip()
-        if not os.path.exists(os.path.dirname(p)):
-            try:
-                os.makedirs(os.path.dirname(p), exist_ok=True)
-            except Exception:
-                return ""
+        try:
+            ensure_parent(p)
+        except Exception:
+            return ""
         return p
 
     def _get_conn(self) -> Optional[sqlite3.Connection]:

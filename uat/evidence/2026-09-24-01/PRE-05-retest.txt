@@ -1,0 +1,20 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_ci_local.sh
+# at 2026-09-24T10:56:41+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+22:        run: python -m pip install -r requirements-dev.txt
+24:        run: ruff check .
+26:        run: pytest
+28:        run: bandit -q -c bandit.yaml -r app core common execution intelligence marketdata observability strategy
+33:      run:
+42:      - run: npm ci
+43:      - run: npm run lint
+44:      - run: npm run build
+All checks passed!
+ruff ok
+........                                                                 [100%]
+bandit ok
+98:- Docker, or Python 3.12+ for a local install (below)
+113:If you want to run or test ReadyTrader-FOREX locally. Requires **Python 3.12 or newer** (`pandas_ta` has no release for older versions).
+
+
+exit=0

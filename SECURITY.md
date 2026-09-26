@@ -4,7 +4,9 @@
 
 If you believe you have found a security vulnerability, **do not** open a public issue.
 
-Please report details privately with:
+Report it privately through GitHub's private vulnerability reporting:
+<https://github.com/up2itnow0822/ReadyTrader-FOREX/security/advisories/new> (the repository's
+**Security** tab, **Report a vulnerability**). Include:
 
 - **Description** of the issue
 - **Reproduction steps**
@@ -14,7 +16,8 @@ Please report details privately with:
 ### Scope Notes
 
 - This project can be configured for **live trading** (`PAPER_MODE=false`). Keep API keys and secrets out of source control.
-- This project uses a **credential provider abstraction**; prefer environment-based or vault-based secrets over raw credentials in code.
+- Brokerage and data keys are read from the environment (or a git-ignored `.env`) and are never written by the server; prefer a secrets manager over a plain `.env` in shared environments.
+- The approval API has no authentication beyond each proposal's `confirm_token`: keep it on `127.0.0.1` (the default).
 - For live trading deployments, review `docs/THREAT_MODEL.md` and follow least-privilege patterns.
 
 ### Secret scanning guidance
