@@ -4,7 +4,7 @@
   "branch": "uat/2026-09-24-forex",
   "base_ref": "main@417a104",
   "started_at": "2026-09-24T10:51:11+00:00",
-  "updated_at": "2026-09-26T00:22:56+00:00",
+  "updated_at": "2026-09-26T02:18:16+00:00",
   "scope": "Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tools, paper trading, risk guardian + FX Falling Knife/halt, api_server approvals, dashboard, CLI scripts, config, docs, registry manifest, Docker configs (static). Out: live brokerage orders (no credentials; live trading is a hard gate), Docker build (no daemon in sandbox)",
   "surfaces": {},
   "journeys": [
@@ -5459,6 +5459,73 @@
             "uat/evidence/2026-09-24-01/BE-32-retest.txt"
           ],
           "observed": "same NaN row: fetch_ticker last 1.1392 (the last real close), bars skip the NaN row, get_stock_price answers ok with real price/bid/ask"
+        }
+      ]
+    },
+    {
+      "id": "DOC-05",
+      "created_at": "2026-09-26T02:09:39+00:00",
+      "history": [
+        {
+          "at": "2026-09-26T02:09:39+00:00",
+          "event": "check",
+          "result": "FAIL",
+          "from": {
+            "result": null,
+            "status": null
+          },
+          "note": ""
+        },
+        {
+          "at": "2026-09-26T02:16:27+00:00",
+          "event": "fix",
+          "commit": "190fb3a6",
+          "note": "README Option A points to the Agent Zero plugin first; the hand-made entry is the {\"mcpServers\": ...} JSON for Settings -> MCP/A2A -> External MCP Servers (configs/agent_zero.mcp.json, data volume included); the YAML moved to _deprecated/configs/"
+        },
+        {
+          "at": "2026-09-26T02:18:16+00:00",
+          "event": "retest",
+          "result": "PASS",
+          "note": "the README's Agent Zero JSON block (identical to configs/agent_zero.mcp.json) parses in Agent Zero v2.13 to one server, readytrader_forex (DOC-05-retest.txt); the README's without-Docker form, written into External MCP Servers of a real Agent Zero tree, connects with 29 tools and answers a price through Agent Zero's MCP client (this capture); the Docker form was not run (no Docker daemon here)"
+        }
+      ],
+      "section": "docs",
+      "title": "The README's Agent Zero integration works in current Agent Zero",
+      "steps": "follow README Option A (Agent Zero) in Agent Zero v2.13; give its block to Agent Zero's MCP settings parser",
+      "expected": "a server entry Agent Zero starts",
+      "observed": "Option A points to 'Settings -> MCP Servers' and an 'agent.yaml' mcp_servers block. Agent Zero v2.13 keeps MCP servers in Settings -> MCP/A2A -> External MCP Servers as JSON ({\"mcpServers\": {...}}); agent.yaml is agent-profile metadata. The README's block yields no server in Agent Zero's parser (parse_config_string -> []), and configs/agent_zero.mcp.yaml has the same shape. The Agent Zero plugin, the supported path, is not mentioned.",
+      "result": "FAIL",
+      "severity": "medium",
+      "evidence": [
+        "uat/evidence/2026-09-24-01/DOC-05.txt"
+      ],
+      "journey": "",
+      "notes": "",
+      "updated_at": "2026-09-26T02:09:39+00:00",
+      "status": "VERIFIED",
+      "fix": {
+        "description": "README Option A points to the Agent Zero plugin first; the hand-made entry is the {\"mcpServers\": ...} JSON for Settings -> MCP/A2A -> External MCP Servers (configs/agent_zero.mcp.json, data volume included); the YAML moved to _deprecated/configs/",
+        "root_cause": "the Agent Zero section was written for an older Agent Zero (MCP servers in agent.yaml / a settings page that no longer exists)",
+        "files": [
+          "README.md",
+          "configs/agent_zero.mcp.json",
+          "_deprecated/configs/agent_zero.mcp.yaml",
+          "CHANGELOG.md",
+          "AGENTS.md",
+          "tests/test_configs.py"
+        ],
+        "commit": "190fb3a6",
+        "regression_test": "tests/test_configs.py::test_the_agent_zero_config_is_what_agent_zero_reads",
+        "at": "2026-09-26T02:16:27+00:00"
+      },
+      "retests": [
+        {
+          "at": "2026-09-26T02:18:16+00:00",
+          "result": "PASS",
+          "evidence": [
+            "uat/evidence/2026-09-24-01/DOC-05-retest-nodocker.txt"
+          ],
+          "observed": "the README's Agent Zero JSON block (identical to configs/agent_zero.mcp.json) parses in Agent Zero v2.13 to one server, readytrader_forex (DOC-05-retest.txt); the README's without-Docker form, written into External MCP Servers of a real Agent Zero tree, connects with 29 tools and answers a price through Agent Zero's MCP client (this capture); the Docker form was not run (no Docker daemon here)"
         }
       ]
     }
