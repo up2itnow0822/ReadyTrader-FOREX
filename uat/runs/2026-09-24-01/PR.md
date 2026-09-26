@@ -9,12 +9,12 @@ path only); no order was placed on any account.
 **Stacked on #4** (`feat/market-falling-knife`, the price-based Falling Knife and volatility halt).
 Review and merge #4 first; this PR's diff is the UAT work on top of it.
 
-**Totals:** 89 checks · 11 pass · 77 fail (77 fixed & verified) · 1 blocked · 461 tests pass, ruff and bandit clean, dashboard installs, lints and builds; the README's Docker path builds and runs.
+**Totals:** 90 checks · 11 pass · 78 fail (78 fixed & verified) · 1 blocked · 464 tests pass, ruff and bandit clean, dashboard installs, lints and builds; the README's Docker path builds and runs.
 
 | Section | Pass | Fail | Verified fixed | Blocked |
 |---|---|---|---|---|
 | preflight | 1 | 5 | 5 | 0 |
-| backend | 0 | 36 | 36 | 0 |
+| backend | 0 | 37 | 37 | 0 |
 | data | 1 | 4 | 4 | 0 |
 | memory | 0 | 2 | 2 | 0 |
 | frontend | 2 | 6 | 6 | 0 |
@@ -62,6 +62,7 @@ Review and merge #4 first; this PR's diff is the UAT work on top of it.
 - **high** XR-06 — A live approve_each order needs an approval the agent cannot give itself → API_OPERATOR_TOKEN: when set, every /api/ route but /api/health needs Authorization: Bearer; a live proposal is approved only when it is set (403 operator_token_required, checked before the proposal is consumed). The dashboard sends it (asked once per tab). (`4f72e15d`)
 - **medium** AR-02 — The dashboard can read a 401 and ask for the operator token → CORS is added after request_context and wraps every answer. (`fc571242`)
 - **medium** AR-03 — A NaN quote is no price → Quotes must be finite and positive, else they are no price (the fail-closed paths then refuse). (`fc571242`)
+- **medium** BE-32 — A quote without a price (Yahoo's unfinished session row) is never answered as a price → provider rows without a finite, positive price are dropped; get_stock_price and get_multiple_prices answer only real prices (orders were already safe). The class was found in ReadyTrader-Stocks through the Agent Zero plugin (`79192fb8`)
 - **medium** BE-03 — Malformed trade requests are refused (unknown side, non-positive amount) → side buy/sell, positive finite amount, market/limit with a positive limit price (`9976ddc`)
 - **medium** BE-07 — start_brokerage_private_ws tells the truth → start_brokerage_private_ws returns not_implemented in live mode (`9976ddc`)
 - **medium** BE-09 — API server starts as documented (python app/api_server.py) → api_server.py puts the repo root on sys.path when run as a file (`9976ddc`)
