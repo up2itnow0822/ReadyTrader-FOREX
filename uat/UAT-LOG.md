@@ -6,10 +6,10 @@
 ## Run 2026-09-24-01 — ReadyTrader-FOREX
 
 - Branch: `uat/2026-09-24-forex`  |  Base: `main@417a104`
-- Started: 2026-09-24T10:51:11+00:00  |  Updated: 2026-09-26T00:22:56+00:00
+- Started: 2026-09-24T10:51:11+00:00  |  Updated: 2026-09-26T02:18:16+00:00
 - Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tools, paper trading, risk guardian + FX Falling Knife/halt, api_server approvals, dashboard, CLI scripts, config, docs, registry manifest, Docker configs (static). Out: live brokerage orders (no credentials; live trading is a hard gate), Docker build (no daemon in sandbox)
 - Verdict: **CLEAN with BLOCKED items**
-- Totals: 90 checks · 11 pass · 78 fail (78 verified fixed, 0 open, 0 fixed-unverified, 0 regressed, 0 wontfix) · 1 blocked
+- Totals: 91 checks · 11 pass · 79 fail (79 verified fixed, 0 open, 0 fixed-unverified, 0 regressed, 0 wontfix) · 1 blocked
 
 ### User journeys exercised
 
@@ -32,10 +32,10 @@
 | integrations | 0 | 4 | 4 | 1 |
 | cli | 0 | 2 | 2 | 0 |
 | config | 0 | 10 | 10 | 0 |
-| docs | 1 | 7 | 7 | 0 |
+| docs | 1 | 8 | 8 | 0 |
 | regression | 6 | 1 | 1 | 0 |
 
-### Findings (79)
+### Findings (80)
 
 #### PRE-01 — README local install (pip install -r requirements-dev.txt) then python app/main.py  [FAIL · critical · **VERIFIED**]
 
@@ -592,6 +592,20 @@
   - Commit: `6886e25`
   - Regression test: tests/test_examples.py
 - Retest 1 (2026-09-24T11:57:56+00:00): **PASS** — paper_quick_demo exercises FxPaperAccount (EURUSD long, USDJPY short with JPY->USD P&L, margin, close, metrics), every self-check ok, exit 0; verify_live_strategy reports OANDA not available/practice API and runs SMA on EURUSD, SUCCESS · evidence: [CL-02-retest.txt](evidence/2026-09-24-01/CL-02-retest.txt)
+
+#### DOC-05 — The README's Agent Zero integration works in current Agent Zero  [FAIL · medium · **VERIFIED**]
+
+- Section: `docs`
+- Steps: follow README Option A (Agent Zero) in Agent Zero v2.13; give its block to Agent Zero's MCP settings parser
+- Expected: a server entry Agent Zero starts
+- Observed: Option A points to 'Settings -> MCP Servers' and an 'agent.yaml' mcp_servers block. Agent Zero v2.13 keeps MCP servers in Settings -> MCP/A2A -> External MCP Servers as JSON ({"mcpServers": {...}}); agent.yaml is agent-profile metadata. The README's block yields no server in Agent Zero's parser (parse_config_string -> []), and configs/agent_zero.mcp.yaml has the same shape. The Agent Zero plugin, the supported path, is not mentioned.
+- Evidence: [DOC-05.txt](evidence/2026-09-24-01/DOC-05.txt)
+- Fix: README Option A points to the Agent Zero plugin first; the hand-made entry is the {"mcpServers": ...} JSON for Settings -> MCP/A2A -> External MCP Servers (configs/agent_zero.mcp.json, data volume included); the YAML moved to _deprecated/configs/
+  - Root cause: the Agent Zero section was written for an older Agent Zero (MCP servers in agent.yaml / a settings page that no longer exists)
+  - Files: `README.md`, `configs/agent_zero.mcp.json`, `_deprecated/configs/agent_zero.mcp.yaml`, `CHANGELOG.md`, `AGENTS.md`, `tests/test_configs.py`
+  - Commit: `190fb3a6`
+  - Regression test: tests/test_configs.py::test_the_agent_zero_config_is_what_agent_zero_reads
+- Retest 1 (2026-09-26T02:18:16+00:00): **PASS** — the README's Agent Zero JSON block (identical to configs/agent_zero.mcp.json) parses in Agent Zero v2.13 to one server, readytrader_forex (DOC-05-retest.txt); the README's without-Docker form, written into External MCP Servers of a real Agent Zero tree, connects with 29 tools and answers a price through Agent Zero's MCP client (this capture); the Docker form was not run (no Docker daemon here) · evidence: [DOC-05-retest-nodocker.txt](evidence/2026-09-24-01/DOC-05-retest-nodocker.txt)
 
 #### FE-05 — The dashboard is readable at phone width (390x844)  [FAIL · medium · **VERIFIED**]
 
