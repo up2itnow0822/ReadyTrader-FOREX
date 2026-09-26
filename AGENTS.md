@@ -55,6 +55,9 @@ a price-based market guard, an operator policy and a kill switch; plus an approv
 - Tools answer `{"ok": true, "data"}` or `{"ok": false, "error": {"code", "message", "data"}}`; a
   source that cannot answer is an error, never a payload (never "no events"). New codes go in
   `docs/ERRORS.md`.
+- A price is finite and positive or it is no price: provider rows without one are dropped
+  (`marketdata/exchange_provider._priced_rows`), quote tools answer only real prices (`_real_price`), and
+  the paper account refuses a non-finite rate (NaN is truthy and compares false against every limit).
 - Default data files live in `<repo>/data/` via `common/paths.data_path` (never the working
   directory); `READYTRADER_DATA_DIR` and each `*_PATH` variable override.
 - Every variable the code reads is in `env.example`, with no inline comments or placeholder keys.
