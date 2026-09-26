@@ -4,7 +4,7 @@
   "branch": "uat/2026-09-24-forex",
   "base_ref": "main@417a104",
   "started_at": "2026-09-24T10:51:11+00:00",
-  "updated_at": "2026-09-25T11:58:10+00:00",
+  "updated_at": "2026-09-26T00:22:56+00:00",
   "scope": "Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tools, paper trading, risk guardian + FX Falling Knife/halt, api_server approvals, dashboard, CLI scripts, config, docs, registry manifest, Docker configs (static). Out: live brokerage orders (no credentials; live trading is a hard gate), Docker build (no daemon in sandbox)",
   "surfaces": {},
   "journeys": [
@@ -5396,6 +5396,71 @@
       "notes": "",
       "updated_at": "2026-09-25T11:58:10+00:00",
       "status": "N/A"
+    },
+    {
+      "id": "BE-32",
+      "created_at": "2026-09-26T00:19:40+00:00",
+      "history": [
+        {
+          "at": "2026-09-26T00:19:40+00:00",
+          "event": "check",
+          "result": "FAIL",
+          "from": {
+            "result": null,
+            "status": null
+          },
+          "note": ""
+        },
+        {
+          "at": "2026-09-26T00:22:47+00:00",
+          "event": "fix",
+          "commit": "79192fb8",
+          "note": "provider rows without a finite positive OHLC are dropped; quote tools answer only finite positive prices"
+        },
+        {
+          "at": "2026-09-26T00:22:56+00:00",
+          "event": "retest",
+          "result": "PASS",
+          "note": "same NaN row: fetch_ticker last 1.1392 (the last real close), bars skip the NaN row, get_stock_price answers ok with real price/bid/ask"
+        }
+      ],
+      "section": "backend",
+      "title": "A quote without a price (Yahoo's unfinished session row) is never answered as a price",
+      "steps": "yfinance history mocked with the row shape Yahoo returned for AAPL on Saturday 2026-09-26 00:14 UTC (Stocks BE-34): a last row with NaN prices; provider fetch_ticker / fetch_ohlcv and the get_stock_price tool",
+      "expected": "the last real rate (or fetch_price_error); bars without the NaN row",
+      "observed": "fetch_ticker last NaN; fetch_ohlcv keeps the NaN bar; get_stock_price answers ok with price/bid/ask NaN (not valid JSON for strict parsers). Orders are safe: the paper account refuses a non-finite rate",
+      "result": "FAIL",
+      "severity": "medium",
+      "evidence": [
+        "uat/evidence/2026-09-24-01/BE-32.txt"
+      ],
+      "journey": "paper-trade a pair",
+      "notes": "",
+      "updated_at": "2026-09-26T00:19:40+00:00",
+      "status": "VERIFIED",
+      "fix": {
+        "description": "provider rows without a finite positive OHLC are dropped; quote tools answer only finite positive prices",
+        "root_cause": "NaN is truthy: 'if not price' let Yahoo's unfinished-session row through as a quote",
+        "files": [
+          "marketdata/exchange_provider.py",
+          "app/tools/market_data.py",
+          "AGENTS.md",
+          "CHANGELOG.md"
+        ],
+        "commit": "79192fb8",
+        "regression_test": "tests/test_exchange_provider.py (2), tests/test_research_tools.py::test_a_quote_without_a_real_price_is_no_price; fail on the old code",
+        "at": "2026-09-26T00:22:47+00:00"
+      },
+      "retests": [
+        {
+          "at": "2026-09-26T00:22:56+00:00",
+          "result": "PASS",
+          "evidence": [
+            "uat/evidence/2026-09-24-01/BE-32-retest.txt"
+          ],
+          "observed": "same NaN row: fetch_ticker last 1.1392 (the last real close), bars skip the NaN row, get_stock_price answers ok with real price/bid/ask"
+        }
+      ]
     }
   ],
   "notes": [
