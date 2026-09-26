@@ -9,7 +9,7 @@ path only); no order was placed on any account.
 **Stacked on #4** (`feat/market-falling-knife`, the price-based Falling Knife and volatility halt).
 Review and merge #4 first; this PR's diff is the UAT work on top of it.
 
-**Totals:** 90 checks · 11 pass · 78 fail (78 fixed & verified) · 1 blocked · 464 tests pass, ruff and bandit clean, dashboard installs, lints and builds; the README's Docker path builds and runs.
+**Totals:** 91 checks · 11 pass · 79 fail (79 fixed & verified) · 1 blocked · 465 tests pass, ruff and bandit clean, dashboard installs, lints and builds; the README's Docker path builds and runs.
 
 | Section | Pass | Fail | Verified fixed | Blocked |
 |---|---|---|---|---|
@@ -21,7 +21,7 @@ Review and merge #4 first; this PR's diff is the UAT work on top of it.
 | integrations | 0 | 4 | 4 | 1 |
 | cli | 0 | 2 | 2 | 0 |
 | config | 0 | 10 | 10 | 0 |
-| docs | 1 | 7 | 7 | 0 |
+| docs | 1 | 8 | 8 | 0 |
 | regression | 6 | 1 | 1 | 0 |
 
 ### Breaking changes (read before merging)
@@ -63,6 +63,7 @@ Review and merge #4 first; this PR's diff is the UAT work on top of it.
 - **medium** AR-02 — The dashboard can read a 401 and ask for the operator token → CORS is added after request_context and wraps every answer. (`fc571242`)
 - **medium** AR-03 — A NaN quote is no price → Quotes must be finite and positive, else they are no price (the fail-closed paths then refuse). (`fc571242`)
 - **medium** BE-32 — A quote without a price (Yahoo's unfinished session row) is never answered as a price → provider rows without a finite, positive price are dropped; get_stock_price and get_multiple_prices answer only real prices (orders were already safe). The class was found in ReadyTrader-Stocks through the Agent Zero plugin (`79192fb8`)
+- **medium** DOC-05 — The README's Agent Zero integration works in current Agent Zero → Option A pointed to a "Settings -> MCP Servers" page and an `agent.yaml` block that Agent Zero v2.13 does not read (its MCP parser found no server); it now points to the Agent Zero plugin first and gives the JSON for Settings -> MCP/A2A -> External MCP Servers (`configs/agent_zero.mcp.json`), verified in a real Agent Zero tree. Found through the Agent Zero plugin (`190fb3a6`)
 - **medium** BE-03 — Malformed trade requests are refused (unknown side, non-positive amount) → side buy/sell, positive finite amount, market/limit with a positive limit price (`9976ddc`)
 - **medium** BE-07 — start_brokerage_private_ws tells the truth → start_brokerage_private_ws returns not_implemented in live mode (`9976ddc`)
 - **medium** BE-09 — API server starts as documented (python app/api_server.py) → api_server.py puts the repo root on sys.path when run as a file (`9976ddc`)
