@@ -1,6 +1,6 @@
 # UAT run 2026-09-24-01 — ReadyTrader-FOREX: CLEAN with BLOCKED items
 
-89 checks · 11 pass · 77 fail (77 fixed & verified, 0 open, 0 fixed-unverified, 0 regressed) · 1 blocked
+90 checks · 11 pass · 78 fail (78 fixed & verified, 0 open, 0 fixed-unverified, 0 regressed) · 1 blocked
 
 Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tools, paper trading, risk guardian + FX Falling Knife/halt, api_server approvals, dashboard, CLI scripts, config, docs, registry manifest, Docker configs (static). Out: live brokerage orders (no credentials; live trading is a hard gate), Docker build (no daemon in sandbox)
 
@@ -43,6 +43,7 @@ Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tool
 - **medium** BE-12 — The approval API answers only the dashboard's browser origin → CORS from API_CORS_ORIGINS (default the dashboard on :3000, '*' ignored); cancel checks the confirm_token (`9976ddc`) · **VERIFIED**
 - **medium** BE-14 — A backtest that fails reports failure (ok:false), not success → run_backtest_simulation returns ok:false backtest_error on failure (`33bf5e1`) · **VERIFIED**
 - **medium** BE-29 — validate_trade_risk refuses a malformed request instead of calling it safe → validate_trade_risk validates side, symbol, amount_usd and portfolio_value (invalid_request) (`eed8f6f`) · **VERIFIED**
+- **medium** BE-32 — A quote without a price (Yahoo's unfinished session row) is never answered as a price → provider rows without a finite positive OHLC are dropped; quote tools answer only finite positive prices (`79192fb8`) · **VERIFIED**
 - **medium** CF-01 — env.example lists the variables the code reads, with safe values → Rewrote env.example: every variable a FOREX path reads, grouped, with safe defaults; API_HOST commented at 127.0.0.1; unread names removed (`240727d`) · **VERIFIED**
 - **medium** CL-01 — The setup wizard checks this project's setup and never crashes → ask() treats EOF as no answer; FX sources probed with a User-Agent; keys judged by PAPER_MODE; FX dependencies; documented start command (`7cf76f1`) · **VERIFIED**
 - **medium** CL-02 — The shipped example scripts run and demonstrate this server's paper account → paper_quick_demo.py rewritten on FxPaperAccount with self-checks; verify_live_strategy.py checks OANDA wiring and runs SMA on EURUSD; moving_average registers pandas_ta (`6886e25`) · **VERIFIED**
@@ -93,7 +94,7 @@ Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tool
 | Section | Checks | Status |
 |---|---|---|
 | preflight | 6 | covered |
-| backend | 36 | covered |
+| backend | 37 | covered |
 | data | 5 | covered |
 | memory | 2 | covered |
 | frontend | 8 | covered |
@@ -108,4 +109,4 @@ Scope: Stacked on PR #4 (feat/market-falling-knife). In: MCP server (stdio) tool
 - Branch `uat/2026-09-24-forex` has a remote (`origin`) but no upstream — it has not been pushed.
 - Base: `main@417a104`
 - DOX: root AGENTS.md indexes `uat/AGENTS.md`
-- Log: `uat/UAT-LOG.md` · evidence: `uat/evidence/2026-09-24-01/` (1.21 MB)
+- Log: `uat/UAT-LOG.md` · evidence: `uat/evidence/2026-09-24-01/` (1.22 MB)
