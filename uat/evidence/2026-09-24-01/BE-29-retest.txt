@@ -1,0 +1,11 @@
+$ .venv/bin/python -W ignore /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_qa_validate.py 2>&1 | grep -v 'Warning\|compatible\|from \|warnings.warn'
+# at 2026-09-24T13:03:35+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_qa_validate.py", line 16, in <module>
+    print(d["ok"], d["data"]["result"])
+                   ~^^^^^^^^
+KeyError: 'data'
+
+
+exit=0

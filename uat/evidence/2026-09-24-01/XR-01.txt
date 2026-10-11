@@ -1,0 +1,14 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex &&  /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p8_normalisation.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/volatility halt/,/orders sent to OANDA: \[(/p'
+# at 2026-09-24T21:16:25+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== live: volatility halt on EURUSD (today's move 6% vs a quiet 20-day norm); SELL 4,000 opens a short
+  SELL 4,000 'EURUSD'   -> risk_blocked market.status=ok          volatility_ratio=7.2836
+  SELL 4,000 'EUR/USD'  -> risk_blocked market.status=ok          volatility_ratio=7.2836
+  SELL 4,000 'EUR_USD'  -> SENT         market.status=unavailable volatility_ratio=None
+  SELL 4,000 'eur-usd'  -> SENT         market.status=unavailable volatility_ratio=None
+  falling knife, MARKET_GUARD_ON_DATA_ERROR=allow: BUY 4,000 'EURUSD'  -> risk_blocked: Guardian blocked BUY: EURUSD is down 8.0% from its highest c
+  falling knife, MARKET_GUARD_ON_DATA_ERROR=allow: BUY 4,000 'EUR_USD' -> SENT
+  orders sent to OANDA: [('EUR_USD', 'sell', 4000.0), ('eur-usd', 'sell', 4000.0), ('EUR_USD', 'buy', 4000.0)]
+
+
+exit=0

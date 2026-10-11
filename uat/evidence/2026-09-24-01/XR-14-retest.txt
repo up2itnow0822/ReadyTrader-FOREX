@@ -1,0 +1,15 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p7c_smithery.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | grep -v '^\s*$'; cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX; grep -n 'EXECUTION_APPROVAL_MODE' smithery.yaml
+# at 2026-09-24T21:48:35+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+configSchema keys: ['ALLOW_BROKERAGE_SYMBOLS', 'ALPHAVANTAGE_API_KEY', 'LIVE_TRADING_ENABLED', 'MAX_BROKERAGE_ORDER_AMOUNT', 'NEWSAPI_KEY', 'OANDA_ACCOUNT_ID', 'OANDA_API_KEY', 'OANDA_ENVIRONMENT', 'PAPER_MODE', 'TRADING_HALTED']
+  default                    env={'EXECUTION_APPROVAL_MODE': 'auto', 'PAPER_MODE': 'true'}
+                             place_market_order -> executed: Paper Trade Executed: BUY 1000 EURUSD @ 1.13766. Realized P&
+  user sets approve_each     env={'EXECUTION_APPROVAL_MODE': 'auto', 'PAPER_MODE': 'true'}
+                             place_market_order -> executed: Paper Trade Executed: BUY 1000 EURUSD @ 1.13766. Realized P&
+  user sets an unknown key   env={'EXECUTION_APPROVAL_MODE': 'auto', 'PAPER_MODE': 'true'}
+                             place_market_order -> executed: Paper Trade Executed: BUY 1000 EURUSD @ 1.13766. Realized P&
+48:    # nothing else is. EXECUTION_APPROVAL_MODE is not offered: approving a proposal needs the
+56:      const env = { EXECUTION_APPROVAL_MODE: 'auto' };
+
+
+exit=0

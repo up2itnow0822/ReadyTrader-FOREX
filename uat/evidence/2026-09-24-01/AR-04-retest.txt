@@ -1,0 +1,12 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review3_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p07b_unpriced_deposit_retest.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|"event"'
+# at 2026-09-25T11:37:42+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+deposit while EURUSD priced  : deposit accepted
+   drawdown before deposit 11.00% -> after 10.51%  (halt at 10%: still halted)
+deposit while EURUSD UNPRICED: deposit refused: deposit refused: the account cannot be valued now (no USD rate for EUR (EURUSD: 'EURUSD'; 
+   drawdown before deposit 11.00% -> after 5.50%  (halt at 10%: HALT LIFTED)
+hand (TWR), deposit made: 0.89 * (994,499/989,000) = 0.8949 -> drawdown 10.51%, still halted
+hand (TWR), deposit refused: no new capital, so +5,499 is a real gain on 89,000: 94,499/100,000 = 0.9450 -> drawdown 5.50%
+
+
+exit=0

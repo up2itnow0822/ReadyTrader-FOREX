@@ -1,0 +1,29 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_pre_more.sh
+# at 2026-09-24T10:55:50+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== test suite baseline
+224 passed in 12.13s
+=== README demos
+--- examples/paper_quick_demo.py
+  "drawdown_pct": 0.0
+}
+
+Done. Next: run `python examples/stress_test_demo.py` for the synthetic stress lab.
+exit=0
+--- examples/stress_test_demo.py
+Worst-drawdown replay seed: 1381
+You can re-run with master_seed=that seed and scenarios=1 to replay deterministically.
+
+Done. Next: connect your agent and run `run_synthetic_stress_test` via MCP.
+exit=0
+=== CI workflow steps
+19:        run: npm install --if-present || true
+21:        run: npm test --if-present || echo "No tests configured yet"
+=== python requirement
+5:requires-python = ">=3.12"
+96:### Prerequisites
+97-
+98-- Docker (Docker Compose optional)
+
+
+exit=0

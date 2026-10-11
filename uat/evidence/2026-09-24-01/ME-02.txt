@@ -1,0 +1,17 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_memory.sh
+# at 2026-09-24T12:15:11+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== post (EUR/USD, ttl 86400) and (GBPUSD, ttl 2), then read every way
+CALL post_market_insight {"symbol": "EUR/USD", "agent_id": "a1", "signal": "bearish", "confidence": 0.8, "reasoning": ..., "ttl_seconds": 86400} -> { "data": { "insight": { "agent_id": "a1", "confidence": 0.8, "meta": {}, "reasoning": ..., "signal": "bearish", "symbol": "EUR/USD", } }, "ok": true }
+CALL post_market_insight {"symbol": "GBPUSD", "agent_id": "a2", "signal": "bullish", "confidence": 0.6, "reasoning": ..., "ttl_seconds": 2} -> { "data": { "insight": { "agent_id": "a2", "confidence": 0.6, "meta": {}, "reasoning": ..., "signal": "bullish", "symbol": "GBPUSD", } }, "ok": true }
+CALL get_latest_insights {"symbol": "EUR/USD"} -> { "data": { "insights": [ { "agent_id": "a1", "confidence": 0.8, "meta": {}, "reasoning": ..., "signal": "bearish", "symbol": "EUR/USD", } ] }, "ok": true }
+CALL get_latest_insights {"symbol": "eurusd"} -> { "data": { "insights": [] }, "ok": true }
+CALL get_latest_insights {"symbol": "EURUSD"} -> { "data": { "insights": [] }, "ok": true }
+CALL get_latest_insights {"symbol": "eur_usd"} -> { "data": { "insights": [] }, "ok": true }
+CALL get_latest_insights {} -> { "data": { "insights": [ { "agent_id": "a2", "confidence": 0.6, "meta": {}, "reasoning": ..., "signal": "bullish", "symbol": "GBPUSD", }, { "agent_id": "a1", "confidence": 0.8, "expires_at_ms":
+== after the GBPUSD insight's 2 s TTL
+CALL get_latest_insights {"symbol": "GBPUSD"} -> { "data": { "insights": [] }, "ok": true }
+CALL get_latest_insights {} -> { "data": { "insights": [ { "agent_id": "a1", "confidence": 0.8, "meta": {}, "reasoning": ..., "signal": "bearish", "symbol": "EUR/USD", } ] }, "ok": true }
+
+
+exit=0

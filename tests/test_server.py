@@ -16,11 +16,12 @@ def test_fetch_price():
 
 
 def test_place_stock_order_requires_approval():
+    global_container.paper_engine.deposit("agent_zero", "USD", 100_000)  # a BUY is sized against real equity
     with patch.object(settings, "EXECUTION_APPROVAL_MODE", "approve_each"):
         with patch.object(global_container, "risk_guardian") as mock_risk:
             mock_risk.validate_trade.return_value = {"allowed": True, "needs_confirmation": False}
 
-            res_str = place_stock_order("AAPL", "buy", 1.0)
+            res_str = place_stock_order("EURUSD", "buy", 1.0)
             res = json.loads(res_str)
 
             assert res["ok"] is True
@@ -34,13 +35,14 @@ def test_place_stock_order_paper_mode():
             with patch.object(global_container, "paper_engine") as mock_engine:
                 with patch.object(global_container, "risk_guardian") as mock_risk:
                     mock_engine.execute_trade.return_value = "Paper Trade Executed"
+                    mock_engine.account.return_value = {}
                     mock_risk.validate_trade.return_value = {"allowed": True, "needs_confirmation": False}
 
-                    res_str = place_stock_order("AAPL", "buy", 1.0)
+                    res_str = place_stock_order("EURUSD", "buy", 1.0)
                     res = json.loads(res_str)
 
                     assert res["ok"] is True
-                    assert res["data"]["mode"] == "paper"
+                    assert res["data"]["venue"] == "paper"
                     assert "Paper Trade Executed" in res["data"]["result"]
 
 
@@ -52,10 +54,10 @@ def test_private_ws_paper_mode_blocked():
         assert res["error"]["code"] == "paper_mode_not_supported"
 
 
-def test_private_ws_connected():
+def test_private_ws_is_not_implemented():
+    """It used to answer {status: connected} without opening anything."""
     with patch.object(settings, "PAPER_MODE", False):
         res_str = start_brokerage_private_ws("oanda", "spot")
         res = json.loads(res_str)
-        assert res["ok"] is True
-        assert res["data"]["mode"] == "ws"
-        assert res["data"]["status"] == "connected"
+        assert res["ok"] is False
+        assert res["error"]["code"] == "not_implemented"

@@ -1,0 +1,8 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_multi.sh
+# at 2026-09-24T12:02:35+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+CALL get_multiple_prices {"symbols": "EURUSD, GBP/USD,NOTAPAIR"} -> { "data": { "errors": { "NOTAPAIR": "All providers failed to fetch ticker for NOTAPAIR. Last error: ('data_not_found', 'No price data found for NOTAPAIR via yfinance.', {'symbol': 'NOTAPAIR'})" }, "prices": { "EURUSD": 1.1370097398757935, "GBP/USD": 1.3220692873001099, "NOTAPAIR": null } }, "ok": true }
+CALL get_multiple_prices {"symbols": ""} -> { "error": { "code": "invalid_request", "data": {}, "message": "symbols must list at least one symbol, e.g. 'EURUSD,GBPUSD'." }, "ok": false }
+
+
+exit=0

@@ -1,4 +1,6 @@
 fastmcp==2.14.1
+# fastmcp 2.14.1 needs the 1.x MCP SDK: mcp 2.x no longer installs pydantic-settings, which fastmcp imports.
+mcp>=1.24.0,<2
 yfinance
 alpaca-py==0.34.0
 python-dotenv==1.2.1

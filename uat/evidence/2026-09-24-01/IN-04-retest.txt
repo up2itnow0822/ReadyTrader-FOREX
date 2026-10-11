@@ -1,0 +1,9 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_oanda_badkey.sh
+# at 2026-09-24T12:23:33+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+practice API reachable: 401
+CALL place_forex_order {"symbol": "EURUSD", "side": "buy", "amount": 1000} -> { "error": { "code": "risk_blocked", "data": { "inactive_rules": { "news_guard": "get_news_status() is not implemented and always reports no news window, so trading is never suspended around high-impact releases." }, "market": { "as_of": "2026-09-23T23:00:00Z", "bars": 40, "detail": null, "drop_pct": 0.009326, "falling_knife": false, "last_close": 1.137268304824829, "on_data_error": "block", "peak_close": 1.1479737758636475, "required": true, "rule": { "min_drop": 0.05, "volatility_halt_ratio": 
+CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": 1000} -> { "error": { "code": "execution_error", "data": {}, "message": "OANDA order failure: HTTP 400: Invalid value specified for 'accountID'" }, "ok": false }
+
+
+exit=0

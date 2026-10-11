@@ -1,0 +1,13 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review3_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p04_twr_math.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2'; cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX; grep -n 'since the day' RUNBOOK.md README.md docs/*.md | cut -c1-200
+# at 2026-09-25T11:27:46+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+S1 after -5% and a 95k top-up                              code: daily=-5.0000% dd=5.0000% maxdd=5.0000% | hand: daily -5.0000% dd 5.0000%
+S1 price back to entry                                     code: daily=-2.5000% dd=2.5000% maxdd=5.0000% | hand: index .95*1.026316=.975 -> daily -2.5% dd 2.5%
+S2 Mon 23:00 check (loss made today)                       code: daily=-5.5000% dd=5.5000% maxdd=5.5000% | hand: daily -5.5% (halt Monday: right)
+S2 Tue 00:05 first check, no move since midnight           code: daily=-5.5000% dd=5.5000% maxdd=5.5000% | hand: since the day began: 0%
+S2 Tue 20:00, still no move                                code: daily=-5.5000% dd=5.5000% maxdd=5.5000% | hand: since the day began: 0%
+S3 same loss, last snapshot 2 days back; Tue 00:05         code: daily=+0.0000% dd=5.5000% maxdd=5.5000% | hand: 0% (and code agrees)
+RUNBOOK.md:73:  - `Daily Loss Limit Hit` / `Max Drawdown` (paper account only): trading lost 5% since the day
+
+
+exit=0

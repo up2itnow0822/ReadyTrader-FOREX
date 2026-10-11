@@ -97,7 +97,8 @@ def test_fetch_rss_news_no_lib():
 def test_fetch_rss_news_success():
     # Only if feedparser is installed (it is in main env, but maybe verify)
     # Use mock
-    with patch("intelligence.core.feedparser") as mock_fp:
+    with patch("intelligence.core.feedparser") as mock_fp, patch("intelligence.core.requests.get") as get:
+        get.return_value.content = b"<rss/>"
         entry = MagicMock()
         entry.title = "AAPL releases iPhone 20"
         entry.summary = "It is great"

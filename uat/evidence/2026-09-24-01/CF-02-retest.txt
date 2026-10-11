@@ -1,0 +1,15 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_approval_mode.sh
+# at 2026-09-24T11:35:58+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+EXECUTION_APPROVAL_MODE=[approve_each]
+CALL place_limit_order {"symbol": "EURUSD", "side": "buy", "amount": 100, "price": 1.2} -> { "data": { "confirm_token": "1763e4c7a03f9f36259961f4a20bc68e", "message": "Order for 100.0 EURUSD (buy) requires manual confirmation.", "order_details": { "amount": 100.0, "exchange": "oanda", "orde
+EXECUTION_APPROVAL_MODE=[approve_each  # comment]
+CALL place_limit_order {"symbol": "EURUSD", "side": "buy", "amount": 100, "price": 1.2} -> { "data": { "confirm_token": "dbb07bca8dddaede288bfc98d3002fc2", "message": "Order for 100.0 EURUSD (buy) requires manual confirmation.", "order_details": { "amount": 100.0, "exchange": "oanda", "orde
+EXECUTION_APPROVAL_MODE=[approve-each]
+CALL place_limit_order {"symbol": "EURUSD", "side": "buy", "amount": 100, "price": 1.2} -> { "data": { "confirm_token": "db1dc2cf984ff3495f7b78dfa5fa65eb", "message": "Order for 100.0 EURUSD (buy) requires manual confirmation.", "order_details": { "amount": 100.0, "exchange": "oanda", "orde
+PAPER_MODE=true -> settings.PAPER_MODE=True
+PAPER_MODE=1 -> settings.PAPER_MODE=True
+PAPER_MODE=yes -> settings.PAPER_MODE=True
+
+
+exit=0

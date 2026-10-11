@@ -1,0 +1,14 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex &&  /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p8_normalisation.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/resting SELL limits/,/orders sent to OANDA: 5/p'
+# at 2026-09-24T21:16:28+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== live: resting SELL limits against a long are all 'reducing' (pending orders are not counted)
+  SELL LIMIT 100,000 @1.20 #1 -> SENT
+  SELL LIMIT 100,000 @1.20 #2 -> SENT
+  SELL LIMIT 100,000 @1.20 #3 -> SENT
+  SELL LIMIT 100,000 @1.20 #4 -> SENT
+  SELL LIMIT 100,000 @1.20 #5 -> SENT
+  each sized as exposure_added=0.0 notional=0.0; resting total 500,000 vs long 100,000 -> net short 400,000 EUR (~$432,000) on $100,000 equity if filled; 5% cap = $5,000
+  orders sent to OANDA: 5
+
+
+exit=0

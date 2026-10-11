@@ -1,0 +1,21 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_volume_upgrade_retest.sh
+# at 2026-09-25T11:38:12+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+sha256:7b1a5854aaa6478f115e2aeaf416a9e51730025b81b389f221b48ddf07019131
+RUNBOOK: docker run --rm --user 0 -v readytrader-forex-data:/app/data --entrypoint chown readytrader-forex -R 10001:10001 /app/data
+--- before: owners in the volume
+-rw-r--r-- 1 0 0 20480 Sep 25 11:29 insights.db
+-rw-r--r-- 1 0 0 32768 Sep 25 11:29 paper.db
+-rw-r--r-- 1 0 0 16384 Sep 25 11:29 strategies.db
+--- the RUNBOOK step, on this probe's volume:
+chown exit=0
+--- after: owners
+-rw-r--r-- 1 10001 10001 20480 Sep 25 11:29 insights.db
+-rw-r--r-- 1 10001 10001 32768 Sep 25 11:29 paper.db
+-rw-r--r-- 1 10001 10001 16384 Sep 25 11:29 strategies.db
+--- the new image (uid 10001) on the same volume:
+CALL deposit_paper_funds {"asset": "USD", "amount": 1000} -> { "data": { "account": { "cash_usd": 2000.0, "equity_usd": 2000.0, "free_margin_usd": 2000.0, "leverage": 30.0, "margin_used_usd": 0.0, "net_deposits_usd": 2000.0, "positions": []
+CALL get_paper_account {} -> { "data": { "cash_usd": 2000.0, "equity_usd": 2000.0, "free_margin_usd": 2000.0, "leverage": 30.0, "margin_used_usd": 0.0, "net_deposits_usd": 2000.0, "positions": [], "unpriced_positions": [], "unrealized_usd":
+
+
+exit=0

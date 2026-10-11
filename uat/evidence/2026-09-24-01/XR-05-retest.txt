@@ -1,0 +1,15 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p7b_live_limits.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio'; cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX; grep -n 'paper account only' README.md docs/THREAT_MODEL.md RUNBOOK.md docs/ERRORS.md | cut -c1-260
+# at 2026-09-24T21:47:58+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== live mode: account equity fell 100,000 -> 80,000 today (-20%); BUY 1,000 GBPUSD
+  live pre_trade_check -> allowed: True | Trade looks safe.
+  inactive_rules: {'daily_loss_limit': 'a live brokerage account has no loss history here, so this rule runs o', 'max_drawdown': 'a live brokerage account has no loss history here, so this rule runs o', 'news_guard': 'get_news_status() is not implemented and always reports no news window'}
+  place_forex_order -> ok: True | inactive_rules in the answer: ['daily_loss_limit', 'max_drawdown', 'news_guard']
+README.md:37:3.  **Governance:** the Risk Guardian judges the part of the order that opens or adds to a position (an order that reduces or closes one is an exit), at its USD notional (from the market rate, never a price the order carries) against your account:
+README.md:172:Live orders go out only with `PAPER_MODE=false` **and** `LIVE_TRADING_ENABLED=true`; `TRADING_HALTED=true` refuses them all, closing orders included (close positions on the OANDA platform while halted). Each is sized against the brokerage account
+docs/THREAT_MODEL.md:34:    - **Loss limits (paper account only)**: every order that adds exposure (long or short) is
+RUNBOOK.md:73:  - `Daily Loss Limit Hit` / `Max Drawdown` (paper account only): trading lost 5% since the day
+docs/ERRORS.md:28:  daily-loss or 10% drawdown limit (orders that add exposure; paper account only), the
+
+
+exit=0

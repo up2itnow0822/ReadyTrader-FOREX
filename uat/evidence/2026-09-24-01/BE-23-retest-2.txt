@@ -1,0 +1,14 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_api_codes.sh
+# at 2026-09-24T13:06:46+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+started as a file (python app/api_server.py): GET /api/health -> {"status":"ok","mode":"paper"} HTTP 200
+proposal made over MCP: request_id c48d7de9910e7b7b09ac4a26 (token redacted)
+approve with a wrong token  -> {"detail":"Invalid confirm_token"} HTTP 403
+approve with its token      -> {"ok":true,"venue":"paper","result":"Paper Trade Executed: BUY 2000 EURUSD @ 1.13740. Realized P&L: 0.00 USD. Position: +2000 EURUSD @ 1.13740. Rationale: api_a
+approve it again            -> {"detail":"Proposal already confirmed"} HTTP 409
+approve an unknown id       -> {"detail":"Unknown request_id"} HTTP 404
+CORS, Origin http://localhost:3000: access-control-allow-origin: http://localhost:3000
+CORS, Origin https://evil.example: []
+
+
+exit=0

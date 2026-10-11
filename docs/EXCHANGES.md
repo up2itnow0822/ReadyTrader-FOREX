@@ -1,72 +1,55 @@
-## ReadyTrader-Crypto — Exchange Capabilities (Phase 2A)
+## ReadyTrader-FOREX — Brokerage Capabilities
 
-This is a **truthful capability matrix** intended to reduce surprises. “Supported” means we have a clear tool path, tests, and documented behavior. “Experimental” means it may work, but behavior varies by exchange/market type.
+A truthful capability matrix. "Supported" means the order path is covered by tests (against a fake
+brokerage) and documented; "Experimental" means the connector exists but has not been exercised
+against that brokerage in this project's tests. None has been exercised against a live account by
+this project: start with OANDA's practice account and `EXECUTION_APPROVAL_MODE=approve_each`.
 
-### Legend
+Live orders go out only with `PAPER_MODE=false` and `LIVE_TRADING_ENABLED=true`, through
+`place_market_order` / `place_limit_order` (OANDA) or `place_forex_order` / `place_stock_order`
+(`exchange`, default `oanda`). Every live order passes the Risk Guardian (sized by USD notional against
+the brokerage's reported equity), the market guard, the kill switch and the live policy
+(`ALLOW_EXCHANGES`, `ALLOW_BROKERAGE_SYMBOLS`, `MAX_BROKERAGE_ORDER_AMOUNT`) first. Paper mode
+never contacts a brokerage: orders fill in the local paper FX account.
 
-- **Supported**: expected to work reliably; covered by unit tests where possible.
-- **Experimental**: best-effort; exchange-specific quirks likely.
-- **N/A**: not implemented.
+### Market data
+Rates and candles come from **yfinance** (Yahoo), not from the brokerage (`docs/MARKETDATA.md`).
+No brokerage key is needed for market data.
 
-### Public market data
+---
 
-ReadyTrader-Crypto can fetch public data via:
+## Capability matrix
 
-- **CCXT REST** (broad exchange coverage; configured via `MARKETDATA_EXCHANGES`)
-- **Public websocket tickers (opt-in)**: Binance / Coinbase / Kraken (see `start_marketdata_ws`)
+| `exchange` | Currency pairs | Market / limit orders | Account equity (for sizing) | Keys (env) | Status |
+|-----------|------|--------------|--------------|----------------|-------|
+| `oanda` (default) | Yes | Yes (both fill-or-kill: a limit is a market order with a `priceBound`) | Yes (account NAV) | `OANDA_API_KEY`, `OANDA_ACCOUNT_ID`; practice API unless `OANDA_ENVIRONMENT=live` | Supported |
+| `ibkr`, `alpaca`, `tradier`, `schwab`, `etrade`, `robinhood` | No | Stocks only (the IBKR connector builds stock contracts) | Yes | see `env.example` (Alpaca paper, Tradier sandbox, TWS paper port by default) | Inherited from ReadyTrader-Stocks |
 
-### Private account/order updates
+Notes for OANDA:
+- Units are whole units of the base currency; a fractional amount is truncated.
+- Every order is fill-or-kill: it fills now or OANDA cancels it (the tool then answers
+  `execution_error` with OANDA's reason, e.g. `BOUNDS_VIOLATION` for a limit the market is beyond).
+  A limit order is a market order whose `priceBound` is the limit: the worst price it may fill at.
+  Nothing rests at OANDA, because the Risk Guardian judges an order against the positions at the
+  time it is checked; a resting order could fill later, past the kill switch and every check.
+- Orders are sent with `positionFill: REDUCE_FIRST`, netting against the open position as the
+  Risk Guardian sizes it. An account that cannot net (some hedging accounts) rejects the order, and
+  nothing trades.
+- Sizing reads the account's NAV as reported, in the account's currency. The Risk Guardian compares
+  it with the order's USD notional, so a non-USD account is sized approximately.
 
-ReadyTrader-Crypto supports:
+**Test the live path without real money:** with `PAPER_MODE=false` and `LIVE_TRADING_ENABLED=true`,
+OANDA orders go to OANDA's practice (demo) API until `OANDA_ENVIRONMENT=live`.
 
-- **Binance user stream (websocket)**: best-effort private updates for spot + swap
-- **Polling fallback (Phase 2)** for other exchanges: periodically fetch open orders and emit changes (not realtime)
+---
 
-______________________________________________________________________
+## What the server does not do
 
-## Capability matrix (high level)
-
-| Exchange | Spot (CEX tools) | Swap/Futures (CEX tools) | Public WS ticker | Private updates | Notes |
-|---|---|---:|---:|---:|---|
-| **Binance** | Supported | Supported (swap) / Experimental (future) | Supported | Supported (WS) | Private WS uses listenKey; opt-in. |
-| **Coinbase** | Supported | N/A | Supported | Experimental (poll) | Private updates via poll fallback. |
-| **Kraken** | Supported | Experimental | Supported | Experimental (poll) | Private updates via poll fallback. |
-| **Bybit** | Experimental | Experimental | N/A (REST only) | Experimental (poll) | CCXT REST only in this repo. |
-| **OKX** | Experimental | Experimental | N/A (REST only) | Experimental (poll) | CCXT REST only in this repo. |
-| **KuCoin** | Experimental | Experimental | N/A (REST only) | Experimental (poll) | CCXT REST only in this repo. |
-
-______________________________________________________________________
-
-## Tool coverage (CEX)
-
-### Core execution
-
-- `place_cex_order(...)`: Supported (spot widely; derivatives depend on exchange + `market_type`)
-- `cancel_cex_order(...)`: Supported
-- `get_cex_order(...)`: Supported
-- `wait_for_cex_order(...)`: Supported (polling helper; useful even without private WS)
-
-### Account and lifecycle
-
-- `get_cex_balance(...)`: Supported (auth required)
-- `list_cex_open_orders(...)`: Supported (auth required)
-- `list_cex_orders(...)`: Supported (auth required)
-- `get_cex_my_trades(...)`: Supported (auth required)
-- `cancel_all_cex_orders(...)`: Capability-gated (`cancelAllOrders`)
-- `replace_cex_order(...)`: Capability-gated (`editOrder`)
-
-______________________________________________________________________
-
-## Operator notes
-
-### Market type (spot/swap/future)
-
-ReadyTrader-Crypto uses `market_type` to configure CCXT defaultType. Exchanges vary; if you see symbol mismatches, use `get_cex_capabilities(exchange, symbol, market_type)` to inspect the resolved symbol/market metadata.
-
-### Private updates (poll fallback)
-
-For exchanges without private websocket support in this repo:
-
-- `start_cex_private_ws(exchange=..., market_type=...)` starts a **poller** (not realtime).
-- Tune with: `CEX_PRIVATE_POLL_INTERVAL_SEC` (default 2.0 seconds).
-- Polling is subject to exchange rate limits; use sparingly and prefer `wait_for_cex_order(...)` for one-off waits.
+- Cancel, amend or list brokerage orders, or list positions: manage those with the brokerage.
+- Count open orders. At the stock brokerages a limit order can rest (Alpaca `GTC`, Tradier `day`);
+  the Risk Guardian sizes each order against the positions at the time it is checked, not against
+  open orders, and the kill switch does not cancel them: cancel them at the brokerage.
+- Close positions while `TRADING_HALTED` is set: the kill switch refuses closing orders too; flatten
+  on the OANDA platform (or the brokerage's own).
+- Stream private order updates: `start_brokerage_private_ws` answers `not_implemented`.
+- Show the live account in the API (`/api/portfolio` is paper-only).

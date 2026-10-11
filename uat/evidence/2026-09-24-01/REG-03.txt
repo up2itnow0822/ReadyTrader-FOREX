@@ -1,0 +1,19 @@
+$ echo '--- regression sweep after the XR fixes (code at 6de3f123), BE-05:'; cat /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/sweep_fx3/BE-05.txt | cut -c1-260; echo '--- IN-04 (OANDA practice API, bogus token):'; cat /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/sweep_fx3/IN-04.txt | cut -c1-260
+# at 2026-09-25T11:02:01+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+--- regression sweep after the XR fixes (code at 6de3f123), BE-05:
+=== sizing: a 4,000-unit USDJPY BUY (notional $4,000 = 4% of a $100k account)
+CALL deposit_paper_funds {"asset": "USD", "amount": 100000} -> { "data": { "account": { "cash_usd": 100000.0, "equity_usd": 100000.0, "free_margin_usd": 100000.0, "leverage": 30.0, "margin_used_usd": 0.0, "net_deposits_usd": 100000.0, "positions": [], "unprice
+CALL place_forex_order {"symbol": "USDJPY", "side": "buy", "amount": 4000, "order_type": "limit", "price": 159} -> { "data": { "account": { "cash_usd": 100000.0, "equity_usd": 100000.0, "free_margin_usd": 99866.67, "leverage": 30.0, "margin_used_usd": 133.33, 
+=== live mode, LIVE_TRADING_ENABLED=false (no keys)
+CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": 1000} -> { "error": { "code": "brokerage_not_configured", "data": {}, "message": "oanda keys are missing: no live order was sent." }, "ok": false }
+=== live mode, LIVE_TRADING_ENABLED=true, TRADING_HALTED=true (no keys)
+CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": 1000} -> { "error": { "code": "brokerage_not_configured", "data": {}, "message": "oanda keys are missing: no live order was sent." }, "ok": false }
+CALL start_brokerage_private_ws {"exchange": "oanda", "market_type": "spot"} -> { "error": { "code": "not_implemented", "data": {}, "message": "Private oanda streams are not implemented; poll the brokerage instead." }, "ok": false }
+--- IN-04 (OANDA practice API, bogus token):
+practice API reachable: 401
+CALL place_forex_order {"symbol": "EURUSD", "side": "buy", "amount": 1000} -> { "error": { "code": "risk_blocked", "data": { "exposure_added_units": 1000.0, "inactive_rules": { "daily_loss_limit": "a live brokerage account has no loss history here, so this rul
+CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": 1000} -> { "error": { "code": "risk_blocked", "data": { "exposure_added_units": 1000.0, "inactive_rules": { "daily_loss_limit": "a live brokerage account has no loss history here, so this ru
+
+
+exit=0

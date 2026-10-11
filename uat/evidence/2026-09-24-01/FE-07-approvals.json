@@ -1,0 +1,18 @@
+{
+  "url": "http://localhost:3000/",
+  "final_url": "http://localhost:3000/",
+  "title": "ReadyTrader | AI Forex Trading",
+  "started_at": "2026-09-24T12:54:24+0000",
+  "viewport": "1280x800",
+  "actions": [],
+  "console_errors": [],
+  "console_warnings": [],
+  "page_errors": [],
+  "failed_requests": [],
+  "aborted_requests": [],
+  "http_errors": [],
+  "assertions": [],
+  "load_ok": true,
+  "ok": true,
+  "reason": []
+}

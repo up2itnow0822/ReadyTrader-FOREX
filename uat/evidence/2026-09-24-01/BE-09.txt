@@ -1,0 +1,17 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_api.sh
+# at 2026-09-24T11:01:11+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== python app/api_server.py (README: api_server.py)
+    from app.core.config import settings
+ModuleNotFoundError: No module named 'app'
+=== python -m app.api_server, MCP proposal (approve_each, shared EXECUTION_DB_PATH), approval through the API
+CALL deposit_paper_funds {"asset": "USD", "amount": 25000} -> { "data": { "message": "Deposited 25000.0 USD. New Balance: 25000.0" }, "ok": true }
+CALL place_limit_order {"symbol": "EURUSD", "side": "buy", "amount": 1000, "price": 1.2} -> { "data": { "confirm_token": "820d86e95d61c4df686ab48cabf6708f", "message": "Order for 1000.0 EURUSD (buy) r
+API pending: {"pending":[]}
+API approve: {"detail":"Unknown request_id"} HTTP 400
+API portfolio (the MCP account holds 25,000 USD): {"balances":{"balance":100000.0,"equity":100000.0,"margin_used":0.0,"free_margin":100000.0,"cash":100000.0,"buying_power":3000000.0},"positions":[],"metrics":{"equity":100000.0,"margin_level_pct":0.0}}
+CORS for Origin https://evil.example: access-control-allow-origin: *
+cancel with a guessed token: {"ok":false}
+
+
+exit=0

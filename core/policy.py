@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set
@@ -10,6 +11,10 @@ class PolicyError(Exception):
     code: str
     message: str
     data: Dict[str, Any]
+
+
+def _symbol_key(symbol: str) -> str:
+    return symbol.strip().lower().replace("/", "").replace("_", "").replace("-", "")
 
 
 def _parse_csv_set(value: Optional[str]) -> Set[str]:
@@ -26,6 +31,26 @@ def _env_float(name: str, default: Optional[float] = None) -> Optional[float]:
         return float(raw)
     except ValueError:
         return default
+
+
+def _env_limit(name: str) -> Optional[float]:
+    """An operator limit from the environment: unset or empty means no limit. A value that is not a
+    finite number ("1,000", "$500", "1O") refuses every live order until it is fixed, because a limit
+    the operator set must never silently disappear."""
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return None
+    try:
+        value = float(raw)
+    except ValueError:
+        value = math.nan
+    if not math.isfinite(value):
+        raise PolicyError(
+            code="invalid_policy_config",
+            message=f"{name}={raw!r} is not a number, so no live order is sent until it is fixed or unset.",
+            data={name.lower(): raw},
+        )
+    return value
 
 
 def _parse_int_set(value: Optional[str]) -> Set[int]:
@@ -78,12 +103,14 @@ class PolicyEngine:
         if not insight_id:
             return 0.0
 
-        sym = symbol.strip().upper()
+        from intelligence.insights import insight_key
+
+        sym = insight_key(symbol)
         for ins in insights:
             # Note: ins is a MarketInsight-like object (or dict from vars(ins))
             ins_id = getattr(ins, "insight_id", None) or ins.get("insight_id")
             ins_sym = getattr(ins, "symbol", None) or ins.get("symbol")
-            if ins_id == insight_id and ins_sym == sym:
+            if ins_id == insight_id and insight_key(ins_sym or "") == sym:
                 conf = getattr(ins, "confidence", 0.0) or ins.get("confidence", 0.0)
                 return float(conf)
 
@@ -325,8 +352,9 @@ class PolicyEngine:
                 data={"exchange": exchange_id, "allow_exchanges": sorted(allow_exchanges)},
             )
 
-        allow_symbols = _parse_csv_set(os.getenv("ALLOW_BROKERAGE_SYMBOLS"))
-        if allow_symbols and sym.lower() not in allow_symbols:
+        # A pair may be written EUR/USD, EUR_USD, eur-usd or EURUSD, in the allowlist and in the order.
+        allow_symbols = {_symbol_key(v) for v in _parse_csv_set(os.getenv("ALLOW_BROKERAGE_SYMBOLS"))}
+        if allow_symbols and _symbol_key(sym) not in allow_symbols:
             raise PolicyError(
                 code="symbol_not_allowed",
                 message=f"Symbol '{symbol}' is not allowlisted for Brokerage.",
@@ -354,7 +382,7 @@ class PolicyEngine:
         if ot == "limit" and (price is None or price <= 0):
             raise PolicyError("invalid_price", "price must be provided for limit orders and be > 0", {"price": price})
 
-        max_amt = (overrides or {}).get("MAX_BROKERAGE_ORDER_AMOUNT", _env_float("MAX_BROKERAGE_ORDER_AMOUNT", None))
+        max_amt = (overrides or {}).get("MAX_BROKERAGE_ORDER_AMOUNT", _env_limit("MAX_BROKERAGE_ORDER_AMOUNT"))
         if max_amt is not None and amount > max_amt:
             raise PolicyError(
                 code="order_amount_too_large",

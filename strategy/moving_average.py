@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict
 
 import pandas as pd
+import pandas_ta  # noqa: F401  (registers the DataFrame.ta accessor used below)
 
 from app.core.container import global_container
 

@@ -1,0 +1,22 @@
+$ .venv/bin/python -W ignore /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_nan_probe.py 2>/dev/null; echo '--- the order path already refuses a non-finite rate (core/fx_account.py):'; grep -n 'isfinite(price)' core/fx_account.py
+# at 2026-09-26T00:19:38+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+provider fetch_ticker last: nan
+provider fetch_ohlcv closes: [1.1392, nan]
+get_stock_price tool -> {
+  "data": {
+    "ask": NaN,
+    "bid": NaN,
+    "price": NaN,
+    "source": "yfinance",
+    "symbol": "EURUSD"
+  },
+  "ok": true
+}
+--- the order path already refuses a non-finite rate (core/fx_account.py):
+75:    if not (math.isfinite(price) and price > 0):
+129:            if math.isfinite(price) and price > 0:
+249:        if not (math.isfinite(amount) and amount > 0 and math.isfinite(price) and price > 0):
+
+
+exit=0

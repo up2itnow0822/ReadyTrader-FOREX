@@ -1,0 +1,83 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_sweep_report3.sh
+# at 2026-09-25T11:03:04+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+BE-01 exit=0 BE-05 exit=0 BE-09 exit=0 BE-13 exit=0 IN-02 exit=0 IN-01 exit=0 CF-01 exit=0 CF-02 exit=0 FE-02 exit=0 CF-03 exit=0 CF-04 exit=0 BE-22 exit=0 CF-05 exit=0 CF-06 exit=0 BE-23 exit=0 CL-01 exit=0 CL-02 exit=0 DOC-01 exit=0 BE-24 exit=0 DOC-02 exit=0 BE-25 exit=0 DOC-04 exit=0 ME-02 exit=0 FE-05 exit=0 IN-04 exit=0 
+BE-01: 10 lines differ
+BE-05: 6 lines differ
+BE-09: 4 lines differ
+BE-13: 0 lines differ
+BE-22: 2 lines differ
+BE-23: 2 lines differ
+BE-24: 0 lines differ
+BE-25: 0 lines differ
+CF-01: 2 lines differ
+CF-02: 0 lines differ
+CF-03: 0 lines differ
+CF-04: 0 lines differ
+CF-05: 0 lines differ
+CF-06: 0 lines differ
+CL-01: 2 lines differ
+CL-02: 0 lines differ
+DOC-01: 4 lines differ
+DOC-02: 6 lines differ
+DOC-04: 0 lines differ
+FE-02: 0 lines differ
+FE-05: 0 lines differ
+IN-01: 2 lines differ
+IN-02: 8 lines differ
+IN-04: 4 lines differ
+ME-02: 0 lines differ
+--- every difference, first lines (before '<', after '>'):
+[BE-01]
+< CALL deposit_paper_funds {"asset": "USD", "amount": N} -> { "data": { "account": { "cash_usd": N, "equity_usd": N, "free_margin_usd": N, "leverage": N, "margin_used_usd
+< CALL validate_trade_risk {"side": "buy", "symbol": "EURUSD", "amount_usd": N, "portfolio_value": N} -> { "data": { "amount_usd": N, "inactive_rules": { "news_guard": "g
+< CALL place_market_order {"symbol": "EURUSD", "side": "buy", "amount": N} -> { "data": { "account": { "cash_usd": N, "equity_usd": N, "free_margin_usd": N, "leverage": N
+< CALL place_forex_order {"symbol": "USDJPY", "side": "buy", "amount": N} -> { "data": { "account": { "cash_usd": N, "equity_usd": N, "free_margin_usd": N, "leverage": N,
+[BE-05]
+< CALL place_forex_order {"symbol": "USDJPY", "side": "buy", "amount": N, "order_type": "limit", "price": N} -> { "data": { "account": { "cash_usd": N, "equity_usd": N, "
+> CALL place_forex_order {"symbol": "USDJPY", "side": "buy", "amount": N, "order_type": "limit", "price": N} -> { "data": { "account": { "cash_usd": N, "equity_usd": N, "
+< CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": N} -> { "error": { "code": "live_trading_disabled", "data": {}, "message": "PAPER_MODE is false bu
+> CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": N} -> { "error": { "code": "brokerage_not_configured", "data": {}, "message": "oanda keys are miss
+[BE-09]
+< API pending: {"pending":[{"request_id":"bNbNeNeNcNdb","kind":"stock_order","created_at":N,"expires_at":N}]}
+> API pending: {"pending":[{"request_id":"NaeNdNaeNaNebNdf","kind":"stock_order","created_at":N,"expires_at":N,"order":{"symbol":"EURUSD","side":"buy","amount":N,"order_t
+< API portfolio (the MCP account holds N,N USD): {"balances":{"USD":N,"EURUSD":N},"positions":[{"symbol":"EURUSD","qty":N,"avg_price":N,"mark":N,"unrealized_usd":N,"margi
+> API portfolio (the MCP account holds N,N USD): {"balances":{"USD":N,"EURUSD":N},"positions":[{"symbol":"EURUSD","qty":N,"avg_price":N,"mark":N,"unrealized_usd":N,"margi
+[BE-22]
+< CALL place_forex_order {"symbol": "EURUSD", "side": "buy", "amount": N, "exchange": "oanda"} -> { "error": { "code": "risk_blocked", "data": { "inactive_rules": { "news
+> CALL place_forex_order {"symbol": "EURUSD", "side": "buy", "amount": N, "exchange": "oanda"} -> { "error": { "code": "brokerage_not_configured", "data": {}, "message": 
+[BE-23]
+< GET /api/portfolio                                         -> N {"balances":{"USD":N},"positions":[],"metrics":{"equity":N,"cash":N,"unrealized_pnl":N,"margin_used":N,"
+> GET /api/portfolio                                         -> N {"balances":{"USD":N},"positions":[],"metrics":{"equity":N,"cash":N,"unrealized_pnl":N,"margin_used":N,"
+[CF-01]
+< MISSING from example: ALLOW_BROKERAGE_MARKET_TYPES ALLOW_CHAINS ALLOW_ROUTERS ALLOW_SIGNER_ADDRESSES ALLOW_SIGN_CHAIN_IDS ALLOW_SIGN_TO_ADDRESSES ALLOW_TOKENS ALLOW_TO_
+> MISSING from example: ALLOW_CHAINS ALLOW_ROUTERS ALLOW_SIGNER_ADDRESSES ALLOW_SIGN_CHAIN_IDS ALLOW_SIGN_TO_ADDRESSES ALLOW_TOKENS ALLOW_TO_ADDRESSES DISALLOW_SIGN_CONTR
+[CL-01]
+<   [✓] Economic calendar (get_economic_calendar) reachable.
+>   [?] Economic calendar (get_economic_calendar) returned status N.
+[DOC-01]
+< type: stdio | config keys: PAPER_MODE, LIVE_TRADING_ENABLED, TRADING_HALTED, EXECUTION_APPROVAL_MODE, MAX_BROKERAGE_ORDER_AMOUNT, ALLOW_BROKERAGE_SYMBOLS, OANDA_API_KEY
+> type: stdio | config keys: PAPER_MODE, LIVE_TRADING_ENABLED, TRADING_HALTED, MAX_BROKERAGE_ORDER_AMOUNT, ALLOW_BROKERAGE_SYMBOLS, OANDA_API_KEY, OANDA_ACCOUNT_ID, OANDA
+< commandFunction(exampleConfig) -> {"command": "python", "args": ["app/main.py"], "env": {"PAPER_MODE": "true", "EXECUTION_APPROVAL_MODE": "auto"}}
+> commandFunction(exampleConfig) -> {"command": "python", "args": ["app/main.py"], "env": {"EXECUTION_APPROVAL_MODE": "auto", "PAPER_MODE": "true"}}
+[DOC-02]
+<         N MB  frontend/
+<         N MB  marketdata/
+>         N MB  marketdata/
+>         N MB  .pytest_cache/
+[IN-01]
+< CALL get_market_sentiment {} -> { "data": { "sentiment": "Forex Sentiment:\nDXY Trend (Nd): Bullish (N%). Last: N\nHigh-impact economic events, rest of this week (Forex
+> CALL get_market_sentiment {} -> { "data": { "sentiment": "Forex Sentiment:\nDXY Trend (Nd): Bullish (N%). Last: N\nEconomic Calendar unavailable: could not read the For
+[IN-02]
+< get_economic_calendar() -> High-impact economic events, rest of this week (ForexFactory, read Thu N:N UTC; times UTC; now Thu N:N):
+< - Thu N Sep N:N (today) AUD: Employment Change (forecast NK, previous -NK)
+< - Thu N Sep N:N (today) AUD: Unemployment Rate (forecast N%, previous N%)
+< - Thu N Sep N:N (today) CHF: SNB Monetary Policy Assessment
+[IN-04]
+< CALL place_forex_order {"symbol": "EURUSD", "side": "buy", "amount": N} -> { "error": { "code": "risk_blocked", "data": { "inactive_rules": { "news_guard": "get_news_st
+< CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": N} -> { "error": { "code": "execution_error", "data": {}, "message": "OANDA order failure: HTTP N:
+> CALL place_forex_order {"symbol": "EURUSD", "side": "buy", "amount": N} -> { "error": { "code": "risk_blocked", "data": { "exposure_added_units": N, "inactive_rules": {
+> CALL place_forex_order {"symbol": "EURUSD", "side": "sell", "amount": N} -> { "error": { "code": "risk_blocked", "data": { "exposure_added_units": N, "inactive_rules": 
+
+
+exit=0

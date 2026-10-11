@@ -1,0 +1,10 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review3_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p06_halt_approval.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|"event"'
+# at 2026-09-25T11:37:51+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+proposal: pending_approval
+MCP order now      : trading_halted
+approval while halted: 409 trading_halted | 
+brokerage called during the halted approval: [] | orders sent: 0
+
+
+exit=0

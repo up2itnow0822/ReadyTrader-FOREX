@@ -1,0 +1,18 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_fe_more.sh FE-05-retest
+# at 2026-09-24T12:19:46+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== API stopped: the page must say so (not spin)
+snap exit=1 (failed requests to the stopped API are expected)
+assertions [('not reachable', True)]
+The API is not reachable at http://localhost:8000. Start it with: python app/api_server.py
+0
+TOOLS 29: analyze_social_sentiment, deposit_paper_funds, fetch_custom_feed, fetch_financia
+CALL deposit_paper_funds {"asset": "USD", "amount": 25000} -> { "data": { "account": { "ca
+CALL place_market_order {"symbol": "EURUSD", "side": "buy", "amount": 1000} -> { "data": {
+CALL place_market_order {"symbol": "USDJPY", "side": "sell", "amount": 1000} -> { "data": 
+=== phone width 390x844 with two open positions
+snap exit=0
+scrollWidth 390 clientWidth 390
+
+
+exit=0

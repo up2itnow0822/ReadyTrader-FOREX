@@ -1,0 +1,15 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_approval_mode.sh
+# at 2026-09-24T11:04:54+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+EXECUTION_APPROVAL_MODE=[approve_each]
+CALL place_limit_order {"symbol": "EURUSD", "side": "buy", "amount": 100, "price": 1.2} -> { "data": { "confirm_token": "579e8b0cd870f0682801a8ed4f82885c", "message": "Order for 100.0 EURUSD (buy) requires manual confirmation.", "order_details": { "amount": 100.0, "exchange": "alpaca", "ord
+EXECUTION_APPROVAL_MODE=[approve_each  # comment]
+CALL place_limit_order {"symbol": "EURUSD", "side": "buy", "amount": 100, "price": 1.2} -> { "data": { "mode": "paper", "result": "Paper Trade Executed: BUY 100.0 EURUSD @ 1.2. Value: 120.0 USD. Rationale: stock_order_paper", "venue": "brokerage" }, "ok": true }
+EXECUTION_APPROVAL_MODE=[approve-each]
+CALL place_limit_order {"symbol": "EURUSD", "side": "buy", "amount": 100, "price": 1.2} -> { "data": { "mode": "paper", "result": "Paper Trade Executed: BUY 100.0 EURUSD @ 1.2. Value: 120.0 USD. Rationale: stock_order_paper", "venue": "brokerage" }, "ok": true }
+PAPER_MODE=true -> settings.PAPER_MODE=True
+PAPER_MODE=1 -> settings.PAPER_MODE=False
+PAPER_MODE=yes -> settings.PAPER_MODE=False
+
+
+exit=0

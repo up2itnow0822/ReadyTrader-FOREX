@@ -6,6 +6,8 @@
         "run",
         "-i",
         "--rm",
+        "-v",
+        "readytrader-forex-data:/app/data",
         "-e",
         "PAPER_MODE=true",
         "readytrader-forex"

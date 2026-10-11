@@ -1,0 +1,12 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review3_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p01_cors_401.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|"event"'
+# at 2026-09-25T11:37:33+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+CORS_ORIGINS: ['http://localhost:3000', 'http://127.0.0.1:3000']
+middleware order (outermost first): ['CORSMiddleware', 'BaseHTTPMiddleware']
+no token     : 401 ACAO = http://localhost:3000
+with token   : 200 ACAO = http://localhost:3000
+pending, none: 401 ACAO = http://localhost:3000
+500 path     : 500 ACAO = http://localhost:3000 {'detail': {'code': 'internal_error', 'message': 'Internal error; see the API log for request 8303f653-04bd-407e-8bf5-5b2e5f907d6c.'}}
+
+
+exit=0

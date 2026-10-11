@@ -1,0 +1,16 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX && .venv/bin/python -W ignore /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_calendar2.py 2>&1 | grep -v Warning
+# at 2026-09-24T11:31:41+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+the XML feed the tool used to read: HTTP 403 | entries: 0
+get_economic_calendar() -> High-impact economic events, rest of this week (ForexFactory, read Thu 11:31 UTC; times UTC; now Thu 11:31):
+- Thu 24 Sep 01:30 (today) AUD: Employment Change (forecast 21.5K, previous -15.8K)
+- Thu 24 Sep 01:30 (today) AUD: Unemployment Rate (forecast 4.5%, previous 4.5%)
+- Thu 24 Sep 07:30 (today) CHF: SNB Monetary Policy Assessment
+- Thu 24 Sep 07:30 (today) CHF: SNB Policy Rate (forecast 0.00%, previous 0.00%)
+- Thu 24 Sep 08:00 (today) CHF: SNB Press Conference
+- Fri 25 Sep 09:15 GBP: BOE Gov Bailey Speaks
+events in the read: 80; high impact: 7
+second call (cached, no new request) -> High-impact economic events, rest of this week (ForexFactory, read Thu 11:31 UTC; times UTC; now Thu 11:31):
+
+
+exit=0

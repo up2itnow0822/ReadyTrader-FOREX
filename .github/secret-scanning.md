@@ -4,7 +4,7 @@ ReadyTrader is capable of live trading. Treat secrets as production-grade:
 
 - never commit `.env` files
 - do not store raw private keys in repo
-- prefer keystore or remote signer
+- give brokerage tokens trading rights only (no withdrawals)
 
 ### Recommended GitHub settings (repo-level)
 

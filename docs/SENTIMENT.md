@@ -101,8 +101,8 @@ Shipping a mirror of the crypto scorer here would have installed a gate that nev
 - **The absence of a measurement is visible.** Every verdict carries a `sentiment` block whose `source` is `unmeasured` or `agent_supplied` — never a measurement by this server — plus a `hint` saying what to do about it.
 - **The agent can supply its own reading.** `validate_trade_risk(..., sentiment_score=...)` and every order entry point accept a score on `[-1, +1]`. You are an LLM reading the actual posts, which is a far better judge of them than any word list, and the response records that the judgement was yours.
 
-### The durable fix
+### The durable fix (done)
 
-Drive the Falling Knife rule from **price and volume**, which this repo already fetches (`fetch_ohlcv`, `intelligence/regime.py` computes ATR). A gap-down-plus-volume-spike test catches the feeds above directly, instead of inferring them from chatter. That is a larger change than repairing a broken scorer, and is deliberately left as follow-up rather than smuggled into this one.
+The Falling Knife rule is now also driven by **price**, which needs no sentiment at all. Every BUY now reads the pair's recent daily closes and is refused while it is still falling after a 5%+ drop, and every trade is halted while the day's move is more than 4.5x its 20-day norm. The thresholds were chosen on historical data and tested on instruments the choice never saw; see [FALLING_KNIFE.md](FALLING_KNIFE.md). Volume could not be used: the provider's FX daily bars carry no volume (on stocks, where it exists, a 2x volume condition barely changed the result), so the shipped rule uses closes only. The sentiment rule above still applies on top, when you supply a reading.
 
 The benchmark corpora used above are simulations, not market data. They are preserved outside the repo so that any future scorer can be compared against the same feeds.

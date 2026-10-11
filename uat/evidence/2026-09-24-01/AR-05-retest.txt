@@ -1,0 +1,18 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review3_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p04_twr_math.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|"event"' | grep S2; cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX; sed -n 73,78p RUNBOOK.md; grep -n -A2 'Loss limits (paper account only)' docs/THREAT_MODEL.md
+# at 2026-09-25T11:37:45+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+S2 Mon 23:00 check (loss made today)                       code: daily=-5.5000% dd=5.5000% maxdd=5.5000% | hand: daily -5.5% (halt Monday: right)
+S2 Tue 00:05 first check, no move since midnight           code: daily=-5.5000% dd=5.5000% maxdd=5.5000% | hand: since the day began: 0%
+S2 Tue 20:00, still no move                                code: daily=-5.5000% dd=5.5000% maxdd=5.5000% | hand: since the day began: 0%
+  - `Daily Loss Limit Hit` / `Max Drawdown` (paper account only): trading lost 5% today or is 10%
+    below its best level, measured on trading results (a deposit is neither a gain nor a loss, and
+    does not end a halt). "Today" starts from the account's last recorded value of the previous UTC
+    day (a trade, a deposit or the first check of a day records one), else its first value today: a
+    move made after a day's last record counts toward the next day's loss too, which errs toward
+    halting. Orders that add exposure (long or short) resume when the
+34:    - **Loss limits (paper account only)**: every order that adds exposure (long or short) is
+35-      refused after a 5% daily loss (from the account's last recorded value of the previous UTC
+36-      day) or a 10% drawdown, measured on trading results (deposits are
+
+
+exit=0

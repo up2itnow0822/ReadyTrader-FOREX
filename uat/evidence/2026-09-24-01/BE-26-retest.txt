@@ -1,0 +1,16 @@
+$ .venv/bin/python -W ignore /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_qa_exposure.py 2>&1 | grep -v 'Warning\|compatible\|from \|warnings.warn'
+# at 2026-09-24T13:03:03+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== A. build a 12,000 EUR long in three 4,000 buys, then close it in one SELL
+Paper Trade Executed: BUY 4000 EURUSD @ 1.10440. Realized P&
+Paper Trade Executed: BUY 4000 EURUSD @ 1.10440. Realized P&
+Paper Trade Executed: BUY 4000 EURUSD @ 1.10440. Realized P&
+close all: Paper Trade Executed: SELL 12000 EURUSD @ 1.10440. Realized 
+== B. EURUSD short built in 4,000 sells; EURUSD rises; cover with a BUY vs add with a SELL
+position: -40000.0
+metrics: {'equity': 88956.0, 'daily_pnl_pct': -0.11, 'drawdown_pct': 0.124, 'max_drawdown_pct': 0.124}
+BUY 3000 to reduce the short: Paper Trade Executed: BUY 3000 EURUSD @ 1.38050. Realized P&
+SELL 3000 to add to it:      risk_blocked: Max Drawdown Limit Hit (12.4%). Orders that add exposure are halted; orders that reduce or
+
+
+exit=0

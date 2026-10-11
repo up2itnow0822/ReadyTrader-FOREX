@@ -1,0 +1,15 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p7_docs.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/(1) live mode/,/(2)/p'; cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX; sed -n 37p README.md | cut -c1-300; sed -n 26,27p docs/THREAT_MODEL.md; sed -n 63p RUNBOOK.md; sed -n 23p docs/ERRORS.md
+# at 2026-09-24T21:16:39+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== (1) live mode: account equity fell 100,000 -> 80,000 today (-20%); BUY 1,000 GBPUSD
+  live pre_trade_check -> allowed: True | Trade looks safe.
+  (paper metrics are the only ones computed; live passes daily_loss=drawdown=0.0)
+== (2) smithery commandFunction: python app/main.py with each option as env
+3.  **Governance:** the Risk Guardian judges the part of the order that opens or adds to a position (an order that reduces or closes one is an exit), at its USD notional against your account: no more than 5% of the account per trade, nothing that adds exposure after a 5% daily loss or a 10% drawdown
+      account's equity, and every order that adds exposure (long or short) after a 5% daily loss or
+      a 10% drawdown; reducing or closing a position stays possible. An order that adds exposure and
+  - `Daily Loss Limit Hit` / `Max Drawdown`: the account lost 5% today or is 10% below its peak;
+  worth over 5% of equity, the 5% daily-loss or 10% drawdown limit (orders that add exposure), the
+
+
+exit=0

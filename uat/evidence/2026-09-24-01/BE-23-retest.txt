@@ -1,0 +1,16 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_api_edges.sh
+# at 2026-09-24T11:54:14+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+GET /api/health                                            -> 200 {"status":"ok","mode":"paper"}
+POST /api/approve-trade {}                                 -> 422 {"detail":[{"type":"missing","loc":["body","request_id"],"msg":"Field required","input":{}},{"type":"missing","loc":["body","confirm_token"],"msg":"Field required","input":{}},{"type":"missing","loc":["body","approve"],"
+POST /api/approve-trade not json                           -> 422 {"detail":[{"type":"json_invalid","loc":["body",0],"msg":"JSON decode error","input":{},"ctx":{"error":"Expecting value"}}]}
+POST /api/approve-trade {"request_id":123,"confirm_token":[],"approve":"maybe"} -> 422 {"detail":[{"type":"string_type","loc":["body","request_id"],"msg":"Input should be a valid string","input":123},{"type":"string_type","loc":["body","confirm_token"],"msg":"Input should be a valid string","input":[]},{"t
+POST /api/approve-trade {"request_id":"nope","confirm_token":"x","approve":true} -> 404 {"detail":"Unknown request_id"}
+POST /api/approve-trade {"request_id":"nope","confirm_token":"x","approve":false} -> 200 {"ok":false}
+GET /api/does-not-exist                                    -> 404 {"detail":"Not Found"}
+GET /api/pending-approvals                                 -> 200 {"pending":[]}
+GET /api/portfolio                                         -> 200 {"balances":{"USD":0.0},"positions":[],"metrics":{"equity":0.0,"cash":0.0,"unrealized_pnl":0.0,"margin_used":0.0,"free_margin":0.0,"leverage":30.0,"daily_pnl_pct":0.0,"drawdown_pct":0.0,"max_drawdown_pct":0.0}}
+--- tracebacks in the API log: 0
+
+
+exit=0

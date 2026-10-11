@@ -1,0 +1,13 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p5_api.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/security headers/,/price=NaN/p'; cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX; /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python -m pytest -p no:warnings -q tests/test_uat_review_2026_09_24.py -k 'request_id or own_time' 2>&1 | tail -2
+# at 2026-09-24T21:48:17+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== security headers / request id on a normal 200
+  GET /api/health 200 {'content-length': '30', 'content-type': 'application/json', 'access-control-expose-headers': 'x-request-id', 'access-control-allow-origin': 'http://localhost:3000', 'vary': 'Origin', 'x-content-type-options': 'nosniff', 'x-frame-options': 'DENY', 'referrer-policy': 'no-referrer', 'cache-control': 'no-store', 'x-request-id': 'ebf6344c-4d24-41ae-8b98-3353903f3362'}
+== two requests: request_id / ts_ms in the API's log lines
+  log: {'event': 'api_approval_risk_blocked', 'request_id': '68a6122d-0d63-4909-8e5a-1f7258b47741', 'ts_ms': 1790286499766}
+  log: {'event': 'api_approval_risk_blocked', 'request_id': '8ee50664-0c09-4e2f-ad6e-6826d6a84306', 'ts_ms': 1790286500878}
+== a proposal with price=NaN (market order; price is not validated) then the pending list
+..                                                                       [100%]
+
+
+exit=0

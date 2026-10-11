@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from common.switches import opt_in_switch_on
 from execution.base import IBrokerage
 
 # Conditional imports for optional dependencies
@@ -149,9 +150,10 @@ class EtradeBrokerage(IBrokerage):
         self.resource_owner_key = os.getenv("ETRADE_RESOURCE_OWNER_KEY")  # Access Token
         self.resource_owner_secret = os.getenv("ETRADE_RESOURCE_OWNER_SECRET")  # Access Secret
 
-        self.base_url = "https://api.etrade.com/v1/market"  # Prod
-        if os.getenv("ETRADE_SANDBOX") == "true":
-            self.base_url = "https://apisb.etrade.com/v1/market"
+        # ETRADE_SANDBOX=true (or 1, yes, on) sends every call, orders and balances alike, to the sandbox.
+        self.sandbox = opt_in_switch_on(os.getenv("ETRADE_SANDBOX"))
+        self.api_host = "https://apisb.etrade.com" if self.sandbox else "https://api.etrade.com"
+        self.base_url = f"{self.api_host}/v1/market"
 
         self._available = bool(self.consumer_key and self.consumer_secret and self.resource_owner_key and self.resource_owner_secret and _OAUTH_LIB_AVAILABLE)
 
@@ -201,9 +203,7 @@ class EtradeBrokerage(IBrokerage):
             payload["PlaceOrderRequest"]["Order"]["limitPrice"] = price
 
         # We need the URL for accounts
-        url = f"https://api.etrade.com/v1/accounts/{account_id_key}/orders/place.json"
-        if os.getenv("ETRADE_SANDBOX") == "true":
-            url = f"https://apisb.etrade.com/v1/accounts/{account_id_key}/orders/place.json"
+        url = f"{self.api_host}/v1/accounts/{account_id_key}/orders/place.json"
 
         try:
             resp = self.session.post(url, json=payload, headers={"Content-Type": "application/json"})
@@ -225,7 +225,7 @@ class EtradeBrokerage(IBrokerage):
             return {"equity": 0.0, "cash": 0.0}
 
         account_id_key = os.getenv("ETRADE_ACCOUNT_ID_KEY")
-        url = f"https://api.etrade.com/v1/accounts/{account_id_key}/balance.json"
+        url = f"{self.api_host}/v1/accounts/{account_id_key}/balance.json"
 
         try:
             resp = self.session.get(url, params={"instType": "BROKERAGE"})

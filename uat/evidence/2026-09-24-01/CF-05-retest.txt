@@ -1,0 +1,15 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_badnum.sh
+# at 2026-09-24T11:49:24+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+LEVERAGE=abc =>     raise ValueError(f"LEVERAGE must be a positive number, got {raw!r}") from None
+ValueError: LEVERAGE must be a positive number, got 'abc'
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+LEVERAGE=0 =>     raise ValueError(f"LEVERAGE must be a positive number, got {raw!r}")
+ValueError: LEVERAGE must be a positive number, got '0'
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+CIRCUIT_BREAKER_PCT=7% => CALL get_paper_account {} -> { "data": { "cash_usd": 0.0, "equity_usd": 0.0, "free_margin_usd": 0.0, "leverage": 30.0, "margin_used_usd": 0.0, "net_deposits_usd": 0.0, "positions": [], "unp
+RATE_LIMIT_DEFAULT_PER_MIN=lots => CALL get_paper_account {} -> { "data": { "cash_usd": 0.0, "equity_usd": 0.0, "free_margin_usd": 0.0, "leverage": 30.0, "margin_used_usd": 0.0, "net_deposits_usd": 0.0, "positions": [], "unp
+MARKETDATA_MAX_AGE_MS=30s => CALL get_paper_account {} -> { "data": { "cash_usd": 0.0, "equity_usd": 0.0, "free_margin_usd": 0.0, "leverage": 30.0, "margin_used_usd": 0.0, "net_deposits_usd": 0.0, "positions": [], "unp
+
+
+exit=0

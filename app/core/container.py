@@ -2,7 +2,7 @@ from app.core.config import settings
 from common.idempotency import IdempotencyStore
 from common.rate_limiter import FixedWindowRateLimiter
 from core.backtest import BacktestEngine
-from core.paper import PaperTradingEngine
+from core.fx_account import FxPaperAccount
 from core.policy import PolicyEngine
 from core.risk import RiskGuardian
 from execution.alpaca_service import AlpacaBrokerage
@@ -34,7 +34,8 @@ class Container:
         self.audit_log = AuditLog()
 
         # Core Engines
-        self.paper_engine = PaperTradingEngine() if settings.PAPER_MODE else None
+        # The paper FX account (core/fx_account.py), shared with the approval API through SQLite.
+        self.paper_engine = FxPaperAccount() if settings.PAPER_MODE else None
         self.backtest_engine = BacktestEngine()
         self.regime_detector = RegimeDetector()
         self.risk_guardian = RiskGuardian()
@@ -71,11 +72,6 @@ class Container:
         self.robinhood_brokerage = RobinhoodBrokerage()
         self.oanda_brokerage = OandaBrokerage()
 
-        # Forex Paper
-        from execution.forex_paper import ForexPaperBrokerage
-
-        self.forex_paper_brokerage = ForexPaperBrokerage(exchange_provider=self.exchange_provider)
-
         # Mapping for easy lookup
         self.brokerages = {
             "alpaca": self.alpaca_brokerage,
@@ -85,8 +81,9 @@ class Container:
             "etrade": self.etrade_brokerage,
             "robinhood": self.robinhood_brokerage,
             "oanda": self.oanda_brokerage,
-            "forex_paper": self.forex_paper_brokerage,
         }
+        # Paper trading is PAPER_MODE=true: orders fill in paper_engine (core/fx_account.py). No
+        # simulated venue is registered here, so a live order can only ever reach a real brokerage.
 
         self.learner = Learner(db_path=self.paper_engine.db_path) if settings.PAPER_MODE and self.paper_engine else None
 

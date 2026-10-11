@@ -1,0 +1,14 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p3_loss_limits_retest.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2\|│\|╭\|╰\|INFO     \|transport\|stdio' | sed -n '/^== (a)/,/^== (b)/p'
+# at 2026-09-24T21:46:39+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+== (a) lose 12%+ (recorded yesterday), then deposit a large amount
+  [after the loss] equity=87041.00 daily_pnl_pct=0.0000 drawdown_pct=0.1296
+  [after the loss] pre_trade_check BUY 1,000 GBPUSD -> allowed=False reason='Max Drawdown Limit Hit (13.0%). Orders that add exposure are halted; orders that reduce or'
+  deposit_paper_funds(USD, 1,000,000): {"ok": true}
+  [after the deposit] equity=1087041.00 daily_pnl_pct=0.0000 drawdown_pct=0.1296
+  [after the deposit] pre_trade_check BUY 1,000 GBPUSD -> allowed=False reason='Max Drawdown Limit Hit (13.0%). Orders that add exposure are halted; orders that reduce or'
+  place_market_order BUY 40,000 GBPUSD: {"ok": false, "code": "risk_blocked", "message": "Max Drawdown Limit Hit (13.0%). Orders that add exposure are halted; orders that reduce or close a position are allowed.", "notional_usd": 50000.0, "exposure_added_units": 40000.0, "position_units": 0.0}
+== (b) price moves after the last trade; no trade since
+
+
+exit=0

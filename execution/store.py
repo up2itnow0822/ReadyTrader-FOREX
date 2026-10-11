@@ -24,6 +24,8 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
+from common.paths import data_path, ensure_parent
+
 # Phase 2: Webhooks for notifications
 try:
     from observability.webhooks import WebhookManager
@@ -43,6 +45,14 @@ class ExecutionProposal:
     cancelled_at: Optional[float] = None
 
 
+
+# What an operator needs to see to decide on a proposal. The confirm_token is never listed.
+_SUMMARY_FIELDS = ("symbol", "side", "amount", "order_type", "price", "exchange", "rationale", "paper_mode")
+
+
+def _order_summary(payload: Dict[str, Any]) -> Dict[str, Any]:
+    return {k: payload.get(k) for k in _SUMMARY_FIELDS if k in (payload or {})}
+
 class ExecutionStore:
     """
     In-memory store for two-step execution proposals.
@@ -55,15 +65,18 @@ class ExecutionStore:
         self._items: Dict[str, ExecutionProposal] = {}
         self._conn: Optional[sqlite3.Connection] = None
         # Used to invalidate any persisted proposals across restarts.
-        self._session_id = secrets.token_hex(8)
+        # Scopes persisted proposals: a fresh id per process invalidates proposals across restarts.
+        # EXECUTION_SESSION_ID, set to the same value for the MCP server and the API server (with
+        # the same EXECUTION_DB_PATH), lets the API see and approve the MCP server's proposals.
+        self._session_id = (os.getenv("EXECUTION_SESSION_ID") or "").strip() or secrets.token_hex(8)
 
     def persistence_enabled(self) -> bool:
         return bool(self._db_path())
 
     def _db_path(self) -> str:
-        default = "data/execution.db"
+        default = data_path("execution.db")
         p = (os.getenv("READYTRADER_EXECUTION_DB_PATH") or os.getenv("EXECUTION_DB_PATH") or default).strip()
-        os.makedirs(os.path.dirname(p), exist_ok=True)
+        ensure_parent(p)
         return p
 
     def _get_conn(self) -> Optional[sqlite3.Connection]:
@@ -222,6 +235,7 @@ class ExecutionStore:
                         "kind": p.kind,
                         "created_at": p.created_at,
                         "expires_at": p.expires_at,
+                        "order": _order_summary(p.payload),
                     }
                 )
             # Optionally merge persisted proposals (same-session only) that aren't loaded yet.
@@ -229,30 +243,39 @@ class ExecutionStore:
             if conn is not None:
                 rows = conn.execute(
                     """
-                    SELECT request_id, kind, created_at, expires_at
+                    SELECT request_id, kind, created_at, expires_at, payload_json
                     FROM execution_proposals
                     WHERE session_id = ? AND confirmed_at IS NULL AND cancelled_at IS NULL AND expires_at > ?
                     """,
                     (self._session_id, float(now)),
                 ).fetchall()
                 seen = {p["request_id"] for p in pending}
-                for rid, kind, created_at, expires_at in rows:
+                for rid, kind, created_at, expires_at, payload_json in rows:
                     if str(rid) in seen:
                         continue
+                    try:
+                        payload = json.loads(payload_json or "{}")
+                    except ValueError:
+                        payload = {}
                     pending.append(
                         {
                             "request_id": str(rid),
                             "kind": str(kind),
                             "created_at": float(created_at),
                             "expires_at": float(expires_at),
+                            "order": _order_summary(payload),
                         }
                     )
             return {"pending": pending}
 
-    def cancel(self, request_id: str) -> bool:
+    def cancel(self, request_id: str, confirm_token: Optional[str] = None) -> bool:
+        """Cancel a pending proposal. When `confirm_token` is given (every API call gives one) it must
+        match, so knowing a request_id alone is not enough to cancel someone's proposal."""
         with self._lock:
             p = self._items.get(request_id) or self._load(request_id)
             if not p:
+                return False
+            if confirm_token is not None and not secrets.compare_digest(p.confirm_token, confirm_token):
                 return False
             if p.confirmed_at is not None:
                 return False

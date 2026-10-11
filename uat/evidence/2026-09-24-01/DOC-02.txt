@@ -1,0 +1,35 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_pack.sh
+# at 2026-09-24T12:03:14+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== docker build context under .dockerignore
+build context: 1207.2 MB
+      592.2 MB  frontend/
+      471.0 MB  .venv/
+      142.8 MB  .git/
+        0.4 MB  data/
+        0.3 MB  uat/
+        0.1 MB  core/
+        0.1 MB  artifacts/
+        0.1 MB  marketdata/
+would copy into the image: .venv/, .git/, data/, uat/, artifacts/
+=== docker daemon: not available here
+=== documented docker run lines (a --rm container without a volume loses the paper account on exit):
+README.md:108:docker run --rm -i readytrader-forex
+README.md:228:      - "run"
+README.md:251:        "run", 
+configs/agent_zero.mcp.yaml:5:      - "run"
+configs/claude_desktop.mcp-server-config.json:6:        "run",
+=== Dockerfile sidecar hint:
+28:# 'uvicorn api_server:app --host 0.0.0.0 --port 8000'
+=== docker-compose.sentinel.yml (the sentinel service it builds):
+2:  sentinel:
+6:    command: uvicorn sentinel.app:app --host 0.0.0.0 --port 8888
+8:      - SIGNER_TYPE=env_private_key
+9:      - PRIVATE_KEY=${PRIVATE_KEY}
+16:      - SIGNER_TYPE=remote
+17:      - SIGNER_REMOTE_URL=http://sentinel:8888
+19:      - sentinel
+ls: cannot access 'sentinel': No such file or directory
+
+
+exit=0

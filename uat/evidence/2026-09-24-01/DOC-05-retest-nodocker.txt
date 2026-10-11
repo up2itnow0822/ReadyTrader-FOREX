@@ -1,0 +1,13 @@
+$ echo 'README Without Docker: command = the checkout venv python, args = [<checkout>/app/main.py], settings in env'; bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/a0_manual_entry.sh paths2-readytrader_forex readytrader_forex /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX app/main.py get_stock_price '{"symbol": "EURUSD"}'
+# at 2026-09-26T02:17:49+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+README Without Docker: command = the checkout venv python, args = [<checkout>/app/main.py], settings in env
+External MCP Servers entry: {"readytrader_forex": {"type": "stdio", "command": "/tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python", "args": ["/tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/app/main.py"], "env": {"PAPER_MODE": "true", "READYTRADER_DATA_DIR": "<set>", "HTTPS_PROXY": "<set>", "NO_PROXY": "<set>", "SSL_CERT_FILE": "<set>", "REQUESTS_CA_BUNDLE": "<set>"}}}
+server: {'name': 'readytrader_forex', 'connected': True, 'error': '', 'tool_count': 29}
+29 tools from readytrader_forex: ['readytrader_forex.analyze_social_sentiment', 'readytrader_forex.deposit_paper_funds', 'readytrader_forex.fetch_custom_feed', 'readytrader_forex.fetch_financial_news', 'readytrader_forex.fetch_ohlcv', 'readytrader_forex.fetch_rss_news'] ...
+CALL readytrader_forex.get_stock_price {"symbol": "EURUSD"} -> isError=False {
+    "price": 1.139211654663086,
+  "ok": true
+
+
+exit=0

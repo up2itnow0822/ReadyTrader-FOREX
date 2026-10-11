@@ -1,226 +1,128 @@
 """
-Generate `docs/TOOLS.md` from the authoritative tool definitions in `app/tools/`.
+Generate `docs/TOOLS.md` from the tools the MCP server actually registers.
 
 Usage:
   python tools/generate_tool_docs.py
 
-This avoids documentation drift as MCP tools evolve.
+The catalog is read from the running server's tool list (an in-process MCP client), so a tool is
+documented exactly as a client sees it: its name, parameters with defaults, and description.
+tests/test_tool_docs.py fails when docs/TOOLS.md and the server disagree.
 """
 
 from __future__ import annotations
 
-import ast
+import asyncio
+import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOLS_DIR = ROOT / "app" / "tools"
 OUT = ROOT / "docs" / "TOOLS.md"
-
-
-def _is_mcp_tool_decorator(dec: ast.AST) -> bool:
-    # mcp.tool()
-    if (
-        isinstance(dec, ast.Call)
-        and isinstance(dec.func, ast.Attribute)
-        and isinstance(dec.func.value, ast.Name)
-        and dec.func.value.id == "mcp"
-        and dec.func.attr == "tool"
-    ):
-        return True
-
-    # @mcp.tool() without parentheses (less common in FastMCP but possible)
-    if isinstance(dec, ast.Attribute) and isinstance(dec.value, ast.Name) and dec.value.id == "mcp" and dec.attr == "tool":
-        return True
-
-    return False
-
-
-def _format_default(expr: ast.AST) -> str:
-    try:
-        v = ast.literal_eval(expr)
-        if isinstance(v, str):
-            return repr(v)
-        return str(v)
-    except Exception:
-        return "…"
-
-
-def _signature(fn: ast.FunctionDef) -> str:
-    args = fn.args
-    parts: list[str] = []
-
-    for a in args.posonlyargs:
-        parts.append(a.arg)
-    if args.posonlyargs:
-        parts.append("/")
-
-    for a in args.args:
-        parts.append(a.arg)
-
-    if args.vararg:
-        parts.append(f"*{args.vararg.arg}")
-
-    for a in args.kwonlyargs:
-        parts.append(a.arg)
-
-    if args.kwarg:
-        parts.append(f"**{args.kwarg.arg}")
-
-    defaults = list(args.defaults)
-    if defaults:
-        for i in range(1, len(defaults) + 1):
-            arg_name = args.args[-i].arg
-            try:
-                parts_index = parts.index(arg_name)
-                parts[parts_index] = f"{arg_name}={_format_default(defaults[-i])}"
-            except ValueError:
-                pass
-
-    for a, d in zip(args.kwonlyargs, args.kw_defaults):
-        if d is None:
-            continue
-        name = a.arg
-        try:
-            idx = parts.index(name)
-            parts[idx] = f"{name}={_format_default(d)}"
-        except ValueError:
-            pass
-
-    return f"{fn.name}({', '.join(parts)})"
-
 
 CATEGORY_ORDER: list[tuple[str, list[str]]] = [
     (
-        "Forex & Stock Execution",
+        "Trading & Paper Account",
         [
             "place_market_order",
             "place_limit_order",
             "place_forex_order",
             "place_stock_order",
-            "start_brokerage_private_ws",
+            "validate_trade_risk",
+            "get_paper_account",
             "deposit_paper_funds",
             "reset_paper_account",
+            "start_brokerage_private_ws",
         ],
     ),
     (
-        "Market Intelligence",
+        "Market Data",
+        ["get_stock_price", "get_multiple_prices", "fetch_ohlcv", "get_market_regime"],
+    ),
+    (
+        "News, Calendar & Sentiment",
         [
-            "get_market_sentiment",
-            "get_market_news",
-            "get_economic_calendar",
-            "get_forex_news",
             "get_forex_market_brief",
-            "get_social_sentiment",
-            "get_financial_news",
+            "get_economic_calendar",
+            "get_market_sentiment",
+            "get_forex_news",
+            "fetch_rss_news",
             "get_free_news",
+            "fetch_custom_feed",
+            "get_market_news",
+            "get_financial_news",
+            "fetch_financial_news",
+            "get_social_sentiment",
+            "analyze_social_sentiment",
         ],
     ),
     (
-        "Analytics & Research",
-        [
-            "get_stock_price",
-            "get_multiple_prices",
-            "get_market_regime",
-            "fetch_ohlcv",
-            "run_backtest_simulation",
-            "post_market_insight",
-            "get_latest_insights",
-        ],
+        "Research & Multi-Agent",
+        ["run_backtest_simulation", "run_synthetic_stress_test", "post_market_insight", "get_latest_insights"],
     ),
 ]
 
 
-def find_tools_in_tree(tree: ast.AST) -> dict[str, ast.FunctionDef]:
-    tools = {}
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef):
-            if any(_is_mcp_tool_decorator(d) for d in node.decorator_list):
-                tools[node.name] = node
-    return tools
+def _registered_tools() -> list[dict]:
+    """[{name, description, inputSchema}] exactly as an MCP client lists them."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from fastmcp import Client
+
+    from app.main import mcp
+
+    async def go():
+        async with Client(mcp) as client:
+            return [{"name": t.name, "description": t.description or "", "inputSchema": t.inputSchema or {}} for t in await client.list_tools()]
+
+    return asyncio.run(go())
+
+
+def _signature(tool: dict) -> str:
+    props = (tool["inputSchema"] or {}).get("properties", {})
+    parts = []
+    for name, spec in props.items():
+        parts.append(f"{name}={json.dumps(spec['default'])}" if "default" in spec else name)
+    return f"{tool['name']}({', '.join(parts)})"
+
+
+def render(tools: list[dict] | None = None) -> str:
+    """The catalog as it should read now (tests compare it with docs/TOOLS.md)."""
+    by_name = {t["name"]: t for t in (tools if tools is not None else _registered_tools())}
+    sections = [(title, [n for n in names if n in by_name]) for title, names in CATEGORY_ORDER]
+    listed = {n for _, names in sections for n in names}
+    other = sorted(set(by_name) - listed)
+    if other:
+        sections.append(("Other", other))
+
+    lines = [
+        "# ReadyTrader-FOREX MCP Tool Catalog",
+        "",
+        f"Generated by `python tools/generate_tool_docs.py` from the {len(by_name)} tools the MCP server registers.",
+        "Every tool answers JSON: `{\"ok\": true, \"data\": ...}` or",
+        "`{\"ok\": false, \"error\": {\"code\", \"message\", \"data\"}}` (codes: `docs/ERRORS.md`).",
+        "",
+    ]
+    for title, names in sections:
+        if not names:
+            continue
+        lines += [f"## {title}", "", "| Tool | Description |", "| :--- | :--- |"]
+        for name in names:
+            first = (by_name[name]["description"].strip().splitlines() or ["No description."])[0].strip()
+            lines.append(f"| [`{name}`](#{name}) | {first} |")  # GitHub keeps underscores in heading anchors
+        lines.append("")
+        for name in names:
+            tool = by_name[name]
+            lines += [f"### {name}", "", f"**Signature:** `{_signature(tool)}`", ""]
+            if tool["description"].strip():
+                lines += [f"```text\n{tool['description'].strip()}\n```", ""]
+            lines += ["---", ""]
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def main() -> int:
-    all_tools: dict[str, ast.FunctionDef] = {}
-
-    # Scan app/tools/*.py
-    for py_file in TOOLS_DIR.glob("*.py"):
-        if py_file.name == "__init__.py":
-            continue
-        tree = ast.parse(py_file.read_text(encoding="utf-8"))
-        all_tools.update(find_tools_in_tree(tree))
-
-    used: set[str] = set()
-    lines: list[str] = []
-
-    lines.append("# ReadyTrader-FOREX MCP Tool Catalog")
-    lines.append("")
-    lines.append("This file is automatically generated from the tool definitions in `app/tools/`.")
-    lines.append("")
-    lines.append("> [!TIP]")
-    lines.append("> AI agents can use these tools to gather intelligence, assess risk, and execute trades.")
-    lines.append("")
-
-    for section, names in CATEGORY_ORDER:
-        present = [n for n in names if n in all_tools]
-        if not present:
-            continue
-        used.update(present)
-        lines.append(f"## {section}")
-        lines.append("")
-        lines.append("| Tool Name | Description |")
-        lines.append("| :--- | :--- |")
-
-        for name in present:
-            fn = all_tools[name]
-            doc = (ast.get_docstring(fn) or "").strip()
-            first = doc.splitlines()[0].strip() if doc else "No description."
-            lines.append(f"| [`{fn.name}`](#{fn.name.replace('_', '-')}) | {first} |")
-        lines.append("")
-
-        for name in present:
-            fn = all_tools[name]
-            sig = _signature(fn)
-            doc = (ast.get_docstring(fn) or "").strip()
-            lines.append(f"### `{fn.name}`")
-            lines.append("")
-            lines.append(f"**Signature:** `{sig}`")
-            lines.append("")
-            if doc:
-                lines.append(f"```text\n{doc}\n```")
-            lines.append("")
-            lines.append("---")
-            lines.append("")
-
-    leftovers = sorted(set(all_tools) - used)
-    if leftovers:
-        lines.append("## Uncategorized")
-        lines.append("")
-        lines.append("| Tool Name | Description |")
-        lines.append("| :--- | :--- |")
-        for name in leftovers:
-            fn = all_tools[name]
-            doc = (ast.get_docstring(fn) or "").strip()
-            first = doc.splitlines()[0].strip() if doc else "No description."
-            lines.append(f"| [`{fn.name}`](#{fn.name.replace('_', '-')}) | {first} |")
-        lines.append("")
-
-        for name in leftovers:
-            fn = all_tools[name]
-            sig = _signature(fn)
-            doc = (ast.get_docstring(fn) or "").strip()
-            lines.append(f"### `{fn.name}`")
-            lines.append("")
-            lines.append(f"**Signature:** `{sig}`")
-            lines.append("")
-            if doc:
-                lines.append(f"```text\n{doc}\n```")
-            lines.append("")
-            lines.append("---")
-            lines.append("")
-
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-    print(f"Wrote {OUT.relative_to(ROOT)} ({len(all_tools)} tools)")
+    text = render()
+    OUT.write_text(text, encoding="utf-8")
+    print(f"Wrote {OUT.relative_to(ROOT)} ({text.count(chr(10) + '### ')} tools)")
     return 0
 
 

@@ -1,0 +1,183 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_doc_walk.sh
+# at 2026-09-24T11:58:23+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== doccheck (tool names, paths, links, anchors) over every Markdown doc
+CHANGELOG.md: tool not registered -> get_news_status
+CHANGELOG.md: tool not registered -> get_volatility_status
+CONTRIBUTING.md: broken link -> ../../issues/new
+README.md: anchor #-optional-web-ui not found
+README.md: path not found -> RELEASE_READINESS_CHECKLIST.md
+README.md: path not found -> agent.yaml
+README.md: path not found -> api_server.py
+README.md: path not found -> mcp-server-config.json
+README.md: tool not registered -> check_orders
+README.md: tool not registered -> get_forex_price
+README.md: tool not registered -> get_marketdata_capabilities
+README.md: tool not registered -> get_portfolio_balance
+README.md: tool not registered -> get_sentiment
+README.md: tool not registered -> reset_paper_wallet
+RUNBOOK.md: tool not registered -> get_cex_capabilities
+RUNBOOK.md: tool not registered -> get_health
+RUNBOOK.md: tool not registered -> get_marketdata_status
+RUNBOOK.md: tool not registered -> get_metrics_prometheus
+RUNBOOK.md: tool not registered -> get_metrics_snapshot
+RUNBOOK.md: tool not registered -> get_ticker
+RUNBOOK.md: tool not registered -> start_cex_private_ws
+RUNBOOK.md: tool not registered -> start_marketdata_ws
+docs/CUSTODY.md: tool not registered -> get_health
+docs/CUSTODY.md: tool not registered -> get_metrics_snapshot
+docs/ERRORS.md: broken link -> file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/README.md
+docs/ERRORS.md: broken link -> file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/docs/SENTIMENT.md
+docs/ERRORS.md: broken link -> file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/requirements.txt
+docs/ERRORS.md: broken link -> file:///Users/billwilson_home/Desktop/ReadyTrader-Crypto/tools/setup_wizard.py
+docs/ERRORS.md: path not found -> errors.py
+docs/ERRORS.md: tool not registered -> get_advanced_risk_disclosure
+docs/ERRORS.md: tool not registered -> get_risk_disclosure
+docs/ERRORS.md: tool not registered -> get_ticker
+docs/ERRORS.md: tool not registered -> start_marketdata_ws
+docs/ERRORS.md: tool not registered -> transfer_amount_too_large
+docs/EXCHANGES.md: tool not registered -> get_cex_balance
+docs/EXCHANGES.md: tool not registered -> get_cex_capabilities
+docs/EXCHANGES.md: tool not registered -> get_cex_my_trades
+docs/EXCHANGES.md: tool not registered -> get_cex_order
+docs/EXCHANGES.md: tool not registered -> place_cex_order
+docs/EXCHANGES.md: tool not registered -> start_cex_private_ws
+docs/EXCHANGES.md: tool not registered -> start_marketdata_ws
+docs/FALLING_KNIFE.md: tool not registered -> get_volatility_status
+docs/MARKETDATA.md: tool not registered -> get_ticker
+docs/POSITIONING.md: path not found -> RELEASE_READINESS_CHECKLIST.md
+docs/README.md: path not found -> ../RELEASE_READINESS_CHECKLIST.md
+docs/TOOLS.md: anchor #analyze-social-sentiment not found
+docs/TOOLS.md: anchor #deposit-paper-funds not found
+docs/TOOLS.md: anchor #fetch-custom-feed not found
+docs/TOOLS.md: anchor #fetch-financial-news not found
+docs/TOOLS.md: anchor #fetch-rss-news not found
+docs/TOOLS.md: anchor #get-economic-calendar not found
+docs/TOOLS.md: anchor #get-financial-news not found
+docs/TOOLS.md: anchor #get-forex-market-brief not found
+docs/TOOLS.md: anchor #get-forex-news not found
+docs/TOOLS.md: anchor #get-free-news not found
+docs/TOOLS.md: anchor #get-latest-insights not found
+docs/TOOLS.md: anchor #get-market-news not found
+docs/TOOLS.md: anchor #get-market-regime not found
+docs/TOOLS.md: anchor #get-market-sentiment not found
+docs/TOOLS.md: anchor #get-social-sentiment not found
+docs/TOOLS.md: anchor #post-market-insight not found
+docs/TOOLS.md: anchor #reset-paper-account not found
+docs/TOOLS.md: anchor #run-backtest-simulation not found
+docs/TOOLS.md: anchor #validate-trade-risk not found
+prompts/READYTRADER_PROMPT_PACK.md: tool not registered -> check_orders
+prompts/READYTRADER_PROMPT_PACK.md: tool not registered -> get_address_balance
+prompts/READYTRADER_PROMPT_PACK.md: tool not registered -> get_advanced_risk_disclosure
+prompts/READYTRADER_PROMPT_PACK.md: tool not registered -> get_health
+-- 68 problem(s) in 17 doc(s)
+=== tool-like names in docs that are not registered MCP tools (any verb)
+README.md:189:`get_portfolio_balance(
+README.md:190:`reset_paper_wallet(
+README.md:195:`get_marketdata_capabilities(
+README.md:199:`get_marketdata_capabilities(
+README.md:275:`on_candle(
+README.md:287:`reset_paper_wallet(
+RUNBOOK.md:15:`get_metrics_snapshot(
+RUNBOOK.md:16:`get_metrics_prometheus(
+RUNBOOK.md:30:`list_pending_executions(
+RUNBOOK.md:35:`start_marketdata_ws(
+RUNBOOK.md:35:`stop_marketdata_ws(
+RUNBOOK.md:36:`start_cex_private_ws(
+RUNBOOK.md:36:`stop_cex_private_ws(
+RUNBOOK.md:37:`list_cex_private_updates(
+RUNBOOK.md:49:`get_metrics_snapshot(
+RUNBOOK.md:63:`get_marketdata_status(
+RUNBOOK.md:66:`get_marketdata_status(
+RUNBOOK.md:72:`stop_marketdata_ws(
+RUNBOOK.md:73:`start_marketdata_ws(
+RUNBOOK.md:7:`get_health(
+RUNBOOK.md:83:`get_cex_capabilities(
+RUNBOOK.md:84:`get_ticker(
+docs/CUSTODY.md:47:`get_health(
+docs/CUSTODY.md:48:`get_metrics_snapshot(
+docs/ERRORS.md:26:`accept_risk_disclosure(
+docs/ERRORS.md:26:`get_risk_disclosure(
+docs/ERRORS.md:29:`accept_advanced_risk_disclosure(
+docs/ERRORS.md:29:`get_advanced_risk_disclosure(
+docs/ERRORS.md:90:`get_ticker(
+docs/EXCHANGES.md:44:`place_cex_order(
+docs/EXCHANGES.md:45:`cancel_cex_order(
+docs/EXCHANGES.md:46:`get_cex_order(
+docs/EXCHANGES.md:47:`wait_for_cex_order(
+docs/EXCHANGES.md:51:`get_cex_balance(
+docs/EXCHANGES.md:52:`list_cex_open_orders(
+docs/EXCHANGES.md:53:`list_cex_orders(
+docs/EXCHANGES.md:54:`get_cex_my_trades(
+docs/EXCHANGES.md:55:`cancel_all_cex_orders(
+docs/EXCHANGES.md:56:`replace_cex_order(
+docs/EXCHANGES.md:64:`get_cex_capabilities(
+docs/EXCHANGES.md:70:`start_cex_private_ws(
+docs/EXCHANGES.md:72:`wait_for_cex_order(
+docs/MARKETDATA.md:34:`get_ticker(
+docs/MARKETDATA.md:3:`get_ticker(
+prompts/READYTRADER_PROMPT_PACK.md:18:`get_health(
+prompts/READYTRADER_PROMPT_PACK.md:21:`check_orders(
+prompts/READYTRADER_PROMPT_PACK.md:22:`get_address_balance(
+prompts/READYTRADER_PROMPT_PACK.md:31:`get_health(
+prompts/READYTRADER_PROMPT_PACK.md:73:`get_health(
+prompts/READYTRADER_PROMPT_PACK.md:77:`get_advanced_risk_disclosure(
+-- 50 call(s) to unregistered names
+=== crypto / stock leftovers in user-facing docs (count per file)
+README.md: 11
+RUNBOOK.md: 8
+CHANGELOG.md: 4
+docs/CUSTODY.md: 12
+docs/ERRORS.md: 10
+docs/EXCHANGES.md: 11
+docs/FALLING_KNIFE.md: 6
+docs/MARKETDATA.md: 6
+docs/POSITIONING.md: 16
+docs/SENTIMENT.md: 5
+docs/THREAT_MODEL.md: 1
+docs/TOOLS.md: 6
+prompts/READYTRADER_PROMPT_PACK.md: 6
+smithery.yaml: 1
+docker-compose.sentinel.yml: 3
+=== TOOLS.md is what the generator produces now
+Wrote docs/TOOLS.md (18 tools)
+Files /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/FX_TOOLS.before.md and docs/TOOLS.md differ
+=== tools registered but not in TOOLS.md:
+fetch_ohlcv get_multiple_prices get_paper_account get_stock_price place_forex_order place_limit_order place_market_order place_stock_order run_synthetic_stress_test start_brokerage_private_ws
+=== smithery.yaml
+startCommand:
+  type: stdio
+  command: python
+  args:
+    - app/main.py
+name: ReadyTrader-FOREX
+description: >-
+  A specialized bridge that turns your AI Agent into a professional forex trading operator.
+  Features specific "Intelligence vs. Execution" separation of powers, a "Risk Guardian" safety layer,
+  and deep DeFi integrations (Aave, Uniswap).
+projectUrl: https://github.com/up2itnow/ReadyTrader-FOREX
+configSchema:
+  type: object
+  properties:
+    PAPER_MODE:
+      type: string
+      description: "Set to 'true' for zero-risk paper trading simulation (default)."
+      default: "true"
+    RISK_PROFILE:
+      type: string
+      description: "Risk enforcement profile ('conservative', 'moderate', 'aggressive')."
+      default: "conservative"
+    EXECUTION_APPROVAL_MODE:
+      type: string
+      description: "Set to 'approve_each' to require human confirmation for every trade."
+      default: "auto"
+    CEX_API_KEY:
+      type: string
+      description: "API Key for centralized exchange execution."
+    CEX_API_SECRET:
+      type: string
+      description: "API Secret for centralized exchange execution."
+  required: []
+
+
+exit=0

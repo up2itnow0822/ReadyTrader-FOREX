@@ -1,0 +1,9 @@
+$ grep -o 'href="[^"]*"' /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/uat/evidence/2026-09-24-01/FE-02-retest-dashboard.html | grep -v _next | sort -u; grep -rn 'href=' frontend/src/app/layout.tsx
+# at 2026-09-24T11:38:32+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+href="/"
+href="/favicon.ico?favicon.0b3bf435.ico"
+25:              <Link href="/" className="nav-item active">Dashboard</Link>
+
+
+exit=0

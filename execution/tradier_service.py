@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from common.switches import safety_switch_on
 from execution.base import IBrokerage
 
 
@@ -16,7 +17,8 @@ class TradierBrokerage(IBrokerage):
     def __init__(self):
         self.token = os.getenv("TRADIER_ACCESS_TOKEN")
         self.account_id = os.getenv("TRADIER_ACCOUNT_ID")
-        self.sandbox = os.getenv("TRADIER_SANDBOX", "true").lower() == "true"
+        # The sandbox is the default; only an explicit false/0/no/off reaches the production API.
+        self.sandbox = safety_switch_on(os.getenv("TRADIER_SANDBOX", "true"))
         self.base_url = "https://sandbox.tradier.com/v1" if self.sandbox else "https://api.tradier.com/v1"
 
         self._available = bool(self.token and self.account_id)

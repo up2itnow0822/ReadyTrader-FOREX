@@ -1,0 +1,13 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_allow_ws.sh
+# at 2026-09-24T12:53:32+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+=== ALLOW_BROKERAGE_SYMBOLS written as the README shows pairs
+ALLOW_BROKERAGE_SYMBOLS='EUR/USD': order EURUSD -> symbol_not_allowed
+ALLOW_BROKERAGE_SYMBOLS='eurusd': order EURUSD -> allowed
+ALLOW_BROKERAGE_SYMBOLS='EURUSD': order EURUSD -> allowed
+=== /ws opened from a foreign web page (Origin: https://evil.example)
+Origin https://evil.example -> HTTP 101
+Origin http://localhost:3000 -> HTTP 101
+
+
+exit=0

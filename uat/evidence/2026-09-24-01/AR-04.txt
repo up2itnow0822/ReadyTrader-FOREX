@@ -1,0 +1,9 @@
+$ cd /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/review3_forex && /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX/.venv/bin/python p07_unpriced_deposit.py 2>&1 | grep -v 'Warning\|warnings.warn\|authlib\|compatible before\|httpx2'
+# at 2026-09-25T11:27:43+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+deposit while EURUSD priced  : drawdown before deposit 11.00% -> after 10.51%  (halt at 10%: still halted)
+deposit while EURUSD UNPRICED: drawdown before deposit 11.00% -> after 5.50%  (halt at 10%: HALT LIFTED)
+hand (TWR): 0.89 * (994,499/989,000) = 0.8949 -> drawdown 10.51%, still halted
+
+
+exit=0

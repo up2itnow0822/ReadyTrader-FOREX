@@ -1,0 +1,22 @@
+$ bash /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/probes/fx_sandbox.sh
+# at 2026-09-24T11:41:23+00:00 in /tmp/claude-0/-home-claude/55237518-b0f0-557c-b340-66cb8731d4ad/scratchpad/repos/ReadyTrader-FOREX
+
+TRADIER_SANDBOX='true' -> tradier base_url https://sandbox.tradier.com/v1
+ETRADE_SANDBOX='true' -> etrade base_url https://apisb.etrade.com/v1/market
+TRADIER_SANDBOX='1' -> tradier base_url https://sandbox.tradier.com/v1
+ETRADE_SANDBOX='1' -> etrade base_url https://apisb.etrade.com/v1/market
+TRADIER_SANDBOX='yes' -> tradier base_url https://sandbox.tradier.com/v1
+ETRADE_SANDBOX='yes' -> etrade base_url https://apisb.etrade.com/v1/market
+TRADIER_SANDBOX='TRUE' -> tradier base_url https://sandbox.tradier.com/v1
+ETRADE_SANDBOX='TRUE' -> etrade base_url https://apisb.etrade.com/v1/market
+TRADIER_SANDBOX='on' -> tradier base_url https://sandbox.tradier.com/v1
+ETRADE_SANDBOX='on' -> etrade base_url https://apisb.etrade.com/v1/market
+--- E*TRADE order and balance URLs with ETRADE_SANDBOX=1
+155:        self.api_host = "https://apisb.etrade.com" if self.sandbox else "https://api.etrade.com"
+--- Alpaca (live mode only reaches this connector)
+PAPER_MODE='false' ALPACA_PAPER=None -> live-path Alpaca endpoint: BaseURL.TRADING_PAPER
+PAPER_MODE='false' ALPACA_PAPER='true' -> live-path Alpaca endpoint: BaseURL.TRADING_PAPER
+PAPER_MODE='false' ALPACA_PAPER='false' -> live-path Alpaca endpoint: BaseURL.TRADING_LIVE
+
+
+exit=0

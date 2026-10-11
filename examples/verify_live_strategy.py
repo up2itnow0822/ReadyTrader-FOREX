@@ -1,64 +1,38 @@
-import asyncio
-import os
+"""
+ReadyTrader-FOREX: check the live-brokerage wiring without placing any order, then run the SMA
+strategy on real EURUSD data.
+
+With no OANDA_API_KEY / OANDA_ACCOUNT_ID set, the OANDA brokerage must report itself as not
+available, so a live order would be refused rather than sent. OANDA_ENVIRONMENT decides which API
+a configured account uses: practice unless it is "live".
+"""
+
 import sys
+from pathlib import Path
 
-# Ensure app is in path
-sys.path.append(os.getcwd())
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from execution.stock_executor import StockExecutor
-
-from strategy.moving_average import SmaStrategy
+from execution.oanda_service import OandaBrokerage  # noqa: E402
+from strategy.moving_average import SmaStrategy  # noqa: E402
 
 
-async def verify():
-    print("--- Verifying Live Trading & Strategy ---")
+def main() -> int:
+    print("--- Verifying live-brokerage wiring and a strategy ---")
+    ok = True
+    brokerage = OandaBrokerage()
+    print(f"OANDA brokerage available: {brokerage.is_available()} (False unless OANDA_API_KEY/OANDA_ACCOUNT_ID are set)")
+    print(f"OANDA environment: {brokerage.environment} -> {brokerage.base_url}")
 
-    # 1. Test StockExecutor (Mock Mode)
-    print("\n[Executor] Testing StockExecutor (Paper Mode)...")
     try:
-        # We manually instantiate to test the class, independent of container which uses global settings
-        executor = StockExecutor(mode="paper")
-        bal = executor.fetch_balance()
-        print(f"Mock Balance: {bal}")
-
-        order = executor.place_order("AAPL", "buy", 10, 150.0)
-        print(f"Mock Order: {order}")
-
-        if order.get("status") == "filled":
-            print("SUCCESS: StockExecutor (Paper) functional.")
-        else:
-            print("FAILURE: Mock order status incorrect.")
-
+        result = SmaStrategy("EURUSD", short_window=5, long_window=10).analyze()
+        print(f"SMA strategy on EURUSD: {result}")
+        ok = ok and "signal" in result and "error" not in result
     except Exception as e:
-        print(f"FAILED StockExecutor: {e}")
-
-    # 2. Test Alpaca Initialization (Expect Failure without Keys)
-    print("\n[Executor] Testing Alpaca Client Init (expecting error if keys missing)...")
-    try:
-        # We expect this to raise ValueError if keys are missing
-        StockExecutor(mode="live")
-        print("WARNING: Alpaca initialized? Keys might be set or check logic.")
-    except ValueError as ve:
-        print(f"SUCCESS: Correctly caught missing keys: {ve}")
-    except Exception as e:
-        print(f"FAILED: Unexpected error during Alpaca init: {e}")
-
-    # 3. Test SMA Strategy
-    print("\n[Strategy] Testing SMA Strategy on AAPL...")
-    try:
-        # SmaStrategy uses global_container.exchange_provider which we verified earlier
-        strat = SmaStrategy("AAPL", short_window=5, long_window=10)
-        res = strat.analyze()
-        print(f"Strategy Result: {res}")
-
-        if "signal" in res:
-            print("SUCCESS: Strategy generated analysis.")
-        else:
-            print("FAILURE: Strategy output malformed.")
-
-    except Exception as e:
-        print(f"FAILED Strategy: {e}")
+        print(f"FAILED strategy: {e}")
+        ok = False
+    print("SUCCESS" if ok else "FAILURE")
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":
-    asyncio.run(verify())
+    raise SystemExit(main())
