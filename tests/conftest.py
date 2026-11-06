@@ -23,7 +23,9 @@ def mock_env_setup():
 def calm_market(monkeypatch):
     """
     The Falling Knife check and the volatility halt read daily bars over the network; no test may.
-    Every test sees a calm tape unless it patches `app.tools.trading._fetch_daily_bars` itself.
+    Every in-process test sees a calm tape unless it patches `app.tools.trading._fetch_daily_bars`
+    itself. A subprocess cannot see this patch: tests/stdio_mcp_tape.py installs the tape, then
+    runs the same FastMCP server (see tests/test_server_startup.py).
     """
     import market_bars
 
