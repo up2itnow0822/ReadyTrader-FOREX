@@ -1,6 +1,7 @@
 fastmcp==2.14.1
 # fastmcp 2.14.1 needs the 1.x MCP SDK: mcp 2.x no longer installs pydantic-settings, which fastmcp imports.
-mcp>=1.24.0,<2
+# Floor 1.30.0: GHSA-w4fh-qvv9-3v23, GHSA-5h93-6whr-6q8j, GHSA-rwrf-2pqf-9j8j (SEC-20261106-02).
+mcp>=1.30.0,<2
 yfinance
 alpaca-py==0.34.0
 python-dotenv==1.2.1

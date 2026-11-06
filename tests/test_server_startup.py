@@ -69,9 +69,22 @@ def test_the_documented_start_command_serves_mcp_over_stdio():
 
 
 def test_requirements_keep_the_mcp_sdk_on_1x():
-    """fastmcp 2.14.1 imports pydantic_settings, which mcp 2.x no longer brings in."""
+    """fastmcp 2.14.1 imports pydantic_settings, which mcp 2.x no longer brings in.
+
+    SEC-20261106-02: the floor is 1.30.0 so `pip install -r requirements.txt` (Dockerfile,
+    README) cannot keep a vulnerable 1.24/1.25 install. Stay below 2.x.
+    """
     text = (ROOT / "requirements.txt").read_text()
-    assert re.search(r"^mcp>=1\.24\.0,<2$", text, re.M)
+    assert re.search(r"^mcp>=1\.30\.0,<2$", text, re.M)
+
+
+def test_lockfile_pins_mcp_to_the_patched_1x_release():
+    """SEC-20261106-02: GHSA-w4fh-qvv9-3v23, GHSA-5h93-6whr-6q8j, GHSA-rwrf-2pqf-9j8j."""
+    text = (ROOT / "requirements.lock.txt").read_text()
+    match = re.search(r"^mcp==(\d+)\.(\d+)\.(\d+)$", text, re.M)
+    assert match, "requirements.lock.txt must pin mcp exactly"
+    major, minor, patch = (int(p) for p in match.groups())
+    assert major == 1 and (minor, patch) >= (30, 0)
 
 
 def test_the_package_resolves_when_main_is_run_as_a_file():
