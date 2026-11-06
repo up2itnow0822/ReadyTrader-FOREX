@@ -353,7 +353,6 @@ class FakeProvider:
 def test_the_fetch_asks_the_provider_for_daily_bars(monkeypatch):
     """Undo the conftest stub for one call and check what the real seam requests."""
     monkeypatch.undo()
-    monkeypatch.delenv("MARKET_GUARD_BARS_PATH", raising=False)
     provider = FakeProvider(bars=mb.calm())
     monkeypatch.setattr(global_container, "exchange_provider", provider)
     bars = trading._fetch_daily_bars(SYMBOL)
@@ -361,18 +360,20 @@ def test_the_fetch_asks_the_provider_for_daily_bars(monkeypatch):
     assert mg.assess(bars).status == mg.STATUS_OK
 
 
-def test_fetch_daily_bars_reads_MARKET_GUARD_BARS_PATH(monkeypatch, tmp_path):
-    """A subprocess cannot monkeypatch _fetch_daily_bars; the env path is the documented hook."""
+def test_fetch_daily_bars_ignores_MARKET_GUARD_BARS_PATH(monkeypatch, tmp_path):
+    """A JSON tape in MARKET_GUARD_BARS_PATH must not divert production _fetch_daily_bars."""
     monkeypatch.undo()
-    bars = mb.calm()
+    env_tape = mb.calm()
+    provider_tape = mb.spike(move=0.06)
     path = tmp_path / "tape.json"
-    path.write_text(json.dumps(bars))
+    path.write_text(json.dumps(env_tape))
     monkeypatch.setenv("MARKET_GUARD_BARS_PATH", str(path))
-    provider = FakeProvider(bars=mb.spike(move=0.06))
+    provider = FakeProvider(bars=provider_tape)
     monkeypatch.setattr(global_container, "exchange_provider", provider)
     got = trading._fetch_daily_bars(SYMBOL)
-    assert got == json.loads(path.read_text())
-    assert provider.calls == []
+    assert provider.calls == [(SYMBOL, "1d", mg.BARS_REQUESTED)]
+    assert got == provider_tape
+    assert got != env_tape
 
 
 def test_get_volatility_status_reads_the_same_ratio(monkeypatch):

@@ -1,6 +1,4 @@
 import json
-import os
-from pathlib import Path
 from typing import Any, Dict, List
 
 from fastmcp import FastMCP
@@ -117,28 +115,8 @@ def _sentiment_context(symbol: str, supplied: float | None) -> Dict[str, Any]:
     return context
 
 
-def _market_guard_bars_path() -> str:
-    """Optional JSON tape the market guard reads instead of fetching daily bars."""
-    return (os.getenv("MARKET_GUARD_BARS_PATH") or "").strip()
-
-
-def _bars_from_fixture(path: str) -> List[Any]:
-    """Load [[ts_ms, open, high, low, close, volume], ...] written for a subprocess that cannot monkeypatch."""
-    payload = json.loads(Path(path).read_text())
-    if not isinstance(payload, list):
-        raise ValueError(f"MARKET_GUARD_BARS_PATH {path} must be a JSON list of OHLCV rows")
-    return payload
-
-
 def _fetch_daily_bars(symbol: str) -> List[Any]:
-    """The market checks' only network call. Tests replace this function.
-
-    A subprocess (`python app/main.py`) cannot monkeypatch, so MARKET_GUARD_BARS_PATH points it
-    at a JSON tape of daily bars instead of yfinance.
-    """
-    path = _market_guard_bars_path()
-    if path:
-        return _bars_from_fixture(path)
+    """The market checks' only network call. Tests replace this function."""
     return global_container.exchange_provider.fetch_ohlcv(
         symbol, market_guard.TIMEFRAME, limit=market_guard.BARS_REQUESTED
     )

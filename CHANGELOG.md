@@ -4,7 +4,7 @@ This project follows a lightweight changelog format. Major changes are summarize
 
 ### Unreleased
 
-- **Stdio smoke test is deterministic**: `python app/main.py` as a subprocess cannot see the in-process calm-tape monkeypatch, so a live EURUSD volatility halt made `test_the_documented_start_command_serves_mcp_over_stdio` flake. `MARKET_GUARD_BARS_PATH` points `_fetch_daily_bars` at a JSON tape (`tests/market_bars.calm` / `.spike`); the smoke test still asserts `allowed is True`, and a sibling test asserts the halt trips on a high-volatility tape. Risk thresholds are unchanged.
+- **Stdio smoke test is deterministic**: `python app/main.py` as a subprocess cannot see the in-process calm-tape monkeypatch, so a live EURUSD volatility halt made `test_the_documented_start_command_serves_mcp_over_stdio` flake. A test-only launcher (`tests/stdio_mcp_tape.py`) patches `_fetch_daily_bars` with a JSON tape (`tests/market_bars.calm` / `.spike`) and then runs the same FastMCP server. The smoke test still asserts `allowed is True`, and a sibling test asserts the halt trips on a high-volatility tape. Production `_fetch_daily_bars` does not read an env tape. Risk thresholds are unchanged.
 
 #### Release UAT (every item was found by running the product, fixed, and retested; see `uat/`)
 - **The server starts**: `python app/main.py`, the command the README and MCP clients use, failed on imports, and `mcp` 2.x (which drops a module FastMCP imports) was installed by default. The `mcp` SDK is pinned below 2 and both servers run as files. CI now runs ruff, pytest and bandit on Python 3.12 and builds the dashboard.
