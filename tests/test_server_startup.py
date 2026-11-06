@@ -57,7 +57,10 @@ def test_the_documented_start_command_serves_mcp_over_stdio():
             async with ClientSession(read, write) as s:
                 await s.initialize()
                 tools = {t.name for t in (await s.list_tools()).tools}
-                # A SELL needs no market data, so this runs offline.
+                # A real server subprocess is not covered by the in-process calm-tape fixture.
+                # validate_trade_risk reads live daily bars for the volatility halt on every side,
+                # so a tiny paper SELL can still be refused when today's move is > 4.5x the 20-day
+                # norm. This test only proves the documented start command serves MCP over stdio.
                 result = await s.call_tool(
                     "validate_trade_risk", {"side": "sell", "symbol": "EURUSD", "amount_usd": 100.0, "portfolio_value": 10000.0}
                 )
@@ -65,7 +68,10 @@ def test_the_documented_start_command_serves_mcp_over_stdio():
 
     tools, verdict = asyncio.run(asyncio.wait_for(session(), timeout=120))
     assert "validate_trade_risk" in tools
-    assert verdict["ok"] is True and verdict["data"]["result"]["allowed"] is True
+    assert verdict["ok"] is True
+    result = verdict["data"]["result"]
+    assert isinstance(result["allowed"], bool)
+    assert isinstance(result["reason"], str) and result["reason"]
 
 
 def test_requirements_keep_the_mcp_sdk_on_1x():
