@@ -71,7 +71,7 @@ def test_the_documented_start_command_serves_mcp_over_stdio():
 def test_requirements_keep_the_mcp_sdk_on_1x():
     """fastmcp 2.14.1 imports pydantic_settings, which mcp 2.x no longer brings in."""
     text = (ROOT / "requirements.txt").read_text()
-    assert re.search(r"^mcp>=1\.24\.0,<2$", text, re.M)
+    assert re.search(r"^mcp>=1\.30\.0,<2$", text, re.M)
 
 
 def test_the_package_resolves_when_main_is_run_as_a_file():
