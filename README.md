@@ -123,6 +123,7 @@ Paper mode needs no configuration. To change anything, copy `env.example` to `.e
 | `ALLOW_EXCHANGES`, `ALLOW_BROKERAGE_SYMBOLS` | unset (all) | Comma-separated allowlists for live orders (`EUR/USD` and `EURUSD` match the same entry), checked when an order is proposed and again when it executes. |
 | `MARKET_GUARD_ENABLED` | `true` | The Falling Knife rule and the volatility halt. Only `false`/`0`/`no`/`off` turns them off. See `docs/FALLING_KNIFE.md`. |
 | `MARKET_GUARD_ON_DATA_ERROR` | unset | What a BUY does when the daily bars cannot be read: `block` or `allow`. Unset blocks in live mode and allows (flagged) in paper mode. |
+| `MARKET_GUARD_BARS_PATH` | unset | JSON file of daily bars (`[[ts_ms, o, h, l, c, v], ...]`) the market guard reads instead of yfinance. Used by the stdio smoke test so it does not depend on live EURUSD. |
 | `API_PORT`, `API_HOST` | `8000`, `127.0.0.1` | The API server's address. The approval API has no login: keep it on 127.0.0.1 unless something in front of it authenticates. |
 | `API_CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Browser origins allowed to call the API. |
 | `API_OPERATOR_TOKEN` | unset | Operator secret for the API server only: when set, every `/api/` call but `/api/health` needs `Authorization: Bearer <it>`; live proposals can be approved only when it is set. |

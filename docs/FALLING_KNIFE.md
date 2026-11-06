@@ -37,7 +37,9 @@ dislocation, in either direction.
 - **Data**: `global_container.exchange_provider.fetch_ohlcv(symbol, "1d", limit=40)` — the same
   yfinance-backed provider as the `fetch_ohlcv` tool (`EURUSD` and `EUR/USD` are read as
   `EURUSD=X`), cached for `OHLCV_CACHE_TTL_SEC` (60 s by default, never past the next daily
-  boundary). At most one network call per pair per minute.
+  boundary). At most one network call per pair per minute. When `MARKET_GUARD_BARS_PATH` is set,
+  those bars are read from that JSON file (`[[ts_ms, o, h, l, c, v], ...]`) instead, so a
+  subprocess that cannot monkeypatch `_fetch_daily_bars` still sees a deterministic tape.
 - **Code**: `core/market_guard.py` is pure (bars in, reading out). `app/tools/trading.py`
   (`_market_context`) fetches the bars and applies the policy below; `core/risk.py` turns the
   reading into a verdict. `intelligence.core.get_volatility_status(symbol)` returns the same ratio,
@@ -82,6 +84,7 @@ A SELL is never blocked for missing data.
 | :--- | :--- | :--- |
 | `MARKET_GUARD_ENABLED` | `true` | `false` (or `0`, `no`, `off`) turns off both rules; they are then listed in `inactive_rules`. Any other value, including a typo, leaves them on |
 | `MARKET_GUARD_ON_DATA_ERROR` | unset | see the table above |
+| `MARKET_GUARD_BARS_PATH` | unset | JSON tape of daily bars the guard reads instead of yfinance (stdio smoke tests; not a risk-threshold change) |
 | `OHLCV_CACHE_TTL_SEC` | `60` | cache lifetime for the daily bars |
 
 `CIRCUIT_BREAKER_PCT` is not read by any check; it predates these rules and is kept only so

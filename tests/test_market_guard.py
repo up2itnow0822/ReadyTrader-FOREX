@@ -353,11 +353,26 @@ class FakeProvider:
 def test_the_fetch_asks_the_provider_for_daily_bars(monkeypatch):
     """Undo the conftest stub for one call and check what the real seam requests."""
     monkeypatch.undo()
+    monkeypatch.delenv("MARKET_GUARD_BARS_PATH", raising=False)
     provider = FakeProvider(bars=mb.calm())
     monkeypatch.setattr(global_container, "exchange_provider", provider)
     bars = trading._fetch_daily_bars(SYMBOL)
     assert provider.calls == [(SYMBOL, "1d", mg.BARS_REQUESTED)]
     assert mg.assess(bars).status == mg.STATUS_OK
+
+
+def test_fetch_daily_bars_reads_MARKET_GUARD_BARS_PATH(monkeypatch, tmp_path):
+    """A subprocess cannot monkeypatch _fetch_daily_bars; the env path is the documented hook."""
+    monkeypatch.undo()
+    bars = mb.calm()
+    path = tmp_path / "tape.json"
+    path.write_text(json.dumps(bars))
+    monkeypatch.setenv("MARKET_GUARD_BARS_PATH", str(path))
+    provider = FakeProvider(bars=mb.spike(move=0.06))
+    monkeypatch.setattr(global_container, "exchange_provider", provider)
+    got = trading._fetch_daily_bars(SYMBOL)
+    assert got == json.loads(path.read_text())
+    assert provider.calls == []
 
 
 def test_get_volatility_status_reads_the_same_ratio(monkeypatch):

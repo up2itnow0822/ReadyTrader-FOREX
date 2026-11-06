@@ -4,6 +4,8 @@ This project follows a lightweight changelog format. Major changes are summarize
 
 ### Unreleased
 
+- **Stdio smoke test is deterministic**: `python app/main.py` as a subprocess cannot see the in-process calm-tape monkeypatch, so a live EURUSD volatility halt made `test_the_documented_start_command_serves_mcp_over_stdio` flake. `MARKET_GUARD_BARS_PATH` points `_fetch_daily_bars` at a JSON tape (`tests/market_bars.calm` / `.spike`); the smoke test still asserts `allowed is True`, and a sibling test asserts the halt trips on a high-volatility tape. Risk thresholds are unchanged.
+
 #### Release UAT (every item was found by running the product, fixed, and retested; see `uat/`)
 - **The server starts**: `python app/main.py`, the command the README and MCP clients use, failed on imports, and `mcp` 2.x (which drops a module FastMCP imports) was installed by default. The `mcp` SDK is pinned below 2 and both servers run as files. CI now runs ruff, pytest and bandit on Python 3.12 and builds the dashboard.
 - **A real paper FX account**: paper orders went to a crypto-style ledger that could not hold a short, valued pairs in the wrong currency and filled at caller-supplied prices. `core/fx_account.py` keeps USD cash and one netted position per pair, charges margin at `LEVERAGE` (30), converts quote-currency P&L to USD, persists in `data/paper.db` and is shared with the API. New `get_paper_account`; `deposit_paper_funds` takes positive USD only.

@@ -12,7 +12,9 @@ Every rate and candle the server uses comes from **yfinance** (Yahoo), through
   volume is usually 0.
 - The Risk Guardian values each order at its USD notional from the latest rates (the base currency's USD
   rate: 10,000 EURGBP is 10,000 EUR at EURUSD); paper orders fill at the latest rate;
-  the market guard reads the last 40 daily bars (`docs/FALLING_KNIFE.md`).
+  the market guard reads the last 40 daily bars (`docs/FALLING_KNIFE.md`). Set
+  `MARKET_GUARD_BARS_PATH` to a JSON tape of those bars to skip yfinance (the stdio smoke test
+  does this so it does not depend on live EURUSD volatility).
 
 No brokerage key is needed for market data. Yahoo's FX rates are indicative, not a dealer's
 quotes, and Yahoo rate-limits bursts; when a rate cannot be read the tools answer
