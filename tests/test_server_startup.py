@@ -54,6 +54,17 @@ def _write_tape(directory: Path, bars) -> str:
     return str(path)
 
 
+def _stdio_env(tmp_path: Path, bars) -> dict:
+    """Isolate the subprocess from the caller's .env: paper on, market guard on, fixture tape."""
+    return {
+        **os.environ,
+        "PAPER_MODE": "true",
+        "MARKET_GUARD_ENABLED": "true",
+        "MARKET_GUARD_BARS_PATH": _write_tape(tmp_path, bars),
+        "PAPER_DB_PATH": str(tmp_path / "paper.db"),
+    }
+
+
 def _verdict_reason(verdict: dict) -> str:
     """CI must show why a paper SELL was allowed or denied (volatility halt on live EURUSD)."""
     if not verdict.get("ok"):
@@ -87,13 +98,7 @@ def test_the_documented_start_command_serves_mcp_over_stdio(tmp_path):
     The subprocess does not see the in-process calm-tape monkeypatch, so it reads
     MARKET_GUARD_BARS_PATH (tests/market_bars.calm) instead of live EURUSD.
     """
-    env = {
-        **os.environ,
-        "PAPER_MODE": "true",
-        "MARKET_GUARD_BARS_PATH": _write_tape(tmp_path, market_bars.calm()),
-        "PAPER_DB_PATH": str(tmp_path / "paper.db"),
-    }
-    tools, verdict = _validate_paper_sell_over_stdio(env)
+    tools, verdict = _validate_paper_sell_over_stdio(_stdio_env(tmp_path, market_bars.calm()))
     reason = _verdict_reason(verdict)
     assert "validate_trade_risk" in tools
     assert verdict["ok"] is True, reason
@@ -102,13 +107,7 @@ def test_the_documented_start_command_serves_mcp_over_stdio(tmp_path):
 
 def test_the_documented_start_command_halts_on_a_high_volatility_tape(tmp_path):
     """Same stdio smoke path, but the fixture is a 6% jump: the volatility halt must refuse the SELL."""
-    env = {
-        **os.environ,
-        "PAPER_MODE": "true",
-        "MARKET_GUARD_BARS_PATH": _write_tape(tmp_path, market_bars.spike(move=0.06)),
-        "PAPER_DB_PATH": str(tmp_path / "paper.db"),
-    }
-    tools, verdict = _validate_paper_sell_over_stdio(env)
+    tools, verdict = _validate_paper_sell_over_stdio(_stdio_env(tmp_path, market_bars.spike(move=0.06)))
     reason = _verdict_reason(verdict)
     assert "validate_trade_risk" in tools
     assert verdict["ok"] is True, reason
