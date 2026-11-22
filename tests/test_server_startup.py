@@ -14,6 +14,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import market_bars
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -44,28 +48,78 @@ def test_every_tool_registers():
     assert {"validate_trade_risk", "place_market_order", "place_limit_order", "place_forex_order", "fetch_ohlcv"} <= tools
 
 
-def test_the_documented_start_command_serves_mcp_over_stdio():
-    """`python app/main.py`, as the README, the Dockerfile and the client configs run it."""
-    from mcp import ClientSession, StdioServerParameters
-    from mcp.client.stdio import stdio_client
+LAUNCHER = "tests/stdio_mcp_tape.py"
 
-    env = {**os.environ, "PAPER_MODE": "true"}
-    params = StdioServerParameters(command=sys.executable, args=["app/main.py"], cwd=str(ROOT), env=env)
+
+def _write_tape(directory: Path, bars) -> str:
+    path = directory / "market_guard_bars.json"
+    path.write_text(json.dumps(bars))
+    return str(path)
+
+
+def _stdio_env(tmp_path: Path) -> dict:
+    """Isolate the subprocess from the caller's .env: paper on, market guard on."""
+    return {
+        **os.environ,
+        "PAPER_MODE": "true",
+        "MARKET_GUARD_ENABLED": "true",
+        "PAPER_DB_PATH": str(tmp_path / "paper.db"),
+    }
+
+
+def _verdict_reason(verdict: dict) -> str:
+    """CI must show why a paper SELL was allowed or denied (volatility halt on live EURUSD)."""
+    if not verdict.get("ok"):
+        error = verdict.get("error") or {}
+        return str(error.get("message") or error or verdict)
+    result = (verdict.get("data") or {}).get("result") or {}
+    return str(result.get("reason") or verdict)
+
+
+def _validate_paper_sell_over_stdio(tmp_path: Path, bars):
+    """Test-only launcher over MCP stdio, then the same paper SELL the smoke test uses."""
+    params = StdioServerParameters(
+        command=sys.executable,
+        args=[LAUNCHER, _write_tape(tmp_path, bars)],
+        cwd=str(ROOT),
+        env=_stdio_env(tmp_path),
+    )
 
     async def session():
         async with stdio_client(params) as (read, write):
             async with ClientSession(read, write) as s:
                 await s.initialize()
                 tools = {t.name for t in (await s.list_tools()).tools}
-                # A SELL needs no market data, so this runs offline.
                 result = await s.call_tool(
-                    "validate_trade_risk", {"side": "sell", "symbol": "EURUSD", "amount_usd": 100.0, "portfolio_value": 10000.0}
+                    "validate_trade_risk",
+                    {"side": "sell", "symbol": "EURUSD", "amount_usd": 100.0, "portfolio_value": 10000.0},
                 )
                 return tools, json.loads(result.content[0].text)
 
-    tools, verdict = asyncio.run(asyncio.wait_for(session(), timeout=120))
+    return asyncio.run(asyncio.wait_for(session(), timeout=120))
+
+
+def test_the_documented_start_command_serves_mcp_over_stdio(tmp_path):
+    """Stdio smoke: the test-only launcher installs a calm tape, then runs the production server.
+
+    A subprocess cannot see the in-process calm-tape monkeypatch. tests/stdio_mcp_tape.py
+    patches `_fetch_daily_bars` in the child and runs the same FastMCP app as `python app/main.py`.
+    """
+    tools, verdict = _validate_paper_sell_over_stdio(tmp_path, market_bars.calm())
+    reason = _verdict_reason(verdict)
     assert "validate_trade_risk" in tools
-    assert verdict["ok"] is True and verdict["data"]["result"]["allowed"] is True
+    assert verdict["ok"] is True, reason
+    assert verdict["data"]["result"]["allowed"] is True, reason
+
+
+def test_the_documented_start_command_halts_on_a_high_volatility_tape(tmp_path):
+    """Same stdio smoke path, but the fixture is a 6% jump: the volatility halt must refuse the SELL."""
+    tools, verdict = _validate_paper_sell_over_stdio(tmp_path, market_bars.spike(move=0.06))
+    reason = _verdict_reason(verdict)
+    assert "validate_trade_risk" in tools
+    assert verdict["ok"] is True, reason
+    assert verdict["data"]["result"]["allowed"] is False, reason
+    assert "Volatility Halt" in reason, reason
 
 
 def test_requirements_keep_the_mcp_sdk_on_1x():

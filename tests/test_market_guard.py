@@ -360,6 +360,22 @@ def test_the_fetch_asks_the_provider_for_daily_bars(monkeypatch):
     assert mg.assess(bars).status == mg.STATUS_OK
 
 
+def test_fetch_daily_bars_ignores_MARKET_GUARD_BARS_PATH(monkeypatch, tmp_path):
+    """A JSON tape in MARKET_GUARD_BARS_PATH must not divert production _fetch_daily_bars."""
+    monkeypatch.undo()
+    env_tape = mb.calm()
+    provider_tape = mb.spike(move=0.06)
+    path = tmp_path / "tape.json"
+    path.write_text(json.dumps(env_tape))
+    monkeypatch.setenv("MARKET_GUARD_BARS_PATH", str(path))
+    provider = FakeProvider(bars=provider_tape)
+    monkeypatch.setattr(global_container, "exchange_provider", provider)
+    got = trading._fetch_daily_bars(SYMBOL)
+    assert provider.calls == [(SYMBOL, "1d", mg.BARS_REQUESTED)]
+    assert got == provider_tape
+    assert got != env_tape
+
+
 def test_get_volatility_status_reads_the_same_ratio(monkeypatch):
     monkeypatch.setattr(global_container, "exchange_provider", FakeProvider(bars=mb.spike(move=0.06)))
     assert core.get_volatility_status(SYMBOL) > mg.VOLATILITY_HALT_RATIO
